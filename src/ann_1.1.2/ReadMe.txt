@@ -1,6 +1,7 @@
 ANN: Approximate Nearest Neighbors
-Version: 1.1.2
+Version: 1.1.2+
 Release date: Jan 27, 2010
+Last patched: Dec 08, 2021 by Nicolas B. Garnier, for multithreading 
 ----------------------------------------------------------------------------
 Copyright (c) 1997-2010 University of Maryland and Sunil Arya and David
 Mount. All Rights Reserved.  See Copyright.txt and License.txt for
@@ -68,3 +69,5 @@ History
     Updated old source comments for GNU LPL.
   Version 1.1.2  01/27/10
     Fixed minor compilation bugs for new versions of gcc
+  Version 1.1.2+ 08/12/21
+    Added multithreding support with pthreads
