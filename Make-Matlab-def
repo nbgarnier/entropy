@@ -1,0 +1,71 @@
+#################################################################
+# definitions to be included in main Makefile                   #
+# related to production of Matlab libraries                     #
+#################################################################
+# 2012-02-29                                                    #
+# 2013-06-20 adapted for phycalc and windows			#
+#################################################################
+
+MEX     = $(CC) -Wall -DMATLAB_MEX_FILE 
+MEX-CPP = $(CPP) -Wall -DMATLAB_MEX_FILE
+MEX_LDEXTENSION = .toto
+
+ifeq ($(PLATFORM),LINUX)
+	MEX_LDEXTENSION = .mexglx  # for linux platforms
+	MEX_LDFLAGS    += -L$(join $(MATLAB),/bin/glnx86) 
+	MEX_LDFLAGS    += -lmx -lmex -lmat -lmwlapack -lmwblas -lm -lgsl
+	MEX_LDFLAGS    += -lgslcblas # 2018-04-22 pour stretch
+	MEX_INC         = -D_GNU_SOURCE -fPIC -pthread -m32 -fexceptions -D_FILE_OFFSET_BITS=64
+	MEX_INC        += -I$(join $(MATLAB),/extern/include) -I$(INCLUDE)
+	MEX_LDFLAGS    += -pthread -shared -m32 -Wl,--no-undefined
+	MEX_LDFLAGS    += -Wl,--version-script,$(join $(MATLAB),/extern/lib/glnx86/mexFunction.map)
+
+else ifeq ($(PLATFORM),LINUX64)   # running OK on Cobalt, 2014-01-17, OK on 2018-11-20
+	MEX_LDEXTENSION = .mexa64  # for linux platforms 64bits
+	MEX_LDFLAGS    += -L$(join $(MATLAB),/bin/glnxa64) 
+	MEX_LDFLAGS    += -lmx -lmex -lmat -lmwlapack -lmwblas -lm -lgsl
+	MEX_LDFLAGS    += -lgslcblas # 2018-04-22 pour stretch
+	MEX_INC         = -D_GNU_SOURCE -fPIC -pthread -m64 -fexceptions -D_FILE_OFFSET_BITS=64
+	MEX_INC        += -I$(join $(MATLAB),/extern/include) -I$(INCLUDE)
+	MEX_LDFLAGS    += -pthread -shared -m64 -Wl,--no-undefined -fPIC
+	MEX_LDFLAGS    += -Wl,--version-script,$(join $(MATLAB),/extern/lib/glnxa64/mexFunction.map) 
+							# -DMX_COMPAT_32
+
+else ifeq ($(PLATFORM),LINUX_PHYCALC)
+	MEX_LDEXTENSION = .mexa64  # for linux platforms
+	MEX_LDFLAGS    += -L$(join $(MATLAB),/bin/glnxa64) 
+	MEX_LDFLAGS    += -lmx -lmex -lmat -lmwlapack -lmwblas -lm -lgsl -lcblas -lstdc++
+	MEX_INC         = -D_GNU_SOURCE -fPIC -fexceptions -fno-omit-frame-pointer -pthread
+	MEX_INC        += -I$(join $(MATLAB),/extern/include) -I$(INCLUDE)
+	MEX_LDFLAGS    += -pthread -shared -Wl,--no-undefined
+	MEX_LDFLAGS    += -Wl,--version-script,$(join $(MATLAB),/extern/lib/glnxa64/mexFunction.map)
+
+else ifeq ($(PLATFORM),PSMN)
+	MEX_LDEXTENSION = .mexa64  # for linux platforms
+	MEX_LDFLAGS    += -L$(join $(MATLAB),/bin/glnxa64)
+	MEX_INC         = -D_GNU_SOURCE  -fexceptions -fPIC -fno-omit-frame-pointer -pthread
+	MEX_INC        += -I$(join $(MATLAB),/extern/include) -I$(INCLUDE) -I../gsl-1.14/
+	MEX_LDFLAGS    += -pthread -shared -Wl,--no-undefined
+	MEX_LDFLAGS    += -lmx -lmex -lmat -lmwlapack -lmwblas -lm -lgsl -L/home/ngarnier/lib/ -lgslcblas
+    MEX_LDFLAGS    += -Wl,--version-script,/softs/matlabR2009a/extern/lib/glnxa64/mexFunction.map
+	MEX_LDFLAGS    += -Wl,-rpath -Wl,/home/ngarnier/lib
+
+else ifeq ($(PLATFORM),MACOS)
+	# (if using macports, ensure that /opt/local/etc/macports/macports.conf is set to produce/use 64 bits libraries !!!)
+#   MEX			   += -arch x86_64 # to ensure that 64bit code is produced on MacOs
+	MEX_LDEXTENSION = .mexmaci64 # for MacOS platform
+	MEX_INC         = -I$(join $(MATLAB),/extern/include) -I$(INCLUDE) $(OPT_FLAGS)
+	MEX_LDFLAGS     = -L$(join $(MATLAB),/bin/maci64) $(LDFLAGS)
+#	MEX-LDFLAGS.   += -stdlib=libstdc++ # old, useless, better to specify "minimal target" in compiler call
+#	MEX_LDFLAGS    += -stdlib=libc++ # new, 2018-11-27, but also useless
+	MEX_LDFLAGS    += -lgsl -lmwlapack -lmwblas
+	MEX_LDFLAGS    += -Wl,-exported_symbols_list,$(join $(MATLAB),/extern/lib/maci64/mexFunction.map) -lmx -lmex -lmat
+
+else ifeq ($(PLATFORM),WIN64)
+	MEX_LDEXTENSION = .mexw64 # for Windows 64 bits platform
+	MEX_INC         = -I$(join $(MATLAB),/extern/include) -I$(INCLUDE)
+	MEX_LDFLAGS     = -L$(join $(MATLAB),/bin/maci64)
+	MEX_LDFLAGS    += -lgsl -lmwlapack -lmwblas # -L../lib
+	MEX_LDFLAGS    += -Wl,-exported_symbols_list,$(join $(MATLAB),/extern/lib/maci64/mexFunction.map) -lmx -lmex -lmat
+endif 
+
