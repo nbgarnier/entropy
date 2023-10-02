@@ -2,7 +2,7 @@
 an efficient C/C++ library integrated with Python and Matlab to estimate various entropies and many other quantities from information theory, using nearest neighbors estimates.
 
 # compilation and installation
-- run ./configure and eventuallly solve the issues by installing missing programs and libraries
+- run ./configure and eventuallly solve the issues by installing missing programs and libraries (e.g.: apt install libtool-bin fftw3-dev )
 - then run either "make matlab" or "make python" to produce the library.
   
 # Matlab version
