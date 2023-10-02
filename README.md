@@ -1,10 +1,10 @@
 # entropy
 an efficient C/C++ library integrated with Python and Matlab to estimate various entropies and many other quantities from information theory, using nearest neighbors estimates.
 
-# installation
-- edit the top lines of file Make-config to suit your needs (essentially, to indicate on which platform you are working)
+# compilation and installation
+- run ./configure and eventuallly solve the issues by installing missing programs and libraries
 - then run either "make matlab" or "make python" to produce the library.
-
+  
 # Matlab version
 - "make matlab" may not be working since last updates. The Matlab version is not fully supported as of now. Open an issue if this matters.
 
