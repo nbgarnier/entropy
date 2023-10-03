@@ -36,7 +36,7 @@ CXXFLAGS = @CXXFLAGS@
 CPPFLAGS = @my_CPPFLAGS@
 CPPFLAGS += -I$(BASE_DIR)/include
 PYTHON = @PYTHON@
-LDLIBS = -lm -lgsl -lfftw3 -lANN
+LDLIBS = @LIBS@ -lANN
 
 ifeq ($(PLATFORM),LINUX)
 	LDLIBS += -pthread
@@ -131,8 +131,10 @@ cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx 
 # first step : create objects files with matlab options (.mo)       #
 # second step : linking                                             #
 #####################################################################
-#include ./matlab/Make-Matlab
-
+matlab : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
+	cd matlab; $(MAKE); cd ..
+	
+		
 
 #####################################################################
 # rules to clean all intermediate and output files                  #
@@ -141,7 +143,7 @@ clean :
 	rm -f *.o *.a *.exe *.mo ../code.tar.gz
 	cd $(BASE_DIR) ; rm -f -R ._* .DS_Store ; cd src/
 # 2015-10-06, NG, added line above for MacOs garbage
-#	rm -f $(OUTPUT_DIR)/matlab/*$(MEX_LDEXTENSION) matlab/*$(MEX_LDEXTENSION) matlab/*.mo
+	cd matlab ; make clean ; cd ..
 	\rm -f -R build/
 	rm -f $(OUTPUT_DIR)/run.exe
 	rm -f ../lib/libANN.a ../lib/libentropy.a ../include/ANN/ANN.h
