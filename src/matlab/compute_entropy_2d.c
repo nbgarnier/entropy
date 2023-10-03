@@ -14,6 +14,7 @@ usage : S = compute_entropy_2d(x, [k, [m, stride, [mask]]]) (see help)
 // #include "math_tools.h"		// for the function "check_continuity"
 #include "entropy_ann.h"
 #include "library_commons.h"    // for global variables
+#include "samplings.h"
 
 #define malloc mxMalloc
 #define calloc mxCalloc
@@ -74,9 +75,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);
     out_nbe = mxGetPr(plhs[2]);  out_nbe[0] = nb_errors;  // nb of errors
     plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_eff = mxGetPr(plhs[3]);  out_eff[0] = last_npts_eff;  // nb of eff. pts used
+    out_eff = mxGetPr(plhs[3]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
     plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbw = mxGetPr(plhs[4]);  out_nbw[0] = last_nb_windows;  // nb of windows (for std computation)
+    out_nbw = mxGetPr(plhs[4]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
     
     nlhs = 5;
     mxFree(x);
