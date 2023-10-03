@@ -615,7 +615,7 @@ PACKAGE_STRING='entropy 3.3.2'
 PACKAGE_BUGREPORT='nicolas.garnier@ens-lyon.fr'
 PACKAGE_URL=''
 
-ac_unique_file="bin/matlab-old/compute_PTE.m"
+ac_unique_file="src/entropy_ann.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stddef.h>
@@ -649,22 +649,13 @@ ac_includes_default="\
 
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
-<<<<<<< HEAD
-=======
-MATLAB
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 my_CPPFLAGS
 MAKELIB
 PLATFORM
 LIBOBJS
-<<<<<<< HEAD
 MATLAB
 TAR
 CYTHON
-=======
-WITH_MATLAB
-TAR
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 PYTHON
 libtool
 SET_MAKE
@@ -1373,14 +1364,9 @@ Some influential environment variables:
               you have headers in a nonstandard directory <include dir>
   CC          C compiler command
   CFLAGS      C compiler flags
-<<<<<<< HEAD
   PYTHON      python interpreter
   MATLAB      matlab installation (e.g.:
               MATLAB=/Applications/MATLAB_R2023a.app/)
-=======
-  PYTHON      "python interpreter"
-  MATLAB      "matlab installation"
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -2838,13 +2824,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ac_config_headers="$ac_config_headers config.h"
 
 
-<<<<<<< HEAD
 #################################################################
 # check for platform / system type:
 #################################################################
-=======
-# check for platform / system type:
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 
 
 
@@ -2924,13 +2906,8 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 #AC_CANONICAL_BUILD
 # m4_case (host_os, linux-gnu, if-value-1, [value-2], [if-value-2], ..., [default])
 # Detect the target system
-<<<<<<< HEAD
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking the build platform" >&5
 printf %s "checking the build platform... " >&6; }
-=======
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking checking what is the build platform" >&5
-printf %s "checking checking what is the build platform... " >&6; }
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 PLATFORM=unknown
 case "${host_os}" in
     linux*)
@@ -2956,23 +2933,16 @@ printf "%s\n" "MACOS" >&6; }
         ;;
 esac
 
-<<<<<<< HEAD
 #################################################################
 # compiler flags
 #################################################################
-=======
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 : ${CXXFLAGS="-O3 -fPIC -pthread"}
 : ${CFLAGS="-O3 -fPIC -std=c99 -pthread"}
 my_CPPFLAGS="-pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code"
 
-<<<<<<< HEAD
 #################################################################
 # Checks for programs.
 #################################################################
-=======
-# Checks for programs.
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 
 
 
@@ -4251,7 +4221,6 @@ fi
 
   test -n "$PYTHON" && break
 done
-<<<<<<< HEAD
 test -n "$PYTHON" || PYTHON="none"
 
 for ac_prog in cython cython3
@@ -4301,8 +4270,6 @@ fi
   test -n "$CYTHON" && break
 done
 test -n "$CYTHON" || CYTHON="none"
-=======
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 
 for ac_prog in tar
 do
@@ -4355,7 +4322,6 @@ done
 set dummy matlab; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 printf %s "checking for $ac_word... " >&6; }
-<<<<<<< HEAD
 if test ${ac_cv_path_MATLAB+y}
 then :
   printf %s "(cached) " >&6
@@ -4363,15 +4329,6 @@ else $as_nop
   case $MATLAB in
   [\\/]* | ?:[\\/]*)
   ac_cv_path_MATLAB="$MATLAB" # Let the user override the test with a path.
-=======
-if test ${ac_cv_path_WITH_MATLAB+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  case $WITH_MATLAB in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_WITH_MATLAB="$WITH_MATLAB" # Let the user override the test with a path.
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
@@ -4385,11 +4342,7 @@ do
   esac
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-<<<<<<< HEAD
     ac_cv_path_MATLAB="$as_dir$ac_word$ac_exec_ext"
-=======
-    ac_cv_path_WITH_MATLAB="$as_dir$ac_word$ac_exec_ext"
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
     printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -4397,7 +4350,6 @@ done
   done
 IFS=$as_save_IFS
 
-<<<<<<< HEAD
   test -z "$ac_cv_path_MATLAB" && ac_cv_path_MATLAB="none"
   ;;
 esac
@@ -4406,23 +4358,12 @@ MATLAB=$ac_cv_path_MATLAB
 if test -n "$MATLAB"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $MATLAB" >&5
 printf "%s\n" "$MATLAB" >&6; }
-=======
-  test -z "$ac_cv_path_WITH_MATLAB" && ac_cv_path_WITH_MATLAB="True"
-  ;;
-esac
-fi
-WITH_MATLAB=$ac_cv_path_WITH_MATLAB
-if test -n "$WITH_MATLAB"; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $WITH_MATLAB" >&5
-printf "%s\n" "$WITH_MATLAB" >&6; }
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 else
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 fi
 
 
-<<<<<<< HEAD
 #AC_MSG_NOTICE(["MATLAB" variable contains $MATLAB])
 if test "$MATLAB" = none
 then :
@@ -4488,14 +4429,6 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for gsl_sf_psi in -lgsl" >&5
 printf %s "checking for gsl_sf_psi in -lgsl... " >&6; }
 if test ${ac_cv_lib_gsl_gsl_sf_psi+y}
-=======
-
-# Checks for libraries.
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for gsl_sf_psi_int in -lgsl" >&5
-printf %s "checking for gsl_sf_psi_int in -lgsl... " >&6; }
-if test ${ac_cv_lib_gsl_gsl_sf_psi_int+y}
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 then :
   printf %s "(cached) " >&6
 else $as_nop
@@ -4507,58 +4440,35 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* Override any GCC internal prototype to avoid an error.
    Use char because int might match the return type of a GCC
    builtin and then its argument prototype would still apply.  */
-<<<<<<< HEAD
 char gsl_sf_psi ();
 int
 main (void)
 {
 return gsl_sf_psi ();
-=======
-char gsl_sf_psi_int ();
-int
-main (void)
-{
-return gsl_sf_psi_int ();
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
-<<<<<<< HEAD
   ac_cv_lib_gsl_gsl_sf_psi=yes
 else $as_nop
   ac_cv_lib_gsl_gsl_sf_psi=no
-=======
-  ac_cv_lib_gsl_gsl_sf_psi_int=yes
-else $as_nop
-  ac_cv_lib_gsl_gsl_sf_psi_int=no
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-<<<<<<< HEAD
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gsl_gsl_sf_psi" >&5
 printf "%s\n" "$ac_cv_lib_gsl_gsl_sf_psi" >&6; }
 if test "x$ac_cv_lib_gsl_gsl_sf_psi" = xyes
-=======
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gsl_gsl_sf_psi_int" >&5
-printf "%s\n" "$ac_cv_lib_gsl_gsl_sf_psi_int" >&6; }
-if test "x$ac_cv_lib_gsl_gsl_sf_psi_int" = xyes
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 then :
   printf "%s\n" "#define HAVE_LIBGSL 1" >>confdefs.h
 
   LIBS="-lgsl $LIBS"
 
-<<<<<<< HEAD
 else $as_nop
   as_fn_error $? "please install libgsl and eventually libgsl-dev on your system" "$LINENO" 5
-=======
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for fftw_malloc in -lfftw3" >&5
@@ -4602,19 +4512,12 @@ then :
 
   LIBS="-lfftw3 $LIBS"
 
-<<<<<<< HEAD
 else $as_nop
   as_fn_error $? "please install libfftw3-dev on your system" "$LINENO" 5
 fi
 
 
 # Checks for header files:
-=======
-fi
-
-
-# Checks for header files.
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 ac_header= ac_cache=
 for ac_item in $ac_header_c_list
 do
@@ -4874,11 +4777,7 @@ printf "%s\n" "#define uint8_t $ac_cv_c_uint8_t" >>confdefs.h
   esac
 
 
-<<<<<<< HEAD
 # Checks for library functions:
-=======
-# Checks for library functions.
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for error_at_line" >&5
 printf %s "checking for error_at_line... " >&6; }
 if test ${ac_cv_lib_error_at_line+y}
@@ -5025,14 +4924,10 @@ then :
 fi
 
 
-<<<<<<< HEAD
 #################################################################
 # export variables
 #################################################################
 
-=======
-# export variables
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 
 
 
@@ -5044,11 +4939,7 @@ fi
   # set variable as precious
  # set variable as precious
 
-<<<<<<< HEAD
 ac_config_files="$ac_config_files Makefile src/Makefile src/ann_1.1.2/src/Makefile src/matlab/Makefile"
-=======
-ac_config_files="$ac_config_files Makefile src/Makefile src/ann_1.1.2/src/Makefile"
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5739,10 +5630,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/ann_1.1.2/src/Makefile") CONFIG_FILES="$CONFIG_FILES src/ann_1.1.2/src/Makefile" ;;
-<<<<<<< HEAD
     "src/matlab/Makefile") CONFIG_FILES="$CONFIG_FILES src/matlab/Makefile" ;;
-=======
->>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
