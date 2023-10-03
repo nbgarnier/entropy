@@ -15,9 +15,12 @@
 /* Define to 1 if you have the `gsl' library (-lgsl). */
 #undef HAVE_LIBGSL
 
+<<<<<<< HEAD
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
 
+=======
+>>>>>>> 1b667f8a3101389d2eb60fdd5c62edd883ca0a46
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #undef HAVE_MALLOC
