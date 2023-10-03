@@ -6,12 +6,14 @@ setup.py for package "entropy"
 2018-04-10
 2019-10-14 now using python3
 2021-12-20 source code split into several files
-2022-11-25 now using build instead of setup
+2022-11-25 now using setuptools instead of distutils
 """
 from setuptools import setup, Extension
-#from distutils.core import setup, Extension
-#from Cython.Distutils import build_ext 
 from Cython.Build import cythonize
+
+# old distutils projec:
+#from distutils.core import setup, Extension 
+#from Cython.Distutils import build_ext 
 
 # to have an annotated html:
 import Cython.Compiler.Options
@@ -116,8 +118,8 @@ others_module = Extension("others",
 #entropy_tools_module = Extension('tools')
                        
 setup(name = 'entropy',
-      version = '3.3.1', 
-#      date ='2023-03-01',
+      version = '3.3.2', 
+#      date ='2023-10-02',
       description = "Information Theory tools and entropies for multi-scale analysis of continuous signals",
       author      = "Nicolas B. Garnier",
       author_email= "nicolas.garnier@ens-lyon.fr",

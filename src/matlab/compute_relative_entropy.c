@@ -14,6 +14,7 @@ wrapper for the function "compute_relative_entropy_ann" defined in entropy_ann.c
 #include "entropy_ann_mask.h"
 #include "entropy_ann_threads.h"
 #include "library_commons.h"    // for global variables
+#include "samplings.h"
 
 #define malloc mxMalloc
 #define calloc mxCalloc
@@ -75,9 +76,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray  *prhs[])
     plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
     out_nbe = mxGetPr(plhs[4]);  out_nbe[0] = nb_errors;  // nb of errors
     plhs[5] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_eff = mxGetPr(plhs[5]);  out_eff[0] = last_npts_eff;  // nb of eff. pts used
+    out_eff = mxGetPr(plhs[5]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
     plhs[6] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbw = mxGetPr(plhs[6]);  out_nbw[0] = last_nb_windows;  // nb of windows (for std computation)
+    out_nbw = mxGetPr(plhs[6]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
 
     nlhs = 7;
     

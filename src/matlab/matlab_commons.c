@@ -184,10 +184,10 @@ void read_algorithms_parameters(const mxArray *param, int *k, int *algo, int *n_
             {   mxArray *p = mxGetFieldByNumber(param,0,i);
                 tmp = *mxGetPr(p);
                 *n_cores = (int)tmp;
-                if (*n_cores<0)  set_multithreading(2); // auto-adapt
-                if (*n_cores==0) set_multithreading(0); // single-thread
+                if (*n_cores<0)  set_multithreading_state(2); // auto-adapt
+                if (*n_cores==0) set_multithreading_state(0); // single-thread
                 if (*n_cores>0)                         // multi-thread
-                {   set_multithreading(1);
+                {   set_multithreading_state(1);
                     set_cores_number(*n_cores);
                 }
             }

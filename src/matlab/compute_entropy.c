@@ -5,6 +5,7 @@ defined in entropy_ann.c (or entropy_ann_mask.c)
 usage : S = compute_entropy(x, [embed_params, [algo_params, [mask]]]) (see help)
  
 // 2021-12-21, new parameters convention
+// 2023-10-03, using new samplings syntax, and autoconf
 */
 #include <math.h>
 #include <stdio.h>
@@ -12,10 +13,11 @@ usage : S = compute_entropy(x, [embed_params, [algo_params, [mask]]]) (see help)
 #include <string.h>             // for 'memcpy' and 'strcmp'
 #include "mex.h"
 
-#include "entropy_ann.h"
+#include "entropy_ann_N.h"
 #include "entropy_ann_mask.h"
 #include "entropy_ann_threads.h"
 #include "library_commons.h"    // for global variables
+#include "samplings.h"
 
 #define malloc mxMalloc
 #define calloc mxCalloc
@@ -58,18 +60,25 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     plhs[0] = mxCreateDoubleMatrix(1,1,mxREAL);
     entropy = mxGetPr(plhs[0]);
         
-    if (do_use_mask==0) compute_entropy_ann     (x,       npts, mx, px, stride, k, entropy);
-    else                compute_entropy_ann_mask(x, mask, npts, mx, px, stride, k, entropy);
+    if (do_use_mask==0) compute_entropy_ann_N   (x,       npts, mx, px, stride, Theiler, N_eff, N_real, k,    entropy);
+    else                compute_entropy_ann_mask(x, mask, npts, mx, px, stride, Theiler, N_eff, N_real, k, 0, entropy); // method=0
 
-    plhs[1] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_std = mxGetPr(plhs[1]);  out_std[0] = last_std;  // std of the estimation
-    plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbe = mxGetPr(plhs[2]);  out_nbe[0] = nb_errors;  // nb of errors
-    plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_eff = mxGetPr(plhs[3]);  out_eff[0] = last_npts_eff;  // nb of eff. pts used
-    plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbw = mxGetPr(plhs[4]);  out_nbw[0] = last_nb_windows;  // nb of windows (for std computation)
-    
+    if (nlhs>1)
+    {   plhs[1] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_std = mxGetPr(plhs[1]);  out_std[0] = last_std;  // std of the estimation
+    }
+    if (nlhs>2)
+    {   plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_nbe = mxGetPr(plhs[2]);  out_nbe[0] = nb_errors;  // nb of errors
+    }
+    if (nlhs>3)
+    {   plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_eff = mxGetPr(plhs[3]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
+    }
+    if (nlhs>4)
+    {   plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_nbw = mxGetPr(plhs[4]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
+    }
     nlhs = 5;
     
     mxFree(x);

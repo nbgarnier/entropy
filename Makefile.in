@@ -11,7 +11,7 @@
 # make clean         : to remove all non-source files and clean     #
 # make zip           : to produce an archive with source files only #
 #####################################################################
-PLATFORM=MACOS
+PLATFORM=@PLATFORM@
 
 default:
 	@echo "Enter one of the following:"
@@ -31,7 +31,7 @@ default:
 C python cython clean :
 	cd src ; $(MAKE) $@ ; cd ..
 	
-MATLAB = none
+MATLAB = @MATLAB@
 matlab:
 	@if [ "$(MATLAB)" = "none" ]; then \
 		echo "in order to be able to compile matlab libraries, you need to inform configure of which matlab to use. This is done by running:"; \
@@ -48,7 +48,7 @@ matlab:
 #####################################################################
 tarball : zip
 
-TAR = tar
+TAR = @TAR@
 ifeq ($(PLATFORM),MACOS)
 #	chmod -N *
 	TAR =COPYFILE_DISABLE=1 tar

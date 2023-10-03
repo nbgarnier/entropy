@@ -17,6 +17,7 @@ usage : S = compute_entropy_inc(x, [embed_params, [algo_params, [mask]]]) (see h
 #include "entropy_ann_mask.h"
 #include "entropy_ann_threads.h"
 #include "library_commons.h"    // for global variables
+#include "samplings.h"  
 
 #define malloc mxMalloc
 #define calloc mxCalloc
@@ -63,8 +64,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     plhs[0] = mxCreateDoubleMatrix(1,1,mxREAL);
     entropy = mxGetPr(plhs[0]);
 
-    if (do_use_mask==0) compute_entropy_increments_ann     (x,       npts, mx, px, stride, Theiler, N_eff, N_real, k, incr_type, entropy);
-    else                compute_entropy_increments_ann_mask(x, mask, npts, mx, px, stride, k, entropy);
+    if (do_use_mask==0) compute_entropy_increments_ann(x,       npts, mx, px, stride, Theiler, N_eff, N_real, k, incr_type, entropy);
+    else                compute_entropy_ann_mask      (x, mask, npts, mx, px, stride, Theiler, N_eff, N_real, k, incr_type, entropy);
     // for the unmasked version, ret contains the number of errors encountered
     // for masked version, ret contains the nb of points used
     plhs[1] = mxCreateDoubleMatrix(1,1,mxREAL);
@@ -74,7 +75,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
     out_eff = mxGetPr(plhs[3]);  out_eff[0] = last_npts_eff;  // nb of eff. pts used
     plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbw = mxGetPr(plhs[4]);  out_nbw[0] = last_nb_windows;  // nb of windows (for std computation)
+    out_nbw = mxGetPr(plhs[4]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
     
     // extra returned values: the std of the increments, and its std:
     plhs[5] = mxCreateDoubleMatrix(1,1,mxREAL);

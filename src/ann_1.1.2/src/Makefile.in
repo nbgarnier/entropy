@@ -27,10 +27,10 @@
 #-----------------------------------------------------------------------------
 # Configuration definitions
 #-----------------------------------------------------------------------------
-CXX = g++
-CXXFLAGS = -O3 -fPIC -pthread
-CPPFLAGS = -pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code
-MAKELIB  = libtool -arch_only x86_64 -static -o
+CXX = @CXX@
+CXXFLAGS = @CXXFLAGS@
+CPPFLAGS = @my_CPPFLAGS@
+MAKELIB  = @MAKELIB@
 
 #-----------------------------------------------------------------------------
 # Some basic definitions:
@@ -62,13 +62,13 @@ shared: $(LIBDIR)/libANN.so
 $(LIBDIR)/libANN.a: $(OBJECTS)
 #	$(MAKELIB) libANN.a $(OBJECTS)
 #	$(RANLIB) libANN.a
-	libtool -arch_only x86_64 -static -o libANN.a $(OBJECTS)
+	@MAKELIB@ libANN.a $(OBJECTS)
 	mv libANN.a $(LIBDIR)
 	
 $(LIBDIR)/libANN.so: $(OBJECTS)
 #	$(MAKE_SO) libANN.so $(OBJECTS)
 #	$(RANLIB) -shared libANN.so
-	libtool -dynamic -o libANN.so $(OBJECTS)
+	@libtool@ -dynamic -o libANN.so $(OBJECTS)
 	mv libANN.so $(LIBDIR)
 	
 

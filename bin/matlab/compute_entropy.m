@@ -6,7 +6,7 @@
 % embed_params : struct with embedding parameters as follows:
 %   m          : number of points in the past of x to be considered (embedding) (default 1)
 %   stride     : distance between 2 points in time for the embedding process (default 1)
-% samp_params  : struct with s parameters as follows:
+% samp_params  : struct with sampling parameters as follows:
 %   Theiler    : Theiler scale (>0), or (-1, -2, -3 or -4) for automatic selection
 %   N_eff      : number of points to use (>0), or -1 for auto-detect (max)
 %   N_real     : number of realizations to use (>0), or (-1, -2) for auto-detect
@@ -35,5 +35,5 @@
 % algo_params=struct('k',5,'threads',8)
 % [H, std] = compute_entropy(x, struct('m',2,'stride',5), algo_params)
 %
-% v2022-05-24
+% v2023-10-03
 %

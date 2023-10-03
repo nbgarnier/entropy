@@ -7,6 +7,10 @@
 % embed_params : struct with scaling/order parameters as follows:
 %   m          : order of the entropy rate and increments (default 1)
 %   stride     : distance between 2 points in time (default 1)
+% samp_params  : struct with sampling parameters as follows:
+%   Theiler    : Theiler scale (>0), or (-1, -2, -3 or -4) for automatic selection
+%   N_eff      : number of points to use (>0), or -1 for auto-detect (max)
+%   N_real     : number of realizations to use (>0), or (-1, -2) for auto-detect
 % algo_params  : struct with algorithm parameters as follows:
 %   k          : number of neighbors to consider (default 5)
 %   algo       : algorithm (from Kraskov et al) to use. This value can be either:
@@ -37,5 +41,5 @@
 % algo_params=struct('k',5,'threads',8,'algo',2)
 % [D1, D2, std1, std2] = compute_regularity_index(x, struct('stride',7), algo_params)
 %
-% v2022-03-11
+% v2023-10-03
 %

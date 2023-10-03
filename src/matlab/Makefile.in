@@ -1,0 +1,107 @@
+#################################################################
+# makefile for Matlab functions                                 #
+#################################################################
+# file located in directory src/matlab/                         #
+#################################################################
+# 2012-04-06, last revised 2023-10-03                           #
+#################################################################
+PLATFORM = @PLATFORM@
+MATLAB   = @MATLAB@
+MEX      = @CC@ @my_CPPFLAGS@ @CFLAGS@ -DMATLAB_MEX_FILE 
+MEX-CPP  = @CXX@ @my_CPPFLAGS@ @CXXFLAGS@ -DMATLAB_MEX_FILE
+MEX_LDEXTENSION = .toto
+INCLUDE  = ../../include
+OUTPUT_DIR = ../../bin
+
+ifeq ($(PLATFORM),LINUX)
+	MEX_LDEXTENSION = .mexglx  # for linux platforms
+	MEX_LDFLAGS    += -L$(join $(MATLAB),/bin/glnx86) 
+	MEX_LDFLAGS    += @LIBS@ -lmx -lmex -lmat -lmwlapack -lmwblas
+	MEX_LDFLAGS    += -lgslcblas # 2018-04-22 pour stretch
+	MEX_INC         = -D_GNU_SOURCE -fPIC -pthread -m32 -fexceptions -D_FILE_OFFSET_BITS=64
+	MEX_INC        += -I$(join $(MATLAB),/extern/include) -I$(INCLUDE)
+	MEX_LDFLAGS    += -pthread -shared -m32 -Wl,--no-undefined
+	MEX_LDFLAGS    += -Wl,--version-script,$(join $(MATLAB),/extern/lib/glnx86/mexFunction.map)
+
+else ifeq ($(PLATFORM),LINUX64)   # running OK on Cobalt, 2014-01-17, OK on 2018-11-20
+	MEX_LDEXTENSION = .mexa64  # for linux platforms 64bits
+	MEX_LDFLAGS    += -L$(join $(MATLAB),/bin/glnxa64) 
+	MEX_LDFLAGS    += @LIBS@ -lmx -lmex -lmat -lmwlapack -lmwblas 
+	MEX_LDFLAGS    += -lgslcblas # 2018-04-22 pour stretch
+	MEX_INC         = -D_GNU_SOURCE -fPIC -pthread -m64 -fexceptions -D_FILE_OFFSET_BITS=64
+	MEX_INC        += -I$(join $(MATLAB),/extern/include) -I$(INCLUDE)
+	MEX_LDFLAGS    += -pthread -shared -m64 -Wl,--no-undefined -fPIC
+	MEX_LDFLAGS    += -Wl,--version-script,$(join $(MATLAB),/extern/lib/glnxa64/mexFunction.map) 
+							# -DMX_COMPAT_32
+
+else ifeq ($(PLATFORM),MACOS)
+	# (if using macports, ensure that /opt/local/etc/macports/macports.conf is set to produce/use 64 bits libraries !!!)
+#   MEX			   += -arch x86_64 # to ensure that 64bit code is produced on MacOs
+	MEX_LDEXTENSION = .mexmaci64 # for MacOS platform
+	MEX_INC         = -I$(join $(MATLAB),/extern/include) -I$(INCLUDE) $(OPT_FLAGS)
+	MEX_LDFLAGS     = -L$(join $(MATLAB),/bin/maci64) $(LDFLAGS)
+#	MEX-LDFLAGS.   += -stdlib=libstdc++ # old, useless, better to specify "minimal target" in compiler call
+#	MEX_LDFLAGS    += -stdlib=libc++ # new, 2018-11-27, but also useless
+	MEX_LDFLAGS    += @LIBS@ -lmwlapack -lmwblas
+	MEX_LDFLAGS    += -Wl,-exported_symbols_list,$(join $(MATLAB),/extern/lib/maci64/mexFunction.map) -lmx -lmex -lmat
+	MEX_LDFLAGS	   += -L../../lib 
+
+else ifeq ($(PLATFORM),WIN64)
+	MEX_LDEXTENSION = .mexw64 # for Windows 64 bits platform
+	MEX_INC         = -I$(join $(MATLAB),/extern/include) -I$(INCLUDE)
+	MEX_LDFLAGS     = -L$(join $(MATLAB),/bin/maci64)
+	MEX_LDFLAGS    += -lgsl -lmwlapack -lmwblas # -L../lib
+	MEX_LDFLAGS    += -Wl,-exported_symbols_list,$(join $(MATLAB),/extern/lib/maci64/mexFunction.map) -lmx -lmex -lmat
+endif 
+
+
+
+
+
+# below is the list of Matlab functions to compile: 
+MATLAB_ANN   = compute_entropy compute_entropy_inc compute_entropy_rate \
+	compute_MI compute_PMI compute_TE compute_DI compute_PTE \
+	compute_Renyi compute_relative_entropy compute_regularity_index compute_entropy_2d  
+#MATLAB_OTHERS= compute_ApEn compute_SampEn compute_KC
+MATLAB_FILES = $(MATLAB_ANN) $(MATLAB_OTHERS)
+
+#matlab : $(addsuffix $(MEX_LDEXTENSION), $(addprefix matlab/, $(MATLAB_FILES)))
+matlab : $(addsuffix $(MEX_LDEXTENSION), $(MATLAB_FILES))
+
+# below are lists of objects to include with some (or all) Matlab function:
+MO_ANN = $(addsuffix .mo, nns_count entropy_ann entropy_ann_threads samplings\
+	entropy_ann_mask entropy_ann_Renyi entropy_ann_single_entropy entropy_ann_single_MI \
+	entropy_ann_threads_entropy entropy_ann_threads_MI entropy_ann_single_RE \
+	entropy_ann_single_PMI entropy_ann_threads_RE entropy_ann_threads_PMI\
+	entropy_ann_Renyi entropy_ann_threads_Renyi)
+MO_COMMON = $(addsuffix .mo, library_commons math_tools mask ANN_wrapper)
+
+#################################################################
+# Matlab stuff                                                  #
+# (http://www.mathworks.fr/help/techdoc/matlab_external/f24338.html)
+# first step : create objects files with matlab options (.mo)   #
+# second step : linking                                         #
+#################################################################
+%.mo : %.c
+	$(MEX) -c $^ -o $@ $(MEX_INC) 
+		
+%.mexa64 : %.mo $(MO_ANN) $(MO_COMMON)
+	$(MEX-CPP) $^ -o $@ $(MEX_LDFLAGS) -lANN
+	cp $@ $(OUTPUT_DIR)/matlab/
+
+%.mexmaci64 : %.mo
+	$(MEX-CPP) -dynamiclib -Wl,-dynamic $(MEX_LDFLAGS) $^ -o $@ -lANN -lentropy
+	cp $@ $(OUTPUT_DIR)/matlab/
+
+%.mexglx : %.mo ANN_wrapper.mo nns_count.mo entropy_ann.mo entropy_ann_mask.mo math_tools.mo entropy_symb.mo entropy_bins.mo mask.mo entropy_others.mo entropy_ann_Renyi.mo
+	$(MEX-CPP) $(MEX_LDFLAGS) $^ -o $@ -lANN
+	cp $@ $(OUTPUT_DIR)/matlab/
+		
+#################################################################
+# cleaning                                                      #
+#################################################################
+clean :
+	rm -f $(OUTPUT_DIR)/matlab/*$(MEX_LDEXTENSION) 
+	rm -f *$(MEX_LDEXTENSION) 
+	rm -f *.mo
+    

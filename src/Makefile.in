@@ -28,15 +28,15 @@ CYTHON_DIR =$(BASE_DIR)/src/cython
 #-----------------------------------------------------------------------------
 # inherit definitions from ./configure step
 #-----------------------------------------------------------------------------
-PLATFORM = MACOS
-CC = gcc
-CXX = g++
-CFLAGS = -O3 -fPIC -std=c99 -pthread
-CXXFLAGS = -O3 -fPIC -pthread
-CPPFLAGS = -pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code
+PLATFORM = @PLATFORM@
+CC = @CC@
+CXX = @CXX@
+CFLAGS = @CFLAGS@
+CXXFLAGS = @CXXFLAGS@
+CPPFLAGS = @my_CPPFLAGS@
 CPPFLAGS += -I$(BASE_DIR)/include
-PYTHON = python
-LDLIBS = -lfftw3 -lgsl -lm  -lANN
+PYTHON = @PYTHON@
+LDLIBS = @LIBS@ -lANN
 
 ifeq ($(PLATFORM),LINUX)
 	LDLIBS += -pthread
@@ -74,7 +74,7 @@ C : $(LIB_DIR)/libentropy.a $(OUTPUT_DIR)/run.exe
 # main C stuff                                                      #
 #####################################################################
 $(LIB_DIR)/libentropy.a: $(OBJS)
-	libtool -arch_only x86_64 -static -o libentropy.a $(OBJS)
+	@MAKELIB@ libentropy.a $(OBJS)
 #	$(RANLIB) libentropy.a
 	mv libentropy.a $(LIB_DIR)
 

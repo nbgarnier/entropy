@@ -136,7 +136,7 @@ int compare(double *x, double *y, int npts)
 }
 
     
-int main()
+int main(void)
 {	int nx, pb=0;
 //	double *x=NULL;
 	double H1=0, H2=0;

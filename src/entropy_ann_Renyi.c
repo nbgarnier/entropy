@@ -108,6 +108,7 @@ double compute_Renyi_nd_ann(double *x, int nx, int n, double q, int k)
 /* stride is the time lag between 2 consecutive points to be considered in time		    */
 /* q      is the order of the Renyi entropy                                             */
 /* k      nb of neighbors to be considered										        */
+/* method to choose embedding (0), increments (1), or higher order increments (2)       */
 /*																			            */
 /* data is ordered like this :													        */
 /* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)				*/
