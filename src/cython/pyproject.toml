@@ -1,3 +1,29 @@
 [build-system]
 # Minimum requirements for the build system to execute.
-requires = ["setuptools", "wheel", "Cython"]  # PEP 508 specifications.
+requires = ["setuptools", "wheel", "Cython", "numpy"]  # PEP 508 specifications.
+
+
+[project]
+name = "entropy"
+version = "2023.10.09" 
+description = "Information Theory tools and entropies for multi-scale analysis of continuous signals"
+# readme = "README.rst"
+authors = [{name = "Nicolas B. Garnier", email = "nicolas.garnier@ens-lyon.fr"}]
+maintainers = [{name = "Nicolas B. Garnier", email = "nicolas.garnier@ens-lyon.fr"}]
+requires-python = ">=3.7"
+keywords = ["entropy", "Shannon", "continuous entropy", "information theory"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Development Status :: 2 - Beta",
+    "Programming Language :: Python :: 3"]
+dependencies = ['importlib-metadata', 'numpy']
+# dynamic = ["version", "description"]
+
+
+[project.urls]
+#Homepage = "https://example.com"
+#Documentation = "https://readthedocs.org"
+Repository = "https://github.com/nbgarnier/entropy"
+#Changelog = "https://github.com/nbgarnier/entropy/blob/master/CHANGELOG.md"
+
+
