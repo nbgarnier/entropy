@@ -75,7 +75,7 @@ zip : clean
 		src/entropy_Gaussian.c src/entropy_Gaussian_single.c \
 		src/entropy_Gaussian_combinations.c \
 		src/main.c
-	$(TAR) -rvf code.tar src/cython/setup.py src/cython/entropy/__init__.py \
+	$(TAR) -rvf code.tar src/cython/setup.py src/cython/pyproject.toml src/cython/entropy/__init__.py \
 		src/cython/entropy/entropy.pyx src/cython/entropy/entropy.c \
 		src/cython/entropy/commons.pyx src/cython/entropy/commons.pxd \
 		src/cython/entropy/computes.pyx src/cython/entropy/computes.pxd \

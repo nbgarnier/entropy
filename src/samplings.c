@@ -409,9 +409,9 @@ void printf_sampling_parameters(samp_param sp, char *text)
         default :   printf("(unknown!)\n");
                     break;
     }
-    printf("\t\tTheiler : %d, (max : %d)\n", sp.Theiler,  sp.Theiler_max);
-	printf("\t\tN_eff   : %d, (max : %d)\n", sp.N_eff,    sp.N_eff_max); 
-    printf("\t\tN_real  : %d, (max : %d)\n", sp.N_real,   sp.N_real_max);
+    printf("\t\tTheiler : %d\t(max : %d)\n", sp.Theiler,  sp.Theiler_max);
+	printf("\t\tN_eff   : %d\t(max : %d)\n", sp.N_eff,    sp.N_eff_max); 
+    printf("\t\tN_real  : %d\t(max : %d)\n", sp.N_real,   sp.N_real_max);
     printf("\n");
     return;
 }
@@ -566,24 +566,25 @@ int check_sampling_parameters(int npts, int p, int stride, samp_param *sp, char 
 /*              (except if ==-1 : then legacy behavior)                                 */
 /* 2022-12-07: full refactoring of the code                                             */
 /* 2023-02-15: now recomputing sp->N_eff_max for sp.Theiler==3                          */
+/* 2023-11-17: added 2 tests for Theiler type 4  (to be cleaned)                        */
 /****************************************************************************************/
 int set_sampling_parameters(int npts, int p, int stride, samp_param *sp, char *func_name)
 {   int tmp=-13;                    
 	int npts_left=npts;
-    
+  
     if (sp->Theiler>0)          sp->type=0;         // tau_Theiler is imposed (this is indeed a viable option)
     else if (sp->Theiler==-1)   sp->type=1;         // for tau_Theiler=tau and uniform sampling (legacy)
     else if (sp->Theiler==-2)   sp->type=2;         // for a smarter adjustment (spanning all the dataset)
     else if (sp->Theiler==-3)   sp->type=3;         // for tau_Theiler=tau and random sampling
     else if (sp->Theiler==-4)   sp->type=4;         // for a reduced tau_Theiler<tau if satisfying N_eff demands it
     else return(-1);
-    
+  
     // we first study the requirements on N_real:
     if (sp->N_real<1)           sp->N_real=1;       // N_real should usualy be specified! not good to have it automatic
                                                     // new default value if <0
     sp->N_real_max = sp->N_real;                    // N_real_max will be computed below, at the end of the function
                                                     // but may be needed before that recomputation
-
+ 
     if (sp->Theiler==0)                             // very old method introduced on 2011-11-14 : no Theiler-correction !
     {	sp->type        = 0;
         sp->Theiler     = 1;                        // to be able to use imposed N_eff and N_real
@@ -641,8 +642,17 @@ int set_sampling_parameters(int npts, int p, int stride, samp_param *sp, char *f
     {   if (sp->N_eff>0)                            // N_eff is imposed
         {   sp->N_eff_max   = sp->N_eff;
             npts_left       = npts - (sp->N_real_max-1) - (p-1)*stride - 1; // XIII.222, same as XIII.213,215
+            if (npts_left<=0)                       // test added 2023-11-17
+            {   printf("npts_left = %d\n", npts_left);
+                return(-1);
+            }
             sp->Theiler_max = (int)trunc((double)npts_left/(sp->N_eff-1));  // XIII.222, same as XIII.213,219, we adapt tau_Theiler
             sp->Theiler     = sp->Theiler_max;      // 2022-12-14
+            if (sp->Theiler<=0)                     // test added 2023-11-17
+            {   printf("sp->Theiler = %d\n", sp->Theiler);
+                return(-1);
+            }
+
             // 2023-02-15: should we recomputed N_eff_max? cf brouillon 2023-02-15
 //            printf("[set_sampling_parameters] : I'm tempted to change N_eff_max from %d", sp->N_eff);
 //            printf(" to %d\n", 1 + (int)trunc((npts-sp->N_real_max-(p-1)*stride)/sp->Theiler));
@@ -654,7 +664,7 @@ int set_sampling_parameters(int npts, int p, int stride, samp_param *sp, char *f
             sp->N_eff_max   = (int)trunc((double)(npts-sp->N_real)/(sp->Theiler)) - (p-2);    // XIII.222
             sp->N_eff       = sp->N_eff_max;
         }
-        
+
         // we need to recompute N_real_max:         // XIII.209, or brouillon 13/05/2022
         sp->N_real_max  = compute_N_real_max(npts, p, stride, sp->Theiler, sp->N_eff_max);
     }

@@ -29,13 +29,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray  *prhs[])
     char    *mask;
     int     npts_x=-1, npts_y=-1, mx=1, my=1, px=1, py=1, stride=1;
     int     k=k_default, n_cores=-1;
-    int     ret1, do_use_mask=0;
-    
+    int     ret1, do_use_mask=0;    
     /* verify the number of input parameters */
     if (nrhs < 2) mexErrMsgTxt("There are at least 2 input arguments required. Please specify at least two vectors x and y.\n"
                     "See help for more information.\n");
-    if (nrhs > 5) mexErrMsgTxt("You specified %d input parameters, this functions requires 2, 3, 4 or 6 parameters. "
+    if (nrhs > 5) mexErrMsgTxt("You specified %d input parameters, this functions requires 2, 3, 4 or 6 parameters.\n"
                     "See help for more information.\n");
+    if (nlhs < 3) mexErrMsgTxt("There are at least 3 output values. Please use at least 3 output variables.\n"
+                    "See help for more information.\n");
+
 
     // parameters 1 and 2 : datasets
     read_data_parameters(prhs[0], &npts_x, &mx, &x);
@@ -71,16 +73,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray  *prhs[])
     if (ret1!=0) printf("[Warning] return value code %d\n", ret1);
     *xout3 = *xout1 - *xout2;
 
-    plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_std = mxGetPr(plhs[3]);  out_std[0] = last_std;  // std of the estimation
-    plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbe = mxGetPr(plhs[4]);  out_nbe[0] = nb_errors;  // nb of errors
-    plhs[5] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_eff = mxGetPr(plhs[5]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
-    plhs[6] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbw = mxGetPr(plhs[6]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
-
-    nlhs = 7;
+    if (nlhs>3)
+    {   plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_std = mxGetPr(plhs[3]);  out_std[0] = last_std;  // std of the estimation
+    }
+    if (nlhs>4)
+    {   plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_nbe = mxGetPr(plhs[4]);  out_nbe[0] = nb_errors;  // nb of errors
+    }
+    if (nlhs>5)
+    {   plhs[5] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_eff = mxGetPr(plhs[5]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
+    }
+    if (nlhs>6)
+    {   plhs[6] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_nbw = mxGetPr(plhs[6]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
+    }
     
     free(x); free(y);
     if (do_use_mask) free(mask);

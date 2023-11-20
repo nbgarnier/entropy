@@ -70,8 +70,8 @@ AS_IF([test "$MATLAB" = none],
 # Checks for libraries:
 #################################################################
 AC_CHECK_LIB(m, log)
-AC_CHECK_LIB(gsl, gsl_sf_psi, [], [AC_MSG_ERROR([please install libgsl and eventually libgsl-dev on your system])])
-AC_CHECK_LIB(fftw3, fftw_malloc, [], [AC_MSG_ERROR([please install libfftw3-dev on your system])])
+AC_CHECK_LIB(gsl, gsl_sf_psi, [], [AC_MSG_ERROR([please install libgsl-dev on your system (sudo apt install libgsl-dev)])])
+AC_CHECK_LIB(fftw3, fftw_malloc, [], [AC_MSG_ERROR([please install libfftw3-dev on your system (sudo apt install libfftw"-dev)])])
 
 # Checks for header files:
 AC_CHECK_HEADERS([stdint.h unistd.h])

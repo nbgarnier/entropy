@@ -69,18 +69,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray  *prhs[])
     if (do_use_mask==1) compute_transfer_entropy_ann_mask(x, y, mask, npts, mx, my, px, py, stride, lag, Theiler, N_eff, N_real, k, xout1, xout2);
     else                compute_transfer_entropy_ann     (x, y,       npts, mx, my, px, py, stride, lag, Theiler, N_eff, N_real, k, xout1, xout2);
     
-    plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_std1 = mxGetPr(plhs[2]);  out_std1[0] = last_std;  // std of the estimation
-    plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_std2 = mxGetPr(plhs[3]);  out_std2[0] = last_std2;  // std of the estimation
-    plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbe = mxGetPr(plhs[4]);  out_nbe[0] = nb_errors;  // nb of errors
-    plhs[5] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_eff = mxGetPr(plhs[5]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
-    plhs[6] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbw = mxGetPr(plhs[6]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
-
-    nlhs = 7;
+    if (nlhs>2) 
+    {   plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_std1 = mxGetPr(plhs[2]);  out_std1[0] = last_std;  // std of the estimation
+    }
+    if (nlhs>3) 
+    {   plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_std2 = mxGetPr(plhs[3]);  out_std2[0] = last_std2;  // std of the estimation
+    }
+    if (nlhs>4) 
+    {   plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_nbe = mxGetPr(plhs[4]);  out_nbe[0] = nb_errors;  // nb of errors
+    }
+    if (nlhs>5) 
+    {   plhs[5] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_eff = mxGetPr(plhs[5]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
+    }
+    if (nlhs>6) 
+    {   plhs[6] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_nbw = mxGetPr(plhs[6]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
+    }
+    
     free(x); free(y);
     if (do_use_mask==1) free(mask);
 }

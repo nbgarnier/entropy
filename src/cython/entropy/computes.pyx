@@ -62,14 +62,15 @@ def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1,
         ratou = computes.compute_entropy_ann(&x[0,0], npts, m, n_embed, stride, k, &S)
         return S
         
+     print("x", x[0,0], "Npts", npts, "m", m, "n_embed", n_embed, "tau", stride, "Theiler", Theiler, "N_eff", N_eff, "N_real", N_real, "k", k)
+        
      if (k==-1):
 #        print("Gaussian entropy")
         ratou = computes.compute_entropy_Gaussian(&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, &S)
         return S  
         
      if (npts_mask>1): # then this is a real mask, not just the default value
-        if (npts_mask!=npts):
-            raise ValueError("mask does not have the same number of points in time as the data")
+        if (npts_mask!=npts): raise ValueError("mask and data do not have the same number of points in time")
         ratou = computes.compute_entropy_ann_mask(&x[0,0], &mask[0], npts, m, n_embed, stride, Theiler, N_eff, N_real, k, 0, &S)
      else:
         ratou = computes.compute_entropy_ann_N   (&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, k, &S)
@@ -125,8 +126,7 @@ def compute_entropy_increments( double[:, ::1] x, int n_embed=1, int stride=1,
         return S  
         
      if (npts_mask>1): # then this is a real mask, not just the default value
-        if (npts_mask!=npts):
-            raise ValueError("mask does not have the same number of points in time as the data")
+        if (npts_mask!=npts): raise ValueError("mask does not have the same number of points in time as the data")
         ratou = computes.compute_entropy_ann_mask           (&x[0,0], &mask[0], npts, m, n_embed, stride, 
                                     Theiler, N_eff, N_real, k, incr_type, &S)
      else:
@@ -474,7 +474,8 @@ def compute_PTE(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
      if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts):  raise ValueError("mask's size doesn't match data's shape")
      else:
-            mask = PNP.ones(shape=(1,npts),dtype='i1')
+#            mask = PNP.ones(shape=(1,npts), dtype='i1') # arbitrary convention #1
+             mask = PNP.ones(npts, dtype='i1')           # simpler arbitrary convention 
      ratou = computes.compute_partial_TE_ann_mask(&x[0,0], &y[0,0], &z[0,0], &mask[0],
                             npts, dim, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2);
      return [I1,I2]

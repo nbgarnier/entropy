@@ -137,6 +137,7 @@ def set_Theiler(int Theiler=4):
 
 
 # 2022-05-23: OK
+# 2023-11-17: N_real==1 now accepted
 def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10):
     ''' set_sampling(Theiler='adapted', N_eff=4096, N_real=10)
     
@@ -152,7 +153,7 @@ def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10):
     set_Theiler(Theiler)
     if (commons.samp_default.type>1): # not legacy
         if (N_eff>1)  : commons.samp_default.N_eff=N_eff
-        if (N_real>1) : commons.samp_default.N_real=N_real
+        if (N_real>0) : commons.samp_default.N_real=N_real
     return
 
 

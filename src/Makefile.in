@@ -115,15 +115,16 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 
 #####################################################################
 # Python and Cython stuff                                           #
-# Warning : the library will automatically be installed in the      #
-# user Python library directory (so no need to copy it manually)    #
+# Warning : the library will automatically be installed 			#
+# see https://docs.python.org/3/tutorial/venv.html					#
 #####################################################################
 python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
-	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
+#	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
+	cd cython; CC=$(CC) pip install -v .; cd ..
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
 	rm -f cython/entropy/entropy.c
-	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
+	cd cython; CC=$(CC) pip install -v .; cd ..
 
 #####################################################################
 # Matlab stuff                                                      #

@@ -17,7 +17,7 @@ from Cython.Build import cythonize
 
 # to have an annotated html:
 import Cython.Compiler.Options
-Cython.Compiler.Options.annotate = True
+Cython.Compiler.Options.annotate = False
 DO_ANNOTATE = False
 
 # Third-party modules - we depend on numpy for everything
@@ -53,8 +53,10 @@ if (platform.system()=='Darwin'):
 		LIBS = ['c++']      # 2018-11-27: stdc++ replaced by c++ (for macos clang at least)
 		LDFLAGS_PYTHON = ['-mmacosx-version-min=12'] # 2021-02-15: replaced 10.12 by 10.15 
 		                                             # 2022-11-26: replaced 10.15 by 12 (Monterey)
+		CFLAGS = ['-Wno-parentheses-equality']       # 2023-10-06: to suppress useless warnings from cython code
 else:
 		LIBS = ['stdc++', 'm']
+		CFLAGS = []
 		
 print(LIBS)
 
@@ -75,6 +77,7 @@ entropy_module = Extension("entropy",
 				sources = ['entropy/entropy.pyx'],
 #				include_path= ["entropy/"],
                 include_dirs = INC_DIR,
+                extra_compile_args = CFLAGS,
                 libraries    = LIBS,
                 library_dirs = LIBS_DIR,
                 extra_link_args=LDFLAGS_PYTHON,

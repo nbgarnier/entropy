@@ -122,12 +122,13 @@ int compute_entropy_ann_N(double *x, int npts, int m, int p, int tau,
 	
     // additional checks and auto-adjustments of parameters:
     N_real_max = set_sampling_parameters(npts, p, tau, &sp, "compute_entropy_ann_N");
+
     tau_Theiler=sp.Theiler; N_eff = sp.N_eff;  N_realizations=sp.N_real;
     if (N_real_max<1)       return(printf("[compute_entropy_ann_N] : aborting !\n"));
     if (sp.N_eff < 2*k)     return(printf("[compute_entropy_ann_N] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
     
     x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
-    
+
     perm_real = create_unity_perm(N_real_max);  if (sp.type>=3) shuffle_perm(perm_real);
     perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
 

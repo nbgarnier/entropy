@@ -35,7 +35,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     algo_type=mexGetVariable("global", "MI_algo");
     if (algo_type==0) // couldn't get global value, using default
-            MI_algo = MI_ALGO_1 | COUNTING_NG | MASK_OPTIMIZED;
+            MI_algo = MI_ALGO_1 | COUNTING_NG; // | MASK_OPTIMIZED;
     else    MI_algo = (int)mxGetScalar(algo_type);
 
     /* verify number of inputs */
@@ -70,15 +70,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
     compute_entropy_ann_2d(x, nx, ny, d, mx, my, stride_x, stride_y, Theiler_x, Theiler_y, N_eff, N_real, k, entropy);
     
-    plhs[1] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_std = mxGetPr(plhs[1]);  out_std[0] = last_std;  // std of the estimation
-    plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbe = mxGetPr(plhs[2]);  out_nbe[0] = nb_errors;  // nb of errors
-    plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_eff = mxGetPr(plhs[3]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
-    plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
-    out_nbw = mxGetPr(plhs[4]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
-    
-    nlhs = 5;
+    if (nlhs > 1) 
+    {   plhs[1] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_std = mxGetPr(plhs[1]);  out_std[0] = last_std;  // std of the estimation
+    }
+    if (nlhs > 2) 
+    {   plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_nbe = mxGetPr(plhs[2]);  out_nbe[0] = nb_errors;  // nb of errors
+    }
+    if (nlhs > 3) 
+    {   plhs[3] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_eff = mxGetPr(plhs[3]);  out_eff[0] = last_samp.N_eff;  // nb of eff. pts used
+    }
+    if (nlhs > 4) 
+    {   plhs[4] = mxCreateDoubleMatrix(1,1,mxREAL);
+        out_nbw = mxGetPr(plhs[4]);  out_nbw[0] = last_samp.N_real;  // nb of windows (for std computation)
+    }
+//    nlhs = 5;
     mxFree(x);
 }

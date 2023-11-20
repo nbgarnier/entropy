@@ -119,11 +119,12 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 # user Python library directory (so no need to copy it manually)    #
 #####################################################################
 python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
-	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
+#	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
+	cd cython; CC=$(CC) pip install --user . -v -v -v; cd ..
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
 	rm -f cython/entropy/entropy.c
-	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
+	cd cython; CC=$(CC) pip install --user -v -v -v .; cd ..
 
 #####################################################################
 # Matlab stuff                                                      #
