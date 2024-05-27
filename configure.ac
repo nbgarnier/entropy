@@ -3,7 +3,7 @@
 #################################################################
 
 AC_PREREQ([2.71])
-AC_INIT([entropy], [3.3.2], [nicolas.garnier@ens-lyon.fr])
+AC_INIT([entropy], [4.0.1], [nicolas.garnier@ens-lyon.fr])
 AC_CONFIG_SRCDIR([src/entropy_ann.c])
 AC_CONFIG_HEADERS([config.h])
 
