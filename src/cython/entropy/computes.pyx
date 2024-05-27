@@ -15,6 +15,7 @@
 # 2022-05-23: sampling parameters selection in function calls, and from default set : OK
 # 2022-10-11: Gaussian estimates now included
 # 2022-11-26: change in library hierarchy
+# 2023-11-28: legacy samplings removed from Python library calls
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
@@ -22,116 +23,98 @@
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1, 
-                int Theiler=0, int N_eff=0, int N_real=0,
+                int Theiler=commons.samp_default.Theiler, int N_eff=commons.samp_default.N_eff, int N_real=commons.samp_default.N_real,
                 int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' H = compute_entropy(x, n_embed=1, stride=1, ..., mask=mask)
+    """     
+    computes the Shannon entropy of a signal (possibly multi-dimensional) using nearest neighbors search with ANN library.
+    (time-)embedding is performed on the fly.           
+      
+    :param x: signal (NumPy array with ndim=2, time along second dimension)
+    :param n_embed: embedding dimension (default=1)
+    :param stride: stride for embedding (default=1) 
+    :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+    :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+    :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+    :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+    :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+    :returns: the entropy estimate
      
-     computes the Shannon entropy of a vector (possibly multi-dimensional)
-     using nearest neighbors search with ANN library.
-     embedding is performed on the fly.
+    see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+    """
+    cdef double S=0
+    cdef int npts=x.shape[1], m=x.shape[0], ratou # 2018-04-13: carefull with ordering of dimensions!
+    cdef int npts_mask=mask.size
      
-     x          : signal (NumPy array with ndim=2)
-     n_embed    : embedding dimension (default=1)
-     stride     : timescale for time-embedding (Theiler correction will be used accordingly, even if n_embed=1) (default=1)
-     Theiler    : Theiler correction (should be >= stride, but lower values are tolerated) 
-               !!! if Theiler<0, then automatic Theiler is applied as follows:
-                 -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-                 -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-                 -3 for Theiler=tau, and random sampling 
-                 -4 for Theiler=max, and random sampling (default)         
-     N_eff      : nb of points to consider in the statistics (default=4096)
-                 -1 for legacy behavior (largest possible value)
-     N_real     : nb of realizations to consider (default=10)
-                 -1 for legacy behavior (N_real=stride)
-     k          : number of neighbors to consider (typically 7 or 10) (default=5)
-                 -1 will force a non-ANN computation using covariance only, assuming Gaussian statistics.
-     mask       : mask to use (NumPy array of dtype=char) (default=no mask)
-                  if a mask is provided, only values given by the mask will be used
-     '''
-     cdef double S=0
-     cdef int npts=x.shape[1], m=x.shape[0], ratou # 2018-04-13: carefull with ordering of dimensions!
-     cdef int npts_mask=mask.size
-     
-     if (npts<m): raise ValueError("please transpose x")
+    if (npts<m): raise ValueError("please transpose x")
 
-     if (Theiler==0): Theiler=commons.samp_default.Theiler
-     if (N_eff==0):   N_eff =commons.samp_default.N_eff
-     if (N_real==0):  N_real=commons.samp_default.N_real
-     if (Theiler==-1) and (N_eff==-1) and (N_real==-1) and (npts_mask==1): # legacy automatic behavior: use all available points
-#         print("legacy sampling")
-        ratou = computes.compute_entropy_ann(&x[0,0], npts, m, n_embed, stride, k, &S)
-        return S
-        
-     print("x", x[0,0], "Npts", npts, "m", m, "n_embed", n_embed, "tau", stride, "Theiler", Theiler, "N_eff", N_eff, "N_real", N_real, "k", k)
-        
-     if (k==-1):
+#     if (Theiler==-1) and (N_eff==-1) and (N_real==-1) and (npts_mask==1): # legacy automatic behavior: use all available points
+#        print("legacy sampling")
+#        ratou = computes.compute_entropy_ann-legacy(&x[0,0], npts, m, n_embed, stride, k, &S)
+#        return S
+       
+    if (k==-1):
 #        print("Gaussian entropy")
         ratou = computes.compute_entropy_Gaussian(&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, &S)
         return S  
         
-     if (npts_mask>1): # then this is a real mask, not just the default value
+    if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts): raise ValueError("mask and data do not have the same number of points in time")
         ratou = computes.compute_entropy_ann_mask(&x[0,0], &mask[0], npts, m, n_embed, stride, Theiler, N_eff, N_real, k, 0, &S)
-     else:
-        ratou = computes.compute_entropy_ann_N   (&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, k, &S)
+    else:  
+        ratou = computes.compute_entropy_ann     (&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, k, &S)
         
-     return S
+    return S
 
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_entropy_increments( double[:, ::1] x, int n_embed=1, int stride=1, 
+def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, int stride=1, 
                 int Theiler=0, int N_eff=0, int N_real=0,
-                int k=commons.k_default, int incr_type=1, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' H = compute_entropy_increments(x, n_embed=1, stride=1, incr_type=0, ..., [mask=mask])
+                int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
+     """
+     computes entropy of the increments of a signal (possibly multi-dimensional) using nearest neighbors search with ANN library.
+     (time-)increments are computed on the fly.
      
-     computes entropy of the increments of a vector (possibly multi-dimensional)
-     using nearest neighbors search with ANN library.
-     increments are computed on the fly.
-     
-     x          : signal (NumPy array with ndim=2)
-     order      : order of increments (between 0 and 5) (default=1)
-     stride     : stride (Theiler correction will be used accordingly, even if n_embed=1) (default=1)
-     Theiler    : Theiler correction (should be >= stride, but lower values are tolerated) 
-               !!! if Theiler<0, then automatic Theiler is applied as follows:
-                 -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-                 -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-                 -3 for Theiler=tau, and random sampling 
-                 -4 for Theiler=max, and random sampling (default)
-     N_eff      : nb of points to consider in the statistics (default=4096)
-                 -1 for legacy behavior (largest possible value)
-     N_real     : nb of realizations to consider (default=10)
-                 -1 for legacy behavior (N_real=stride)
-     k          : number of neighbors to consider (typically 7 or 10) (default=5)
-                 -1 will force a non-ANN computation using covariance only, assuming Gaussian statistics.
-     incr_type  : increments type (regular or averaged):
+     :param x: signal (NumPy array with ndim=2, time along second dimension)
+     :param inc_type: increments type (regular or averaged):
                   1 for regular increments (of given order)
                   2 for averaged increments (of order 1 only)
-     mask       : mask to use (NumPy array of dtype=char) (default=no mask)
-                   if a mask is provided, only values given by the mask will be used
-     '''
+     :param order: order of increments (between 0 and 5) (default=1)
+     :param stride: stride for embedding (default=1) 
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+     :returns: the entropy estimate for the increments 
+     
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """
      cdef double S=0
-     cdef int npts=x.shape[1], m=x.shape[0], ratou
-     cdef int npts_mask=mask.size
+     cdef n_embed=order
+     cdef int npts=x.shape[1], m=x.shape[0], npts_mask=mask.size, ratou
      
      if (npts<m):     raise ValueError("please transpose x")
+     if ( (inc_type!=1) & (inc_type!=2) ): raise ValueError("increments type must be either 1 or 2")
      if (Theiler==0): Theiler=commons.samp_default.Theiler
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
      
      if (k==-1):
         ratou = computes.compute_entropy_increments_Gaussian(&x[0,0], npts, m, n_embed, stride, 
-                                    Theiler, N_eff, N_real,    incr_type, &S)
+                                    Theiler, N_eff, N_real,    inc_type, &S)
         return S  
         
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts): raise ValueError("mask does not have the same number of points in time as the data")
         ratou = computes.compute_entropy_ann_mask           (&x[0,0], &mask[0], npts, m, n_embed, stride, 
-                                    Theiler, N_eff, N_real, k, incr_type, &S)
+                                    Theiler, N_eff, N_real, k, inc_type, &S)
      else:
         ratou = computes.compute_entropy_increments_ann     (&x[0,0], npts, m, n_embed, stride, 
-                                    Theiler, N_eff, N_real, k, incr_type, &S)
+                                    Theiler, N_eff, N_real, k, inc_type, &S)
 
      return S
 
@@ -139,36 +122,32 @@ def compute_entropy_increments( double[:, ::1] x, int n_embed=1, int stride=1,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_entropy_rate( double[:, ::1] x, int m=1, int stride=1,
+def compute_entropy_rate( double[:, ::1] x, int method=1, int m=1, int stride=1,
             int Theiler=0, int N_eff=0, int N_real=0,
-            int method=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' h = compute_entropy_rate(x, m=1, stride=1, method=1, ..., [mask=mask])
+            int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
+     """
+     computes entropy rate of order m of a vector (possibly multi-dimensional) using nearest neighbors search with ANN library.
+     (time-)embedding is performed on the fly.           
+
+     :param x: signal (NumPy array with ndim=2, time along second dimension)
+     :param method: an integer. in {0,1,2} to indicate which method to use (default=1) (see below)
+     :param m: embedding dimension (default=1)
+     :param stride: stride for embedding (default=1) 
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+     :returns: the entropy estimate
      
-     computes entropy rate of order m of a vector (possibly multi-dimensional)
-     using nearest neighbors search with ANN library.
-     embedding is performed on the fly.
+     The parameter method influences the computation as follows:       
+       * 0 for H^(m)/m
+       * 1 for H^(m+1)-H^(m)       (default=1)
+       * 2 for H^(1)-MI(x,x^(m))
      
-     x        : signal (NumPy array with ndim=2, time as second dimension)
-     m        : embedding dimension (default=1)
-     stride   : stride (Theiler correction will be used accordingly, even if m=1) (default=1)
-     Theiler  : Theiler correction (should be >= stride, but lower values are tolerated) 
-             !!! if Theiler<0, then automatic Theiler is applied as follows:
-               -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-               -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-               -3 for Theiler=tau, and random sampling 
-               -4 for Theiler=max, and random sampling (default)              
-     method   : 0 for H^(m)/m
-                1 for H^(m+1)-H^(m)       (default=1)
-                2 for H^(1)-MI(x,x^(m))
-     N_eff    : nb of points to consider in the statistics (default=4096)
-               -1 for legacy behavior (largest possible value)
-     N_real   : nb of realizations to consider (default=10)
-               -1 for legacy behavior (N_real=stride)
-     k        : number of neighbors to consider (typically 7 or 10) (default=5)
-               -1 will force a non-ANN computation using covariance only, assuming Gaussian statistics.
-     mask     : mask to use (NumPy array of dtype=char) (default=no mask)
-                if a mask is provided, only values given by the mask will be used
-     '''
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """     
      cdef double S=0
      cdef int npts=x.shape[1], nx=x.shape[0], ratou 
      cdef int npts_mask=mask.size
@@ -199,23 +178,28 @@ def compute_entropy_rate( double[:, ::1] x, int m=1, int stride=1,
 @cython.wraparound(False)
 def compute_relative_entropy(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
                 int Theiler=0, int N_eff=0, int N_real=0,
-                int method=1, int k=commons.k_default):
-     ''' Hr = compute_relative_entropy(x, y, n_embed_x=1, n_embed_y=1, stride=1, method=1, ...)
+                int k=commons.k_default, int method=1):
+     """      
+     computes relative entropy of two processes (possibly multi-dimensional) using nearest neighbors search with ANN library.
+     (time-)embedding is performed on the fly.
           
-     computes relative entropy of two distributions (possibly multi-dimensional)
-     using nearest neighbors search with ANN library.
-     embedding is performed on the fly.
-          
-     x         : signal (NumPy array with ndim=2, time as second dimension)
-     y         : signal (NumPy array with ndim=2, time as second dimension)
-     n_embed_x : embedding dimension in x (default=1)
-     n_embed_y : embedding dimension in y (default=1)
-     stride    : stride (Theiler correction will be used accordingly, even if n_embed=1) (default=1)
-     Theiler, N_eff, N_real : samplling parameters (see 'set_sampling()')
-     method    : 0 for relative entropy (1 value [Hr] is returned)
-               : 1 for Kullbach-Leibler divergence (2 values [Hr, KLdiv] are returned) (default=1)
-     k         : number of neighbors to consider (typically 5 or 10) (default=5)
-     '''
+     :param x: signal (NumPy array with ndim=2, time along second dimension)
+     :param y: signal (NumPy array with ndim=2, time along second dimension)
+     :param n_embed_x: embedding dimension for x (default=1)
+     :param n_embed_y: embedding dimension for y (default=1)
+     :param stride: stride for embedding (default=1) 
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: masks are not supported yet.
+     :param method: 0 for relative entropy (1 value [Hr] is returned) or 1 for Kullbach-Leibler divergence (2 values [Hr, KLdiv] are returned) (default=1)
+  
+     :returns: 1 or 2 values are returned, depending on the value of the parameter method: the relative entropy (Hr) and the KL divergence (Hr-H) estimates.
+     
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """
+
      cdef double Hr=0., H=0.
      cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0], ratou
      
@@ -226,12 +210,12 @@ def compute_relative_entropy(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
      
-     ratou = computes.compute_relative_entropy_ann_N(&x[0,0], npts, &y[0,0], npty, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, &Hr)
+     ratou = computes.compute_relative_entropy_ann(&x[0,0], npts, &y[0,0], npty, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, &Hr)
      if (method==0): return Hr
      
      cdef double std_Hr=0., std_H=0., tmp=0.
      commons.get_last_stds(&std_Hr, &tmp)
-     ratou = computes.compute_entropy_ann_N(&x[0,0], npts, nx, n_embed_x, stride, Theiler, N_eff, N_real, k, &H)
+     ratou = computes.compute_entropy_ann(&x[0,0], npts, nx, n_embed_x, stride, Theiler, N_eff, N_real, k, &H)
      commons.get_last_stds(&std_H, &tmp)
      
      commons.set_last_stds(std_Hr, std_H)  # if not, returned std is the one for H, not Hr anymore!
@@ -244,31 +228,23 @@ def compute_relative_entropy(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1
 def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
             int Theiler=0, int N_eff=0, int N_real=0,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' MI = compute_MI( x, y, n_embed_x=1, n_embed_y=1, stride=1, ..., [mask])
+     """ 
+     computes mutual information MI(x,y) of two multi-dimensional vectors x and y using nearest neighbors search with ANN library.
      
-     computes mutual information of two multi-dimensional vectors x and y 
-     using nearest neighbors search with ANN library
-     embedding is performed on the fly.
+     :param x, y: signals (NumPy arrays with ndim=2, time along second dimension)
+     :param n_embed_x: embedding dimension for x (default=1)
+     :param n_embed_y: embedding dimension for y (default=1)
+     :param stride: stride for embedding (default=1)
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+     :returns: two values (one per algorithm). See function :any:`choose_algorithm`
      
-     x, y      : signals (NumPy arrays with ndim=2, time along second dimension)
-     n_embed_x : embedding dimension for x (default=1)
-     n_embed_y : embedding dimension for y (default=1)
-     stride    : stride (Theiler correction will be used accordingly, even if n_embed_x,y=1) (default=1)
-     Theiler   : Theiler correction (should be >= stride, but lower values are tolerated) 
-              !!! if Theiler<0, then automatic Theiler is applied as follows:
-                -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-                -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-                -3 for Theiler=tau, and random sampling 
-                -4 for Theiler=max, and random sampling (default)        
-     N_eff     : nb of points to consider in the statistics (default=4096)
-                -1 for legacy behavior (largest possible value)
-     N_real    : nb of realizations to consider (default=10)
-                -1 for legacy behavior (N_real=stride)
-     k         : number of neighbors to consider (typically 7 or 10) (default=5)
-                -1 will force a non-ANN computation using covariance only, assuming Gaussian statistics.     
-     mask      : mask to use (NumPy array of dtype=char) (default=no mask)
-                 if a mask is provided, only values given by the mask will be used
-     '''
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.                 
+     """
      cdef double I1=0, I2=0
      cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
      cdef int npts_mask=mask.size
@@ -290,7 +266,7 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
         ratou = computes.compute_mutual_information_ann_mask(&x[0,0], &y[0,0], &mask[0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, &I1, &I2)
      else:
-        ratou = computes.compute_mutual_information_ann_N(&x[0,0], &y[0,0], 
+        ratou = computes.compute_mutual_information_ann     (&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, &I1, &I2)
      return [I1,I2]
 
@@ -301,32 +277,26 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
             int Theiler=0, int N_eff=0, int N_real=0,
             int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' TE = compute_TE(x, y, n_embed_x=1, n_embed_y=1, stride=1, lag=1, ..., [mask])
-                
-     computes transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y
-     using nearest neighbors search with ANN library
-     embedding is performed on the fly.
+     """           
+     computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.
+     
+     TE(x,y) = TE(x->y)  (from x to y)
           
-     x, y      : signals (NumPy arrays with ndim=2, time along second dimension)
-     n_embed_x : embedding dimension for x (default=1)
-     n_embed_y : embedding dimension for y (default=1)
-     stride    : stride (Theiler correction will be used accordingly, even if n_embed_x,y=1) (default=1)
-     Theiler   : Theiler correction (should be >= stride, but lower values are tolerated) 
-              !!! if Theiler<0, then automatic Theiler is applied as follows:
-                -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-                -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-                -3 for Theiler=tau, and random sampling 
-                -4 for Theiler=max, and random sampling (default)        
-     lag       : lag (equivalent to stride) for future point in time (default=1)
-     N_eff     : nb of points to consider in the statistics (default=4096)
-                -1 for legacy behavior (largest possible value)
-     N_real    : nb of realizations to consider (default=10)
-                -1 for legacy behavior (N_real=stride)
-     k         : number of neighbors to consider (typically 7 or 10) (default=5)
-                -1 will force a non-ANN computation using covariance only, assuming Gaussian statistics.     
-     mask      : mask to use (NumPy array of dtype=char) (default=no mask)
-                 if a mask is provided, only values given by the mask will be used
-     '''
+     :param x: (y): signals (NumPy arrays with ndim=2, time along second dimension)
+     :param n_embed_x: embedding dimension for x (default=1)
+     :param n_embed_y: embedding dimension for y (default=1)
+     :param stride: stride for embedding (default=1)     
+     :param lag: distance of the future point in time (default=1)
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+     :returns: two values (one per algorithm)
+     
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """
      cdef double I1=0, I2=0
      cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
      cdef int npts_mask=mask.size, ratou
@@ -361,32 +331,26 @@ def compute_PMI(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
             int n_embed_x=1, int n_embed_y=1, int n_embed_z=1, int stride=1, 
             int Theiler=0, int N_eff=0, int N_real=0,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' PMI = compute_PMI(x,y,z, n_embed_x=1, n_embed_y=1, n_embed_z=1, stride=1, ..., [mask])
-                
-     computes partial mutual information (PMI) of three 2-d vectors x, y and z
+     """            
+     computes partial mutual information (PMI) of three 2-d vectors x, y and z using nearest neighbors search with ANN library
+     
      PMI = MI(x,y|z)    (z is the conditioning variable)
-     using nearest neighbors search with ANN library
-     embedding is performed on the fly.
           
-     n_embed_x : embedding dimension for x (default=1)
-     n_embed_y : embedding dimension for y (default=1)
-     n_embed_z : embedding dimension for z (default=1)
-     stride    : stride (Theiler correction will be used accordingly) (default=1)
-     Theiler   : Theiler correction (should be >= stride, but lower values are tolerated) 
-              !!! if Theiler<0, then automatic Theiler is applied as follows:
-                -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-                -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-                -3 for Theiler=tau, and random sampling
-                -4 for Theiler=max, and random sampling (default)         
-     N_eff     : nb of points to consider in the statistics (default=4096)
-                -1 for legacy behavior (largest possible value)
-     N_real    : nb of realizations to consider (default=10)
-                -1 for legacy behavior (N_real=stride)
-     k         : number of neighbors to consider (typically 7 or 10) (default=5)
-                -1 will force a non-ANN computation using covariance only, assuming Gaussian statistics.
-     mask      : mask to use (NumPy array of dtype=char) (default=no mask)
-                 if a mask is provided, only values given by the mask will be used
-     '''
+     :param x, y, z: signals (NumPy arrays with ndim=2, time along second dimension)
+     :param n_embed_x: embedding dimension for x (default=1)
+     :param n_embed_y: embedding dimension for y (default=1)
+     :param n_embed_z: embedding dimension for z (default=1)
+     :param stride: stride for embedding (default=1)
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+     :returns: two values (one per algorithm)
+     
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """
      cdef double I1=0, I2=0
      cdef int npts=x.shape[1], dim_x=x.shape[0], npty=y.shape[1], dim_y=y.shape[0]
      cdef int nptz=z.shape[1], dim_z=z.shape[0], npts_mask=mask.size
@@ -414,7 +378,7 @@ def compute_PMI(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
             ratou = computes.compute_partial_MI_ann_mask(&x[0,0], &y[0,0], &z[0,0], &mask[0],
                             npts, dim, stride, Theiler, N_eff, N_real, k, &I1, &I2);
      else:
-            ratou = computes.compute_partial_MI_ann_N(&x[0,0], &y[0,0], &z[0,0], 
+            ratou = computes.compute_partial_MI_ann     (&x[0,0], &y[0,0], &z[0,0], 
                             npts, dim, stride, Theiler, N_eff, N_real, k, &I1, &I2);
      return [I1,I2]
 
@@ -427,32 +391,27 @@ def compute_PTE(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
             int stride=1, int lag=1, 
             int Theiler=0, int N_eff=0, int N_real=0, 
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' PTE = compute_PTE(x,y,z, n_embed_x=1, n_embed_y=1, n_embed_z=1, stride=1, ..., [mask])
-                
-     computes partial transfer entropy (PTE) of three 2-d vectors x, y and z
-     PTE(x,y,z) = TE(y->x|z)    (z is the conditioning variable)
-     using nearest neighbors search with ANN library
-     embedding is performed on the fly.
+     """           
+     computes partial transfer entropy (PTE) of three 2-d vectors x, y and z using nearest neighbors search with ANN library.
+
+     PTE(x,y,z) = TE(x->y|z)  (from x to y, with z a conditioning variable)
           
-     n_embed_x : embedding dimension for x (default=1)
-     n_embed_y : embedding dimension for y (default=1)
-     n_embed_z : embedding dimension for z (default=1)
-     stride    : stride (Theiler correction will be used accordingly) (default=1)
-     Theiler   : Theiler correction (should be >= stride, but lower values are tolerated) 
-              !!! if Theiler<0, then automatic Theiler is applied as follows:
-                -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-                -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-                -3 for Theiler=tau, and random sampling
-                -4 for Theiler=max, and random sampling (default)         
-     lag       : lag (equivalent to stride) for future point in time (default=1)
-     N_eff     : nb of points to consider in the statistics (default=4096)
-                -1 for legacy behavior (largest possible value)
-     N_real    : nb of realizations to consider (default=10)
-                -1 for legacy behavior (N_real=stride)
-     k         : number of neighbors to consider (typically 7 or 10) (default=5)
-     mask      : mask to use (NumPy array of dtype=char) (default=no mask)
-                 if a mask is provided, only values given by the mask will be used
-     '''
+     :param x, y, z: signals (NumPy arrays with ndim=2, time along second dimension)
+     :param n_embed_x: embedding dimension for x (default=1)
+     :param n_embed_y: embedding dimension for y (default=1)
+     :param n_embed_z: embedding dimension for z (default=1)
+     :param stride: stride for embedding (default=1)     
+     :param lag: distance of the future point in time (default=1)
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+     :returns: two values (one per algorithm)
+     
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """
      cdef double I1=0, I2=0
      cdef int npts=x.shape[1], dim_x=x.shape[0], npty=y.shape[1], dim_y=y.shape[0]
      cdef int nptz=z.shape[1], dim_z=z.shape[0], npts_mask=mask.size
@@ -487,30 +446,22 @@ def compute_PTE(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
 def compute_DI(double[:, ::1] x, double[:, ::1] y, int N, int stride=1,
             int Theiler=0, int N_eff=0, int N_real=0,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' DI = compute_DI(x, y, N, stride=1, ..., [mask])
-                
-     computes transfer entropy of two n-d vectors x and y
-     using nearest neighbors search with ANN library
-     embedding is performed on the fly.
+     """       
+     computes directed information DI(x->y) between two n-d vectors x and y, using nearest neighbors search with ANN library.
+     (time-)embedding is performed on the fly.
           
-     N         : embedding dimension for x and y (can be 1, but better if >1)
-     stride    : stride (Theiler correction will be used accordingly, even if n_embed_x,y=1)
-                 note that lag (equivalent to stride for future point in time) is equal to stride
-     Theiler   : Theiler correction (should be >= stride, but lower values are tolerated) 
-              !!! if Theiler<0, then automatic Theiler is applied as follows:
-                -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-                -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-                -3 for Theiler=tau, and random sampling 
-                -4 for Theiler=max, and random sampling (default)          
-     N_eff     : nb of points to consider in the statistics (default=4096)
-                -1 for legacy behavior (largest possible value)
-     N_real    : nb of realizations to consider (default=10)
-                -1 for legacy behavior (N_real=stride)
-     k         : number of neighbors to consider (typically 7 or 10)
-                -1 will force a non-ANN computation using covariance only, assuming Gaussian statistics.
-     mask      : mask to use (NumPy array of dtype=char) (default=no mask)
-                 if a mask is provided, only values given by the mask will be used
-     '''
+     :param N: embedding dimension for x and y (should be >=1)
+     :param stride: stride (Theiler correction will be used accordingly, even if n_embed_x,y=1). Note that for DI, lag (equivalent to stride for future point in time) is equal to stride.
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+     :returns: two values (one per algorithm)
+     
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """
      cdef double I1=0, I2=0
      cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
      cdef int npts_mask=mask.size, ratou
@@ -539,27 +490,24 @@ def compute_DI(double[:, ::1] x, double[:, ::1] y, int N, int stride=1,
 def compute_regularity_index( double[:, ::1] x, int stride=1, 
             int Theiler=0, int N_eff=0, int N_real=0,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' Delta = compute_regularity_index(x, stride=1, ...)
+     """     
+     computes regularity index of a vector (possibly multi-dimensional) using nearest neighbors search with ANN library.
+     (time-)embedding is performed on the fly.
      
-     computes regularity index of a vector (possibly multi-dimensional)
-     using nearest neighbors search with ANN library.
-     embedding is performed on the fly.
+     Delta(x,tau) = H(\delta_tau x) - h^\tau(x) 
      
-     x        : signal (NumPy array with ndim=2, time as second dimension)
-     stride   : stride (Theiler correction will be used accordingly, even if m=1) (default=1)
-     Theiler  : Theiler correction (should be >= stride, but lower values are tolerated) 
-             !!! if Theiler<0, then automatic Theiler is applied as follows:
-               -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-               -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-               -3 for Theiler=tau, and random sampling (default)
-               -4 for Theiler=max, and random sampling           
-     N_eff    : nb of points to consider in the statistics (default=4096)
-               -1 for legacy behavior (largest possible value)
-     N_real   : nb of realizations to consider (default=10)
-               -1 for legacy behavior (N_real=stride)
-     k        : number of neighbors to consider (typically 7 or 10) (default=5)
-               -1 will force a non-ANN computation using covariance only, assuming Gaussian statistics.
-     '''
+     :param x: signal (NumPy array with ndim=2, time as second dimension)
+     :param stride: stride (Theiler correction will be used accordingly). 
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+                 
+     :returns: two values (one per algorithm)
+     
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """
      cdef double D1=0, D2=0
      cdef int npts=x.shape[1], nx=x.shape[0], ratou 
      cdef int npts_mask=mask.size
@@ -589,38 +537,39 @@ def compute_regularity_index( double[:, ::1] x, int stride=1,
 def compute_entropy_2d( double[:, ::1] x, int n_embed=1, int stride_x=1, int stride_y=1, 
                 int Theiler_x=0, int Theiler_y=0, int N_eff=0, int N_real=0,
                 int k=commons.k_default, int method=0, int Theiler_2d=-1):
-     ''' H = compute_entropy_2d(x, n_embed=1, stride_x=1, stride_y=1, method=0, ...)
-     
-     computes Shannon entropy of a scalar image, or of its spatial increments
-     using nearest neighbors search with ANN library.
+     """
+     computes Shannon entropy of a scalar image, or of its spatial increments, using nearest neighbors search with ANN library.
      embedding and (uniform or random) sub-sampling are performed on the fly.
+    
+     :param x: signal (NumPy array with ndim=2 (unidimensional) or ndim=3 (multi-dimensional))
+     :param stride_x: stride along x direction (Theiler correction will be used accordingly)  (default=1)
+     :param stride_y: stride along y direction (Theiler correction will be used accordingly)  (default=1)
+     :param Theiler_x: Theiler scale along x (should be >= stride_x, but lower values are tolerated).
+     :param Theiler_y: Theiler scale along y (should be >= stride_x, but lower values are tolerated).
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param method: an interger in {0,1,2} with     
+        0 for regular entropy of the image (default)
+        1 for entropy of the increments (of the image)
+        2 for entropy of the averaged increments (of the image)
+     :param Theiler_2d: integers in {1, 2, 4} to specify which 2-d Theiler prescription to use.
+     :returns: two values (one per algorithm)
      
-     x          : signal (NumPy array with ndim=2 (unidimensional) or ndim=3 (multi-dimensional))
-     n_embed    : embedding dimension (default=1, no embedding)
-     stride_x   : stride along x (Theiler correction will be used accordingly, even if n_embed=1) (default=1)
-     stride_y   : stride along y (Theiler correction will be used accordingly, even if n_embed=1) (default=1)
-     Theiler_x  : Theiler correction along x (should be >= stride_x, but lower values are tolerated) 
-     Theiler_y  : Theiler correction along y (should be >= stride_y, but lower values are tolerated) 
-               !!! if either Theiler_x<0 or Theiler_y<0, then automatic Theiler is applied as follows:
-                 -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-                 -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-                 -3for Theiler=tau, and random sampling (default)
-                 -4 for Theiler=max, and random sampling
-                 see the "Theiler_prescription" parameter below for a better control of the automatic value in 2d
-     N_eff      : nb of points to consider in the statistics (default=4096)
-                 -1 for legacy behavior (largest possible value)
-     N_real     : nb of realizations to consider (default=10)
-                 -1 for legacy behavior (N_real=stride)
-     k          : number of neighbors to consider (typically 7 or 10) (default=5)
-     method     : 0 for regular entropy (default)
-                  1 for entropy of the increments
-                  2 for entropy of the averaged increments
-     Theiler_2d : which 2-d Theiler prescription to use. Possible values are integers in {1, 2, 4} for:
-                  1: "minimal" : tau_Theiler is selected in each direction as in 1-d (troublesome if stride is small)
-                  2: "maximal" : tau_Theiler is selected as the max of (stride_x, stride_y) (possible sqrt(2) trouble)
-                  4: "optimal" : tau_Theiler is selected as sqrt(stride_x^2 + stride_y^2) (rounded-up)
-                if not provided, the value set by the function "choose_Theiler_2d" will be used (default="maximal").
-     '''
+     If either Theiler_x<0 or Theiler_y<0, then automatic Theiler is applied as follows:
+        * -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
+        * -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
+        * -3 for Theiler=tau, and random sampling (default)
+        * -4 for Theiler=max, and random sampling
+        
+     The parameter Theiler_2d indicates, depending on its value:
+        * 1 for "minimal" : tau_Theiler is selected in each direction as in 1-d (troublesome if stride is small)
+        * 2 for "maximal" : tau_Theiler is selected as the max of (stride_x, stride_y) (possible sqrt(2) trouble)
+        * 4 for "optimal" : tau_Theiler is selected as sqrt(stride_x^2 + stride_y^2) (rounded-up)
+        * if not provided, the value set by the function :any:`set_Theiler_2d` will be used (default="maximal").   
+    
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.                
+     """
      cdef double S=0
      cdef int d=1
      cdef int nx=x.shape[0], ny=x.shape[1], ratou 
@@ -637,7 +586,7 @@ def compute_entropy_2d( double[:, ::1] x, int n_embed=1, int stride_x=1, int str
          print("-> contact nicolas.garnier@ens-lyon.fr for discussing the conventions")
      # 2020-07-20: carefull with ordering of dimensions! Now, we use same as Python matrix!
     
-     if (Theiler_2d>0): choose_Theiler_2d(Theiler_2d) 
+     if (Theiler_2d>0): set_Theiler_2d(Theiler_2d) 
      ratou = computes.compute_entropy_ann_2d(&x[0,0], nx, ny, d, n_embed, stride_x, stride_y, Theiler_x, Theiler_y, N_eff, N_real, k, method, &S)
      return S
 

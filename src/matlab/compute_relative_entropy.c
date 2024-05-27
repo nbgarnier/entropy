@@ -23,11 +23,12 @@ wrapper for the function "compute_relative_entropy_ann" defined in entropy_ann.c
 
 #include "matlab_commons.c"
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray  *prhs[])
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray  *prhs[])
 {   double  *x,*y;
     double  *xout1, *xout2, *xout3, *out_std, *out_nbe, *out_eff, *out_nbw;
     char    *mask;
     int     npts_x=-1, npts_y=-1, mx=1, my=1, px=1, py=1, stride=1;
+    int     Theiler=-4, N_eff=2048, N_real=10;
     int     k=k_default, n_cores=-1;
     int     ret1, do_use_mask=0;    
     /* verify the number of input parameters */
@@ -47,11 +48,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray  *prhs[])
     /* parameter 3 contains embedding parameters : */
     if (nrhs > 2) read_embedding_parameters(prhs[2], &px, &py, NULL, &stride, NULL, NULL);
 
+    /* third input parameter contains sampling parameters : */
+    if (nrhs > 3) read_sampling_parameters(prhs[2], &Theiler, NULL, &N_eff, &N_real);
+
     /*  parameter 4 contains algorithms parameters : */
-    if (nrhs > 3) read_algorithms_parameters(prhs[3], &k, NULL, &n_cores, NULL);
+    if (nrhs > 4) read_algorithms_parameters(prhs[3], &k, NULL, &n_cores, NULL);
 
     /* parameter 5 contains the mask (to select epochs) */
-    if (nrhs==5) read_mask(prhs[4], &mask, &do_use_mask, npts_x);
+    if (nrhs==6) read_mask(prhs[4], &mask, &do_use_mask, npts_x);
     if ( (do_use_mask>0)  )
         mexErrMsgTxt("sorry, this function does not support masking yet. Contact nicolas.garnier@ens-lyon.fr if interested.\n");
     
@@ -68,8 +72,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray  *prhs[])
     plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL); // KL divergence
     xout3 = mxGetPr(plhs[2]);
 
-    ret1  = compute_relative_entropy_ann(x, npts_x, y, npts_y, mx, my, px, py, stride, k, xout1);
-    ret1 += compute_entropy_ann         (x, npts_x, mx, px, stride, k, xout2);
+//    ret1  = compute_relative_entropy_ann(x, npts_x, y, npts_y, mx, my, px, py, stride, k, xout1);
+    ret1  = compute_relative_entropy_ann(x, npts_x, y, npts_y, mx, my, px, py, stride, Theiler, N_eff, N_real, k, xout1);
+//    ret1 += compute_entropy_ann         (x, npts_x, mx, px, stride, k, xout2);
+    ret1 += compute_entropy_ann         (x, npts_x, mx, px, stride, Theiler, N_eff, N_real, k, xout2);
     if (ret1!=0) printf("[Warning] return value code %d\n", ret1);
     *xout3 = *xout1 - *xout2;
 

@@ -38,7 +38,6 @@
 #include "samplings.h"              // created 2021-12-17 (to factor some operations)
 #include "math_tools.h"
 #include "entropy_ann.h"
-#include "entropy_ann_N.h"
 #include "entropy_ann_threads.h"
 #include "entropy_ann_combinations.h"
 #include "entropy_ann_single_entropy.h"  // for the engine function to compute Shannon entropy
@@ -53,7 +52,6 @@
 #define noDEBUG	    // for debug information, replace "noDEBUG" by "DEBUG"
 #define noDEBUG_EXPORT
 #define LOOK 17 	// for debug also (which point(s) to save the data of ?)
-#define TEST_EMBED  // new samplings!
 #define noTIMING
 
 #ifdef TIMING
@@ -73,7 +71,7 @@
 /* x      contains all the data, which is of size nx in time					    	*/
 /* nx     is the number of points in time											    */
 /* m	  indicates the (initial) dimensionality of x								    */
-/* p	  indicates the order of increments (usually 1)                                 */
+/* px     indicates the order of increments (usually 1)                                 */
 /* stride is the time lag between 2 consecutive points to be considered in time		    */
 /* k      nb of neighbors to be considered										        */
 /*																			            */
@@ -103,9 +101,7 @@ int compute_entropy_increments_ann(double *x, int npts, int m, int px, int strid
     debug_trace("[compute_entropy_increments_ann] signal x", x, npts, m, p, stride, k);
 #endif
 
-#ifdef NAN // default returned value
-    *S = NAN;
-#endif
+    *S = my_NAN; // default returned value
 
     if ((m<1))          return(printf("[compute_entropy_increments_ann] : m must be at least 1 !\n"));
     if ((px<0))         return(printf("[compute_entropy_increments_ann] : p must be at least 0 !\n"));
@@ -113,24 +109,14 @@ int compute_entropy_increments_ann(double *x, int npts, int m, int px, int strid
     if ((k<1))          return(printf("[compute_entropy_increments_ann] : k must be at least 1 !\n"));
 
     // additional checks and auto-adjustments of parameters:
-/*    N_real_max = set_sampling_parameters_old(npts, p, stride, &sp, "compute_entropy_increments_ann_N");
-    printf("stride  : %d\tmax : %d (Theiler) old function:\n", stride, tau_Theiler);
-    print_samp_param(sp); fflush(stdout);
-    sp.Theiler=tau_Theiler; sp.N_eff=N_eff; sp.N_real=N_realizations;
-*/
-    N_real_max = set_sampling_parameters(npts, p, stride, &sp, "compute_entropy_increments_ann_N");
-/*    printf("stride  : %d\tmax : %d (Theiler) new function:\n", stride, tau_Theiler);
-    print_samp_param(sp); fflush(stdout);
-    printf("\n");
-*/
-
+    N_real_max = set_sampling_parameters(npts, p, stride, &sp, "compute_entropy_increments_ann");
     if (N_real_max<1)   return(printf("[compute_entropy_increments_ann] : aborting ! (Theiler %d, N_eff %d, N_real %d)\n", 
                                 sp.Theiler, sp.N_eff, sp.N_real));
     if (sp.N_eff < 2*k) return(printf("[compute_entropy_increments_ann] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
     
     x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
 
-    perm_real = create_unity_perm(N_real_max); shuffle_perm(perm_real);     // for independant windows
+    perm_real = create_unity_perm(N_real_max);  if (sp.type>=3) shuffle_perm(perm_real);    // for independant windows
     // 2022-05-23: note: shuffling is a time-consuming operation, so large N_real_max should be avoided (Theiler=-4)
     perm_pts  = create_unity_perm(sp.N_eff_max);                            // for random sampling
     
@@ -142,7 +128,7 @@ int compute_entropy_increments_ann(double *x, int npts, int m, int px, int strid
         if (incr_type==1) increments(x+(stride*(p-1)+perm_real->data[j]), npts, m, p, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
         else              incr_avg  (x+(stride*(p-1)+perm_real->data[j]), npts, m, p, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 
-        // 2022-03-11: std of the increments:
+        // 2022-03-11: std of the increments: // 2024-03-05: works only if m=1! (uni-dimensional signal)
         x_new_std     = gsl_stats_sd(x_new, 1, sp.N_eff);
         data_std     += x_new_std;
         data_std_std += x_new_std*x_new_std;
@@ -205,9 +191,7 @@ int compute_entropy_rate_ann(double *x, int npts, int m, int p, int stride,
     double H_past=0.0, H=0.0, I1=0.0, I2=0.0;
     double *x_past, *x_now;
         
-#ifdef NAN // default returned value
-    *S = NAN;
-#endif
+    *S = my_NAN; // default returned value
     
     if ((method!=ENTROPY_RATE_FRACTION) && (method!=ENTROPY_RATE_DIFFERENCE) && (method!=ENTROPY_RATE_MI))
     {                   return(printf("[compute_entropy_rate_ann] : invalid method (should be 0,1 or 2)!\n")); }
@@ -216,7 +200,7 @@ int compute_entropy_rate_ann(double *x, int npts, int m, int p, int stride,
     if ((k<1))          return(printf("[compute_entropy_rate_ann] : k must be at least 1 !\n"));
     
     if (method==ENTROPY_RATE_FRACTION)
-    {   nb_errors = compute_entropy_ann_N(x, npts, m, p, stride, tau_Theiler, N_eff, N_realizations, k, &H);
+    {   nb_errors = compute_entropy_ann(x, npts, m, p, stride, tau_Theiler, N_eff, N_realizations, k, &H);
         *S = H/p;
     }
     else if (method==ENTROPY_RATE_DIFFERENCE)
@@ -227,8 +211,8 @@ int compute_entropy_rate_ann(double *x, int npts, int m, int p, int stride,
         for (i=0; i<npts-stride; i++)
         {   x_past[i + d*(npts-stride)] = x[i+d*npts];
         }
-        nb_errors = compute_entropy_ann_N(x_past, npts-stride, m, p,   stride, tau_Theiler, N_eff, N_realizations, k, &H_past); 
-        nb_errors = compute_entropy_ann_N(x_now,  npts,        m, p+1, stride, tau_Theiler, N_eff, N_realizations, k, &H);
+        nb_errors = compute_entropy_ann(x_past, npts-stride, m, p,   stride, tau_Theiler, N_eff, N_realizations, k, &H_past); 
+        nb_errors = compute_entropy_ann(x_now,  npts,        m, p+1, stride, tau_Theiler, N_eff, N_realizations, k, &H);
         *S = H-H_past;
         
         free(x_past);
@@ -242,15 +226,15 @@ int compute_entropy_rate_ann(double *x, int npts, int m, int p, int stride,
         {   x_past[i + d*(npts-stride)] = x[i        + d*npts];
             x_now [i + d*(npts-stride)] = x[i+stride + d*npts];
         }
-        nb_errors = compute_entropy_ann_N           (x_now,         npts-stride, m,    1,    stride, tau_Theiler, N_eff, N_realizations, k, &H);
-        nb_errors = compute_mutual_information_ann_N(x_now, x_past, npts-stride, m, m, 1, p, stride, tau_Theiler, N_eff, N_realizations, k, &I1, &I2); 
+        nb_errors = compute_entropy_ann           (x_now,         npts-stride, m,    1,    stride, tau_Theiler, N_eff, N_realizations, k, &H);
+        nb_errors = compute_mutual_information_ann(x_now, x_past, npts-stride, m, m, 1, p, stride, tau_Theiler, N_eff, N_realizations, k, &I1, &I2); 
         *S = (MI_algo&MI_ALGO_1) ? H-I1 : H-I2;
         
         free(x_past); free(x_now);
     }
     
     // 2021-12-15: by default, std and nb_errors are obtained from the last function call, 
-    // which is the most "multi-dimensional". As a cosnequence, both quantities are over-estimates
+    // which is the most "multi-dimensional". As a consequence, these two quantities are over-estimated
     // (especially the std which is supposed to be much smaller due to compensations)
     return(nb_errors);
 } /* end of function "compute_entropy_rate_ann" *************************************/
@@ -287,9 +271,7 @@ int compute_regularity_index_ann(double *x, int npts, int mx, int px, int stride
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 
-#ifdef NAN
-    *I1=NAN; *I2=NAN;
-#endif
+    *I1=my_NAN; *I2=my_NAN;
      
 	if ((mx<1))     return(printf("[compute_regularity_index_ann] : mx must be at least 1 !\n"));
 	if ((px<1))     return(printf("[compute_regularity_index_ann] : px must be at least 1 !\n"));
@@ -374,18 +356,13 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
 {	register int j, shift;
     register int nn	= my*(py+1)+mx*px;   // dimension of the new variable
     register int pp = (px>py) ? px : py; // who has the largest past ?
-#ifndef TEST_EMBED
-    register int i,l,d;
-#endif 
 	double *x_new;
 	double te1=0.0, te2=0.0, avg1=0.0, avg2=0.0, var1=0.0, var2=0.0;
     int     N_real_max=0;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 
-#ifdef NAN
-    *T1=NAN; *T2=NAN;
-#endif
+    *T1=my_NAN; *T2=my_NAN;
 
 	if (lag<1)          return(printf("[compute_transfer_entropy_ann] : lag has to be equal or larger than 1.\n"));
 	if (stride<1)       return(printf("[compute_transfer_entropy_ann] : stride must be at least 1 !\n"));
@@ -407,26 +384,11 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
     nb_errors=0; last_npts_eff=0;
     for (j=0; j<sp.N_real; j++) // loop over independant windows
 	{   if (sp.type>=3) shuffle_perm(perm_pts);
-#ifdef TEST_EMBED
+
         Theiler_embed(y+shift+lag+perm_real->data[j], nx, my,  1, stride, sp.Theiler, perm_pts->data, x_new,                      sp.N_eff);
         Theiler_embed(y+shift+perm_real->data[j],     nx, my, py, stride, sp.Theiler, perm_pts->data, x_new+(      my *sp.N_eff), sp.N_eff);
         Theiler_embed(x+shift+perm_real->data[j],     nx, mx, px, stride, sp.Theiler, perm_pts->data, x_new+(my*(py+1)*sp.N_eff), sp.N_eff);
-#else
-	    for (i=0; i<nx_new; i++) // loop over points in 1 window
-        {   {   for (l=0; l<mx; l++) // loop over dimensions in x
-                x_new[i +                     l*nx_new ] = x[j + n_windows*i + shift + lag + l*nx];
-            }
-            for (d=0; d<px; d++) // loop over embedding in x
-            {   for (l=0; l<mx; l++) // loop over dimensions in x
-                x_new[i +      (mx*1 + d + l*px)*nx_new] = x[j + n_windows*i + shift - stride*d + l*nx];
-            }
-            for (d=0; d<py; d++) 
-            {   for (l=0; l<my; l++)
-                x_new[i + (mx*(px+1) + d + l*py)*nx_new] = y[j + n_windows*i + shift - stride*d + l*nx];
-            }
-        }
-        // now we have a vector with all components of interest (see VIII p 148 ) 
-#endif
+
         if (USE_PTHREAD>0) // if we want multithreading
             nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, 
                 my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
@@ -493,10 +455,8 @@ int compute_directed_information_ann(double *x, double *y, int npts, int mx, int
 	int     N_real_max=0;
     samp_param  sp = { .Theiler=Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
-
-#ifdef NAN
-    *I1=NAN; *I2=NAN;
-#endif
+	
+    *I1=my_NAN; *I2=my_NAN;
     
 	if ((mx<1)||(my<1)) return(printf("[compute_directed_information_ann] : mx and my have to be equal or larger than 1.\n"));	
 	if (N<1)            return(printf("[compute_directed_information_ann] : N has to be equal or larger than 1.\n"));	

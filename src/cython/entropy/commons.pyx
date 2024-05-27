@@ -22,18 +22,21 @@ from libc.string cimport memcpy
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+# @embedsignature(True)
 def get_last_info(int verbosity=0):
-    ''' get_last_info(verbosity=0)
+    """ 
+    returns informations from the last computation (and prints them on screen if verbosity>0)
     
-    returns informations from the last computation and prints them on screen if verbosity>0
+    :param verbosity: an integer. If ==0 (default), then nothing is printed on the screen, but values are returned (useful for use in scripts).
+    :returns: the following 8 values, in the following order
     
-    Returned are the following 8 values, in this order: 
       - the standard deviations estimates of the last computed quantities
       - the number of errors encountered 
       - the effective number of points used, per realization, and total
       - the number of independent realizations used
       - the effective value of tau_Theiler (in x, and eventually in y)
-    '''
+      
+    """
     cdef double std             = commons.last_std
     cdef double std2            = commons.last_std2
     cdef int    nb_errors_local = commons.nb_errors_local
@@ -56,12 +59,17 @@ def get_last_info(int verbosity=0):
 
 
 def get_extra_info(int verbosity=0):
-     ''' get extra information from the last computation
-     Returned are : 
+     """
+     returns extra information from the last computation
+     
+     :param verbosity: an integer. If ==0 (default), then nothing is printed on the screen, but values are returned (useful for use in scripts).
+     :returns: statistics on the processed input data (e.g.: increments of the input)
+      
        - the standard deviation of the last data used (i.e., the std of the input, not of the output!)
        - the standard deviation of this standard deviation
-     (note that these are useful for, e.g., operations on increments with a given stride)
-     '''
+       
+     These maybe useful for, e.g., computations on increments with a given stride.
+     """
      cdef double std       = commons.data_std
      cdef double std_std   = commons.data_std_std
      if verbosity:
@@ -73,56 +81,80 @@ def get_extra_info(int verbosity=0):
 
 # 2019-01-28: OK
 def choose_algorithm(int algo=1, int version=1):
-     ''' choose_algorithm([algo])
+     """
+     selects the algorithms to use for computing all mutual informations (including partial mutual informations and TEs),
+     and selects the algorithm to use to count neighbors.
      
-     Select the algorithms to use for computing all mutual informations (including partial mutual informations and TEs),
-     and select the algorithm to use to count neighbors.
+     :param algo: the Kraskov-Stogbauer-Grassberger algorithm. Possible values are {1, 2, 1|2}) for (algo 1, algo 2, both algos). (default=1)
+     :param version: counting algorithm version, possible values are {1, 2} for (legacy, mixed ANN) (default=1)
+     :returns: no output
      
-     algo     : Kraskov-Stogbauer-Grassberger algorithm 
-                possible values: {1, 2, 1|2}) for (algo 1, algo 2, both algos)
-                (default=1)
-     version  : counting algorithm version, possible values: {1, 2} for (legacy, mixed ANN):
-                1 : legacy (NBG) : faster for small embedding dimensions (<=2)
-                2 : mixed ANN    : faster for large embedding dimensions (>=4)
-                (default=1)
-     '''
+       - 1 : legacy (NBG) : faster for small embedding dimensions (<=2)
+       - 2 : mixed ANN    : faster for large embedding dimensions (>=4)
+     """
      commons.ANN_choose_algorithm(algo|(version*0x0100))
      return
 
 
 # 2022-05-17: OK
 def set_verbosity(int level=1):
-    ''' sets the verbosity level of the library
+    """
+    sets the verbosity level of the library
+    
+    :param verbosity: an integer that indicates the verbosity level of the library (default=1)
+    :returns: no output
+    
+    verbosity can be:
+        
        <0 : no messages, even if an error is encountered (not recommended!)
         0 : messages only if an error is encountered
         1 : messages for errors and important warnings only (default)
         2 : more warnings and/or more details on the warnings
         ...
-    '''
+        
+    """
     commons.lib_verbosity=level
     
 def get_verbosity():
+    """
+    gets the current verbosity level of the library
+    
+    :param none:
+    :returns:  no output values, but a message indicating the verbosity level is printed in the console.
+    
+    verbosity level explanation:
+        
+       <0 : no messages, even if an error is encountered (not recommended!)
+        0 : messages only if an error is encountered
+        1 : messages for errors and important warnings only (default)
+        2 : more warnings and/or more details on the warnings
+        ...
+        
+    """
     print("verbosity level", commons.lib_verbosity)
 
 
 # 2022-05-17: OK
 # 2022-11-30: little bug corrected (for "legacy" behavior)
 def set_Theiler(int Theiler=4):
-    ''' set_Theiler(Theiler='legacy'|'smart'|'random'|'adapted')
-    
-    sets the way the library handles by default the Theiler prescription 
+    """ 
+    sets the way the library handles by default the Theiler prescription.
     this prescription is overiden if explicitly specified in a function call
     
-    Theiler  : prescription
-                possible values: are {1, 2, 3, 4} or ("legacy", "smart", "random", "adapted") for:
-                1 or "legacy"  : tau_Theiler=tau(=stride) + uniform sampling
-                2 or "smart"   : tau_Theiler=max>=tau(=stride) + uniform sampling (covering the full dataset)
-                3 or "random"  : tau_Theiler=tau(=stride) + random sampling
-                4 or "adapted" : tau_Theiler>(or <)tau(=stride) 
-                              !!! tau_Theiler can be smaller than tau(=stride) in order to satisfy the imposed N_eff
-                                    (use this with caution, by tracking the selected Theiler value with get_last_info()
-                (default=4)
-    '''
+    set_Theiler(Theiler='legacy'|'smart'|'random'|'adapted')
+    
+    :param Theiler: Theiler prescription. Possible values are {1, 2, 3, 4} or ("legacy", "smart", "random", "adapted") (default=4)
+    :returns: no output values, but a message is printed in the console.
+        
+    The parameter Theiler here is a positive integer which indicates the prescription to follow:
+        
+        * 1 or "legacy"  : tau_Theiler=tau(=stride) + uniform sampling (thus localized in the dataset) (legacy)
+        * 2 or "smart"   : tau_Theiler=max>=tau(=stride) + uniform sampling (covering the full dataset)
+        * 3 or "random"  : tau_Theiler=tau(=stride) + random sampling
+        * 4 or "adapted" : tau_Theiler>(or <)tau(=stride) 
+        
+    Depending on the Theiler prescription, the effective value of ''tau_Theiler'' can be smaller than tau(=stride) in order to satisfy the imposed N_eff; use this with caution, for example by tracking the effectively selected Theiler value with the function :any:`get_last_info`. 
+    """
     if   ( (Theiler==1) or (Theiler=='legacy')  ): 
         commons.samp_default.type   =1
         commons.samp_default.N_eff  =-1   
@@ -139,17 +171,20 @@ def set_Theiler(int Theiler=4):
 # 2022-05-23: OK
 # 2023-11-17: N_real==1 now accepted
 def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10):
-    ''' set_sampling(Theiler='adapted', N_eff=4096, N_real=10)
+    """ set_sampling(Theiler='adapted', N_eff=4096, N_real=10)
     
-    sets the way the library handles by default the Theiler prescription, the nb of effective points and the nb of realizations
-    these prescriptions are overiden if explicitly specified in a function call 
+    sets the way the library handles by default the Theiler prescription, the number N_eff of effective points and the number N_real of realizations.
+    These values are overiden if explicitly specified in a function call. 
     
-    Theiler  : prescription (default='adapted'), see function 'set_Theiler()' for details on possible options)
-    N_eff    : number of effective points to consider in the statistics (default=4096)
-                this parameter is overriden if Theiler=='legacy'
-    N_real   : number of realizations to consider (default=10)
-                this parameter is overriden if Theiler=='legacy'
-    '''    
+    :param Theiler: prescription (default='adapted'), see function :any:`set_Theiler` for details on possible options.
+    :param N_eff: number of points to consider in the statistics (default=4096).
+    :param N_real: number of realizations to consider (default=10).
+    :returns: no output.
+    
+    parameters N_eff and N_real are overriden if Theiler=='legacy'
+    
+    You can check what are the current default values with the function :any:`get_sampling`. You can also examine what were the values used in the last computation with the function :any:`get_last_sampling`. See :any:`input_parameters`
+    """    
     set_Theiler(Theiler)
     if (commons.samp_default.type>1): # not legacy
         if (N_eff>1)  : commons.samp_default.N_eff=N_eff
@@ -157,35 +192,47 @@ def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10):
     return
 
 
-def get_sampling():
-    ''' get_sampling(verbosity=0)
+def get_sampling(verbosity=1):
+    """
+    prints the default values of sampling parameters used in all functions.
     
-    prints values used as default for sampling parameters in all functions
-    see 'set_sampling()' to change these values
-    '''
-    print("Theiler prescription :", commons.samp_default.type, end="")
-    if   (commons.samp_default.type==1): print("(legacy)")
-    elif (commons.samp_default.type==2): print("(smart)")
-    elif (commons.samp_default.type==3): print("(random)")
-    elif (commons.samp_default.type==4): print("(adapted)")
-    else:                                print("unknown?")
-    print("Theiler scale        :", commons.samp_default.Theiler)
-    print("N_eff                :", commons.samp_default.N_eff)
-    print("N_realizations       :", commons.samp_default.N_real)
+    :param verbosity: an integer in {0,1} (default=1)
+    :returns: 4 values described below. If verbosity>0, a human-readable message expliciting these 4 values is printed in the console.
+    
+    Returned are the following 4 values, in the following order: 
+      - the default type of Theiler prescription
+      - the default Theiler scale
+      - the default effective number of points used in a single realization
+      - the default number of realizations used.
 
+    see :any:`set_sampling` to change these values and :any:`input_parameters` for their meaning.
+    """
+    if (verbosity>0):
+        print("Theiler prescription :", commons.samp_default.type, end="")
+        if   (commons.samp_default.type==1): print("(legacy)")
+        elif (commons.samp_default.type==2): print("(smart)")
+        elif (commons.samp_default.type==3): print("(random)")
+        elif (commons.samp_default.type==4): print("(adapted)")
+        else:                                print("unknown?")
+        print("Theiler scale        :", commons.samp_default.Theiler)
+        print("N_eff                :", commons.samp_default.N_eff)
+        print("N_realizations       :", commons.samp_default.N_real)
+    return [commons.samp_default.type, commons.samp_default.Theiler, commons.samp_default.N_eff, commons.samp_default.N_real]
     
 def get_last_sampling(int verbosity=0):
-    ''' get_last_sampling(verbosity=0)
+    """
+    returns full set of information on the sampling used in the last computation and prints them in the console if verbosity>0
+    (note that these values may differ from default values, as returned by :any:`get_sampling`)
     
-    returns informations on the sampling used in the last computation and print them on screen if verbosity>0
-    (note that these values may differ from default values, as returned by get_sampling())
+    :param verbosity: an integer in {0,1} (default=0)
+    :returns: 7 values described below. If verbosity>0, a human-readable message expliciting these 7 values is printed in the console.
     
     Returned are the following 7 values, in the following order: 
-      - the type of Theiler prescription
-      - the Theiler scale used, and its maximal value given the other parameters
-      - the effective number of points used in a single realization, and its maximal value
-      - the number of realizations used, and its maximal value
-    '''
+      - the type of Theiler prescription ( 1 integer)
+      - the Theiler scale used, and its maximal value given the other parameters (2 integers)
+      - the effective number of points used in a single realization, and its maximal value (2 integers)
+      - the number of realizations used, and its maximal value (2 integers)
+    """
     if (verbosity>0):
         print("from last function call:")
         print("- Theiler prescription :", commons.last_samp.type)
@@ -196,21 +243,18 @@ def get_last_sampling(int verbosity=0):
 
     
 # 2022-01-12: OK
-def choose_Theiler_2d(int Theiler=2):
-    ''' choose_Theiler_2d(Theiler=2)
+def set_Theiler_2d(int Theiler=2):
+    """
+    selects the 2-d Theiler prescription to use for sampling images.
     
-    Select the 2-d Theiler prescription to use for sampling images.
+    :param Theiler: Theiler prescription. Possible values: are {1, 2, 4} as explicited below.
+    :returns: no output
     
-    Theiler  : prescription
-                possible values: are {1, 2, 4} for:
-                1 or "minimal" : tau_Theiler is selected in each direction as in 1-d 
-                                (troublesome if one of the stride is much smaller than the other one)
-                2 or "maximal" : tau_Theiler is selected as the max of (stride_x, stride_y) 
-                                (possibly too small by a factor sqrt(2))
-                4 or "optimal" : tau_Theiler is selected as sqrt(stride_x^2 + stride_y^2) 
-                                (rounded-up for max safety)
-                (default=2)
-    '''
+        1 or "minimal" : tau_Theiler is selected in each direction as in 1-d (troublesome if one of the stride is much smaller than the other one)
+        2 or "maximal" : tau_Theiler is selected as the max of (stride_x, stride_y) (possibly too small by a factor sqrt(2))
+        4 or "optimal" : tau_Theiler is selected as sqrt(stride_x^2 + stride_y^2) (rounded-up for max safety)
+        (default=2)
+    """
     if   ( (Theiler==1) or (Theiler=='minimal') ): commons.samp_2d.type=1
     elif ( (Theiler==2) or (Theiler=='maximal') ): commons.samp_2d.type=2
     elif ( (Theiler==4) or (Theiler=='optimal') ): commons.samp_2d.type=4
@@ -221,25 +265,34 @@ def choose_Theiler_2d(int Theiler=2):
 
 # 2022-01-14: OK
 def get_Theiler_2d():
-     ''' get_Theiler_2d()
-     
+     """
      returns the Theiler prescription currently selected.
-     (see the help of 'choose_Theiler_2d' for details)
-     '''
+     (see the function :any:`set_Theiler_2d` for details)
+     
+     :param none:
+     :returns: the value.
+     """
      return(commons.samp_2d.type)
 
 
 # 2021-12-02
 def multithreading(do_what="info", int nb_cores=0):
-     ''' multithreading(do_what=["info", "auto", "single", n_cores])
-     
+     """ multithreading(do_what=["info", "auto", "single"], n_cores=0)
+
      Selects the multi-threading schemes and eventually sets the number of threads to use
      
-     if do_what == "info", nothing is done, but informations on the current multithreading state are displayed.
-                   "auto", then the optimal (self-adapted to largest) number of threads will be used) (default).
-                   "single", then the algorithms will run single-threaded (classical algorithms) 
-                   nb_cores (a positive number), then the provided number nb_cores of threads will be used.
-     '''
+     :param do_what: either "info" or "auto" or "single", see below.
+     :param nb_cores: an integer; if specified and positive, then the provided number nb_cores of threads will be used. (default=0 for "auto") 
+     :returns: no output.
+     
+     The parameter do_what can be chosen as follows:
+         
+        - "info": nothing is done, but informations on the current multithreading state are displayed.
+        - "auto": then the optimal (self-adapted to largest) number of threads will be used) (default).
+        - "single": then the algorithms will run single-threaded (no multithreading) 
+     
+     if nb_cores (a positive number) is specified, then the provided number nb_cores of threads will be used.
+     """
      
      if (do_what=="info"): 
         print("currently using %d out of %d cores available"
@@ -264,10 +317,13 @@ def multithreading(do_what="info", int nb_cores=0):
 
 # 2021-12-20
 def get_threads_number():
-     ''' get_threads_number()
+     """
+     returns the current number of threads.
      
-     Returns the current number of threads.
-     '''
+     :param none:
+     :returns: an integer, the current number of threads used.
+      
+     """
      
      if (commons.USE_PTHREAD>0): return(commons.get_cores_number(0x0001))
      return(0)
@@ -281,16 +337,16 @@ def get_threads_number():
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def FIR_LP( double[:, ::1] x, int tau=2, double fr=1):
-     ''' x_filtered = FIR_LP(x, tau=2, fr=1)
+     """
+     low-pass filters a (multi-dimensional) signal x, using local averaging and cut-off time-scale tau.
      
-     low-pass filter a (multi-dimensional) signal x, using time-scale tau.
+     :param x: signal (NumPy array with ndim=2)
+     :param tau: time-scale for a local averaging (default tau=2)
+     :param fr: how many pts to keep from each tau-sized time interval (subsampling). Setting fr=tau keeps all points. (default fr=1 : keeps 1 pts every tau pts)
+     :returns: an nd-array containing the low-pass filtered version of x
      
-     x        : signal (NumPy array with ndim=2)
-     tau      : time-scale for a local averaging (default tau=2)
-     fr       : how many pts to keep from each tau-sized time interval (subsampling) 
-                (default fr=1 : keep 1 pts every tau pts)
-                (choose fr=tau to keep all pts)
-     '''
+     :meta private:
+     """
      
      cdef int npts=x.shape[1], nx=x.shape[0], ratou=1
      cdef int npts_new = int(npts*fr//tau)
@@ -314,9 +370,10 @@ def FIR_LP( double[:, ::1] x, int tau=2, double fr=1):
 #             so I comment this out
 #####################################################################################
 cdef pointer_to_numpy_array(void * ptr, CNP.npy_intp size0, CNP.npy_intp size1):
-    '''Convert C double pointer a numpy float array of shape (size0, size1).
+    """
+    converts C double pointer a numpy float array of shape (size0, size1).
     The memory will be freed as soon as the ndarray is deallocated.
-    '''
+    """
     cdef extern from "numpy/arrayobject.h":
         void PyArray_ENABLEFLAGS(CNP.ndarray arr, int flags)
     cdef CNP.npy_intp[2] my_shape = [size0, size1]
@@ -333,9 +390,12 @@ cdef pointer_to_numpy_array(void * ptr, CNP.npy_intp size0, CNP.npy_intp size1):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def surrogate_WIP( double[:, ::1] x):
-    ''' xs = surrogate(x) : creates a surrogate version of (possibly multi-dimensionial) data x
-            by shuffling points in time, while retaining the joint-coordinates
-    '''
+    """ 
+    xs = surrogate(x) : creates a surrogate version of (possibly multi-dimensionial) data x
+    by shuffling points in time, while retaining the joint-coordinates
+    
+    :meta private:
+    """
     cdef int npts=x.shape[1], nx=x.shape[0]
     if (npts<nx):  raise ValueError("please transpose x")
     
@@ -358,17 +418,23 @@ def surrogate_WIP( double[:, ::1] x):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
-    ''' xs = surrogate(x) : creates a surrogate version of (possibly multi-dimensionial) data x
+    """
+    creates a surrogate version of (possibly multi-dimensionial) data x
     
-    method indicates which type of surrogate to create:
+    :param method: an integer to indicate which type of surrogate to create (see below)
+    :param N_steps: an integer to indicate how many steps to use for improved surrogates (method 4 only)
+    :returns: an nd-array with the same dimmensionality as the input data x
+    
+    The method parameter can be:
+        
         0 : by shuffling points in time, while retaining the joint-coordinates
         1 : randomize phase with unwindowed Fourier transform (uFt)
         2 : randomize phase with windowed Fourier transform (wFT) (buggy!)
         3 : randomize phase with Gaussian null hypothesis and Ft (aaFT)
         4 : improved surrogate (same PDF and PSD), using N_steps
         5 : creates a Gaussian version of x, with same PSD and dependences
-    N_steps indicates how many steps to use for improved surrogates (method 4 only)
-    '''
+
+    """
     cdef int npts=x.shape[1], nx=x.shape[0], m
     if (npts<nx):  raise ValueError("please transpose x")
     if ((method<0) or (method>5)): raise ValueError("choose a valid method")
@@ -384,17 +450,24 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
     elif (method==5):  
         means = PNP.mean(x, axis=1)
         stds  = PNP.std (x, axis=1)
-        commons.Gaussianize(&z[0,0], npts, nx) 
-        for m in PNP.arange(nx):    z[m,:] = z[m,:]*stds[m] + means[m]
+        commons.Gaussianize(&z[0,0], npts, nx)
+        if (nx>1): 
+            for m in PNP.arange(nx):    z[m,:] = z[m,:]*stds[m] + means[m]
+        else: 
+            z = z*stds + means
     return(zout)
 
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def mask_finite(double[:, ::1] x):
-    ''' mask=mask_finite(x) : build a mask corresponding to non-NaN values in the data x
-    '''
+def mask_finite_C(double[:, ::1] x):
+    """ 
+    mask=mask_finite(x) : build a mask corresponding to non-NaN values in the data x
+    
+    C-version, experimental.
+    :meta private:
+    """
   
     cdef int npts=x.shape[1], nx=x.shape[0], ratou
     if (npts < nx): raise ValueError("please transpose x")

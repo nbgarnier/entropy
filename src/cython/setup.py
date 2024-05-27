@@ -7,8 +7,10 @@ setup.py for package "entropy"
 2019-10-14 now using python3
 2021-12-20 source code split into several files
 2022-11-25 now using setuptools instead of distutils
+2023-10-15 new Python install method
+2023-12-04 now the install is even more generic on Linux systems
 """
-from setuptools import setup, Extension
+from setuptools import Extension, setup
 from Cython.Build import cythonize
 
 # old distutils projec:
@@ -35,6 +37,13 @@ except AttributeError:
 #numpy_include='%s/lib/python%s/site-packages/numpy/core/include'\
 #         %(os.path.normpath(sys.exec_prefix),sys.version[:3])
 print("using NumPy from : ", numpy_include)
+#cwd = os.getcwd(); print("current directory : ", cwd)
+#local_dir_raw = os.path.realpath(__file__); print("source directory : ", local_dir_raw)
+#local_dir = os.path.dirname(local_dir_raw); print("source dir extrc : ", local_dir)
+#print(os.environ)
+#local_dir = os.environ['BUILD_DIR'] # not passed from Makefile!
+local_dir = os.environ['PWD'] # 2023-12-04: a trick...
+print("source origin    : ", local_dir)
 
 import subprocess 
 #LIBS_PYTHON = subprocess.run(["python3-config","--libs"], capture_output=True).stdout # python3.7
@@ -64,12 +73,9 @@ INC_DIR  = ['.', '../include', '../../include', './entropy', '/opt/local/include
 LIBS_DIR = ['../../lib', '/usr/lib', '/usr/local/lib', '/opt/local/lib']
 LIBS     = ['entropy', 'ANN', 'gsl', 'gslcblas', 'fftw3', 'pthread'] + LIBS #'m', # 2020-07-22: moved LIBS at the end (for stdc++ on linux)
 
-# 2018-04-11: 'python' replaced by 'python2.7'
-# 2019-10-14: 'python2.7' replaced by 'python3.7m', and then by auto
-
-# 2022-02-14: for debug:
-#import Cython.Compiler.Options
-#Cython.Compiler.Options.annotate = True
+if (platform.system()=='Linux'):
+        INC_DIR.append(local_dir+'/../../include')
+        LIBS_DIR.append(local_dir+'/../../lib')
 
 # 2021-12-19: testing with several modules => useless for ELF libraries which do not share symbols
 # 2021-12-20: so only 1 module (named "entropy" below) is used
@@ -82,6 +88,9 @@ entropy_module = Extension("entropy",
                 library_dirs = LIBS_DIR,
                 extra_link_args=LDFLAGS_PYTHON,
                 define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+# 2023/11/21 For Sphinx doc: by setting this compiler directive, cython will embed signature information
+# in docstrings. Sphinx then knows how to extract and use those signatures:                
+                cython_directives = {"embedsignature": True},
                 )
 
 commons_module = Extension("commons",
@@ -119,23 +128,21 @@ others_module = Extension("others",
                 )
 
 #entropy_tools_module = Extension('tools')
-                       
+          
 setup(name = 'entropy',
-      version = '3.3.2', 
-#      date ='2023-10-02',
+      version = '4.0.1', 
+#      date ='2023-12-19',
       description = "Information Theory tools and entropies for multi-scale analysis of continuous signals",
       author      = "Nicolas B. Garnier",
       author_email= "nicolas.garnier@ens-lyon.fr",
-      include_dirs = [numpy.get_include()],         # New line 2014/09/30
 #      zip_safe=False,  # 2022-11-25, to work with cimport for pxd files when using them from a dependent package
                         # 2023-02-14 : line above commented
-#	  cmdclass = {'build_ext': build_ext},			
+#	  cmdclass = {'build_ext': build_ext},
 	  ext_package='entropy',
 #	  package_dir={'', 'entropy', 'tools'},
 #      py_modules  = ['tools.tools', 'tools.masks'],
       py_modules  = ['entropy.tools', 'entropy.masks'],
-#      ext_modules = [entropy_module],  # good version  
-      ext_modules = cythonize([entropy_module], annotate=DO_ANNOTATE), # tried 2019-10-14 to replace line above
+      ext_modules = cythonize([entropy_module], annotate=DO_ANNOTATE)#, compiler_directives={'embedsignature': True}), 
 #	  packages = ['entropy']
 	)
 

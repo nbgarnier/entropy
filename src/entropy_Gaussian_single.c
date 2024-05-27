@@ -10,7 +10,6 @@
 
 #include <math.h>               // for fabs and log
 #include <string.h>
-// #include <gsl/gsl_sf.h>         // for psi digamma function
 #include <gsl/gsl_statistics_double.h>
 
 #include "library_commons.h"    // definitions of nb_errors, and stds
@@ -21,7 +20,6 @@
 // #define M_PI (3.14159265358979323846)
 #define M_PI (3.14159265358979323846264338327950288)
 #endif
-
 
 #define noDEBUG	    // for debug information, replace "noDEBUG" by "DEBUG"
 #define noDEBUG_EXPORT
@@ -48,7 +46,7 @@
 /****************************************************************************************/
 double compute_entropy_nd_Gaussian(double *x, int npts, int n)
 {	register int i,j;
-	double h=0.00;
+	double h=my_NAN;
 	double *M, det;
     
     M=(double*)calloc(n*n, sizeof(double));
@@ -63,17 +61,14 @@ double compute_entropy_nd_Gaussian(double *x, int npts, int n)
     }  
     det = determinant(M, n);
 //    printf("\tdet = %f\n", det);
-    
-#ifdef NAN
-    h=NAN;
-#endif
+
     if (det>0.0) h = (double)n/2.*(1. + log(2.*M_PI)) + 1./2.*log(det);
     else printf("[compute_entropy_nd_Gaussian] negative det : %f\n", det);
     
 	last_npts_eff_local = npts;
 	free(M);
 	return(h);
-} /* end of function "compute_entropy_nd_ann" *************************************/
+} /* end of function "compute_entropy_nd_ann" *******************************************/
 
 
 
@@ -100,7 +95,7 @@ double compute_entropy_nd_Gaussian(double *x, int npts, int n)
 /****************************************************************************************/
 double compute_mutual_information_direct_Gaussian(double *x, int npts, int mx, int my)
 {	register int i,j, m=mx+my;
-	double h=0.00;
+	double h=my_NAN;
 	double *Mx, *My, *M, detx, dety, det;
     
     Mx=(double*)calloc(mx*mx, sizeof(double));
@@ -122,10 +117,7 @@ double compute_mutual_information_direct_Gaussian(double *x, int npts, int mx, i
     detx = determinant(Mx, mx);
     dety = determinant(My, my);
     det  = determinant(M,  m);
-    
-#ifdef NAN
-    h=NAN;
-#endif
+
     if (det>0.0) h = 1./2.*log(detx*dety/det);
     
 	last_npts_eff_local = npts;
@@ -161,7 +153,7 @@ double compute_mutual_information_direct_Gaussian(double *x, int npts, int mx, i
  ***************************************************************************************/
 double compute_partial_MI_engine_Gaussian(double *x, int npts, int mx, int my, int mz)
 {	register int i,j, m=mx+my+mz;
-	double h=0.00;
+	double h=my_NAN;
 	double *Mxz, *Mzy, *Mz, *M, detxz, detzy, detz, det;
     
     Mxz=(double*)calloc((mx+mz)*(mx+mz), sizeof(double));
@@ -187,9 +179,6 @@ double compute_partial_MI_engine_Gaussian(double *x, int npts, int mx, int my, i
     detz  = determinant(Mz,  mz);
     det   = determinant(M,  m);
     
-#ifdef NAN
-    h=NAN;
-#endif
     if ((det>0.0) && (detz>0.0)) h = 1./2.*(log(detxz*detzy)-log(detz*det));
     
 	last_npts_eff_local = npts;

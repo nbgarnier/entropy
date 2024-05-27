@@ -13,7 +13,7 @@ usage : S = compute_entropy(x, [embed_params, [algo_params, [mask]]]) (see help)
 #include <string.h>             // for 'memcpy' and 'strcmp'
 #include "mex.h"
 
-#include "entropy_ann_N.h"
+#include "entropy_ann.h"
 #include "entropy_ann_mask.h"
 #include "entropy_ann_threads.h"
 #include "library_commons.h"    // for global variables
@@ -60,7 +60,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     plhs[0] = mxCreateDoubleMatrix(1,1,mxREAL);
     entropy = mxGetPr(plhs[0]);
         
-    if (do_use_mask==0) compute_entropy_ann_N   (x,       npts, mx, px, stride, Theiler, N_eff, N_real, k,    entropy);
+    if (do_use_mask==0) compute_entropy_ann     (x,       npts, mx, px, stride, Theiler, N_eff, N_real, k,    entropy);
     else                compute_entropy_ann_mask(x, mask, npts, mx, px, stride, Theiler, N_eff, N_real, k, 0, entropy); // method=0
 
     if (nlhs>1)

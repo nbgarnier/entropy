@@ -33,9 +33,6 @@ int nb_errors_total;    // total nb of errors encountered since the library has 
 int last_npts_eff;      // effective nb of points used in the last "wrapper" function call
 int last_npts_eff_local;// effective nb of points used in the last "engine" function call
 
-// global variable to count the nb of independant windows (used for stats like std)
-// int last_nb_windows;    // nb of windows (default was =stride if Theiler)
-
 // global variable to keep track of the standard deviation of the last estimate
 double last_std;        // main variable
 double last_std2;       // additional variable (for functions returning a second value)
@@ -76,7 +73,7 @@ void ANN_choose_algorithm(int algo)
     {   MI_algo = 0; // a welcome reset
         if (algo&MI_ALGO_1)             MI_algo |= MI_ALGO_1;
         if (algo&MI_ALGO_2)             MI_algo |= MI_ALGO_2;
-        // check at least one algo is selected:
+        // check that at least one algo is selected:
         if (!(MI_algo&MI_ALGO_1) && !(MI_algo&MI_ALGO_2)) MI_algo |= MI_ALGO_1;
         
 /*        if (algo&MASK_CONSERVATIVE)     MI_algo |= MASK_CONSERVATIVE;

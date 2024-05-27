@@ -125,11 +125,10 @@ int compute_mutual_information_direct_ann(double *x, int nx, int m, int p, int k
 #ifdef TIMING
     double time_alloc=0, time_sort=0, time_init_ANN=0, time_0_1=0, time_0_2=0, time_1=0, time_2=0;
 #endif
-							
-#ifdef NAN
-    *I1 = NAN;
-    *I2 = NAN;
-#endif
+			
+    *I1 = my_NAN;
+    *I2 = my_NAN;
+
 	n = m+p; /* total dimensionality of data */
 	if (n<2) return(printf("[compute_mutual_information_direct_ann] not enough dimensions in data (at least 2 required)\n"));
 	

@@ -28,7 +28,6 @@
 #define noDEBUG	    // for debug information, replace "noDEBUG" by "DEBUG"
 #define noDEBUG_EXPORT
 #define LOOK 17 	// for debug also (which point(s) to save the data of ?)
-#define TEST_EMBED  // new samplings!
 #define noTIMING
 
 #ifdef TIMING
@@ -79,9 +78,7 @@ int compute_entropy_increments_Gaussian(double *x, int npts, int m, int px, int 
     debug_trace("[compute_entropy_increments_Gaussian] signal x", x, npts, m, p, stride, k);
 #endif
 
-#ifdef NAN // default returned value
-    *S = NAN;
-#endif
+    *S = my_NAN; // default returned value
 
     if ((m<1))          return(printf("[compute_entropy_increments_Gaussian] : m must be at least 1 !\n"));
     if ((px<0))         return(printf("[compute_entropy_increments_Gaussian] : p must be at least 0 !\n"));
@@ -173,9 +170,7 @@ int compute_entropy_rate_Gaussian(double *x, int npts, int m, int p, int stride,
     double H_past=0.0, H=0.0, I1=0.0;
     double *x_past, *x_now;
         
-#ifdef NAN // default returned value
-    *S = NAN;
-#endif
+    *S = my_NAN; // default returned value
     
     if ((method!=ENTROPY_RATE_FRACTION) && (method!=ENTROPY_RATE_DIFFERENCE) && (method!=ENTROPY_RATE_MI))
     {                   return(printf("[compute_entropy_rate_Gaussian] : invalid method (should be 0,1 or 2)!\n")); }
@@ -254,9 +249,7 @@ int compute_regularity_index_Gaussian(double *x, int npts, int mx, int px, int s
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 
-#ifdef NAN
-    *I1=NAN;
-#endif
+    *I1=my_NAN;
      
 	if ((mx<1))     return(printf("[compute_regularity_index_Gaussian] : mx must be at least 1 !\n"));
 	if ((px<1))     return(printf("[compute_regularity_index_Gaussian] : px must be at least 1 !\n"));
@@ -339,9 +332,7 @@ int compute_transfer_entropy_Gaussian(double *x, double *y, int nx, int mx, int 
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 
-#ifdef NAN
-    *T1=NAN;
-#endif
+    *T1=my_NAN;
 
 	if (lag<1)            return(printf("[compute_transfer_entropy_Gaussian] : lag has to be equal or larger than 1.\n"));
 	if (stride<1)         return(printf("[compute_transfer_entropy_Gaussian] : stride must be at least 1 !\n"));
@@ -424,9 +415,7 @@ int compute_directed_information_Gaussian(double *x, double *y, int npts, int mx
     samp_param  sp = { .Theiler=Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 
-#ifdef NAN
-    *I1=NAN;
-#endif
+    *I1=my_NAN;
     
 	if ((mx<1)||(my<1)) return(printf("[compute_directed_information_Gaussian] : mx and my have to be equal or larger than 1.\n"));	
 	if (N<1)            return(printf("[compute_directed_information_Gaussian] : N has to be equal or larger than 1.\n"));	
@@ -454,7 +443,7 @@ int compute_directed_information_Gaussian(double *x, double *y, int npts, int mx
             
             if (n==1)                   // first term of the sum is regular MI (DI = MI if N==1)
             {   tmp1 = compute_mutual_information_direct_Gaussian(x_new, sp.N_eff, my*n, mx*n);
-                di1[0] += tmp1;          var1[0] += tmp1*tmp1;      // 2023-02-24: replaced = by +=
+                di1[0] += tmp1;         var1[0] += tmp1*tmp1;      // 2023-02-24: replaced = by +=
             }
             else
             {   tmp1 = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, my, mx*n, my*(n-1));
@@ -479,6 +468,7 @@ int compute_directed_information_Gaussian(double *x, double *y, int npts, int mx
 
     free(x_new);    
     free(di1); free(var1); 
+    free_perm(perm_real);    free_perm(perm_pts);
 	return(nb_errors);
 } /* end of function "compute_directed_information_Gaussian" */
 

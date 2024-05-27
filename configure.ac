@@ -16,21 +16,41 @@ AC_CANONICAL_HOST
 # Detect the target system
 AC_MSG_CHECKING([the build platform])
 PLATFORM=unknown
+MEX_LDEXTENSION=unknown
+MEX_DIRNAME=unknown
+
 case "${host_os}" in
     linux*)
         PLATFORM=[LINUX]
         MAKELIB="ar ruv"
+        MEX_LDEXTENSION=[.mexa64]
+        MEX_DIRNAME=[glnxa86]
         AC_MSG_RESULT([LINUX])
         ;;
     cygwin*|mingw*)
         PLATFORM=[WIN64]
         MAKELIB="ar ruv"
+        MEX_LDEXTENSION=[.mexw64]
+        MEX_DIRNAME=[maci86]
         AC_MSG_RESULT([WIN64])
         ;;
     darwin*)
         PLATFORM=[MACOS]
-        MAKELIB="libtool -arch_only x86_64 -static -o"
         AC_MSG_RESULT([MACOS])
+        MAKELIB="libtool -arch_only $host_cpu -static -o"
+        case "${host_cpu}" in
+            x86_64*)
+                MEX_LDEXTENSION=[.mexmaci64]
+                MEX_DIRNAME=[maci64]
+                ;;
+            aarch64*)
+                MEX_LDEXTENSION=[.mexmaca64]
+                MEX_DIRNAME=[maca64]
+                ;;
+            *)
+                AC_MSG_ERROR(["MacOS CPU $host_cpu is not supported"])
+                ;;
+            esac
         ;;
     *)
         AC_MSG_ERROR(["OS $host_os is not supported"])
@@ -100,6 +120,8 @@ AC_SUBST(CXXFLAGS)
 AC_SUBST(my_CPPFLAGS)
 AC_SUBST(LIBS)
 AC_SUBST(libtool)
+AC_SUBST(MEX_LDEXTENSION)
+AC_SUBST(MEX_DIRNAME)
 AC_ARG_VAR(PYTHON, [python interpreter])  # set variable as precious
 AC_ARG_VAR(MATLAB, [matlab installation (e.g.: MATLAB=/Applications/MATLAB_R2023a.app/)]) # set variable as precious
 AC_SUBST(TAR)

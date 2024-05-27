@@ -55,6 +55,9 @@
 /* p	    indicates how many points to take in time (in the past) (embedding)         */
 /* stride   is the time lag between 2 consecutive points to be considered in time		*/
 /* k        nb of neighbors to be considered										    */
+/* method   0 for regular entropy                                                       */
+/*          1 for entropy of the increments                                             */
+/*          2 for entropy of the averaged increments                                    */
 /*																			            */
 /* data is ordered like this :													        */
 /* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)				*/
@@ -80,13 +83,11 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
 	double x_new_std=0.;    // 2022-06-06: for the std of the pre-processed signal
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
-    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
 //	double temps;
 	
-#ifdef NAN
-    *S = NAN;
-#endif
+    *S = my_NAN;
         
 	if ((m<1) || (p<1)) return(printf("[compute_entropy_ann_mask] : m and p must be at least 1 !\n"));
     if (k<1)            return(printf("[compute_entropy_ann_mask] : k must be at least 1 !\n"));
@@ -119,7 +120,7 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
 //if (j==0) printf("stride %d, Theiler %d, N_eff_max %d, time to analyze mask: %f", stride, sp.Theiler, sp.N_eff_max, temps);
         
         if (npts_good<sp.N_eff) 
-        {   printf("\tnpts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
+        {   printf("[compute_entropy_ann_mask] : npts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
             return(-1);
         }
 //temps=0; tic();       
@@ -206,12 +207,11 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
     double x_new_std=0.;    // 2022-06-08: for the std of the pre-processed signal
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
-    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
- 
-#ifdef NAN
-    *S = NAN;
-#endif
+
+    *S = my_NAN;
+
     if ((m<1) || (p<1))     return(printf("[compute_Renyi_ann_mask] : m and p must be at least 1 !\n"));
     if (k<1)                return(printf("[compute_Renyi_ann_mask] : k must be at least 1 !\n"));
     if (stride<1)           return(printf("[compute_Renyi_ann_mask] : stride must be at least 1 !\n"));
@@ -324,9 +324,7 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
     int  my_nb_errors=0; // 2020-02-26: we need local counting, because we invoke here several "direct" functions
     int  my_npts_eff =0; // 2020-02-28: we need local counting, because we invoke here several "direct" functions
     
-#ifdef NAN // default returned value
-    *S = NAN;
-#endif
+    *S = my_NAN;    // default returned value
     
     if ((method!=ENTROPY_RATE_FRACTION) && (method!=ENTROPY_RATE_DIFFERENCE) && (method!=ENTROPY_RATE_MI))
                         return(printf("[compute_entropy_rate_ann] : invalid method (should be 0,1 or 2)!\n"));
@@ -417,6 +415,7 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
 /*              after half a day of intense fight, this has been tested OK              */
 /* 2020-02-24: checkedd that the embedding is causal                                    */
 /* 2021-12-15: multithreading enabled                                                   */
+/* 2023-12-01: bug correction (wrong pointer as parameter of "Theiler_embed_mask")      */
 /****************************************************************************************/
 int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
@@ -428,13 +427,11 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
     int     N_real_max=0, npts_good;	
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
-    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
 	
     // default value (in case of return on error):	
-#ifdef NAN
-    *I1=NAN; *I2=NAN;
-#endif
+    *I1=my_NAN; *I2=my_NAN;
 
 	if ((mx<1) || (my<1)) return(printf("[compute_mutual_information_ann_mask] : mx and my must be at least 1 !\n"));
 	if ((px<1) || (py<1)) return(printf("[compute_mutual_information_ann_mask] : px and py must be at least 1 !\n"));
@@ -452,7 +449,7 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
 	{   
 	    npts_good = analyze_mask_for_sampling(mask+j, npts-j, pp, stride, 0, sp.Theiler, 1, &ind_epoch); 
         if (npts_good<sp.N_eff) 
-        {   printf("\tnpts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
+        {   printf("[compute_mutual_information_ann_mask] : npts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
             return(-1);
         }      
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
@@ -461,8 +458,8 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
         
         // note: in the calls below, the shift must not include (p-1)*stride, because it is already
         // accounted for in the indices in 'ind_shuffled'
-        Theiler_embed_mask(x+j, npts, mx, px, stride, perm_pts->data, x_new,                sp.N_eff);
-        Theiler_embed_mask(y+j, npts, my, py, stride, perm_pts->data, x_new+mx*px*sp.N_eff, sp.N_eff);
+        Theiler_embed_mask(x+j, npts, mx, px, stride, ind_shuffled, x_new,                sp.N_eff);
+        Theiler_embed_mask(y+j, npts, my, py, stride, ind_shuffled, x_new+mx*px*sp.N_eff, sp.N_eff);
         
         if (USE_PTHREAD>0)  // if we want multithreading
             nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, 
@@ -525,6 +522,7 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
  * 2013-06-20 : working version, with improved tests of sanity (on the nb of available points)
  * 2021-12-15 : pthreads
  * 2023-02-23 : now TE(X->Y) (1st -> 2nd argument) instead of the opposite
+ * 2023-12-01 : bug correction (same as in MI)
  *************************************************************************************/
 int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, int lag, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2)
@@ -536,13 +534,11 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
 	double  te1=0.0, te2=0.0, avg1=0.0, avg2=0.0, var1=0.0, var2=0.0;
     int     *ind_epoch;
     size_t  *ind_shuffled=NULL;
-    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
 
     // default value (in case of return on error):
-#ifdef NAN
-    *T1=NAN; *T2=NAN;
-#endif
+    *T1=my_NAN; *T2=my_NAN;
     
 	if (lag<1)            return(printf("[compute_transfer_entropy_ann_mask] : lag has to be equal or larger than 1.\n"));
 	if (stride<1)         return(printf("[compute_transfer_entropy_ann_mask] : stride must be at least 1 !\n"));
@@ -570,9 +566,9 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
         
         // note: in the calls below, the shift must not include (p-1)*stride, because it is already
         // accounted for in the indices in 'ind_shuffled'
-        Theiler_embed_mask(y+j+lag, npts, my,  1, stride, perm_pts->data, x_new,                    sp.N_eff);
-        Theiler_embed_mask(y+j,     npts, my, py, stride, perm_pts->data, x_new+my*sp.N_eff,        sp.N_eff);
-        Theiler_embed_mask(x+j,     npts, mx, px, stride, perm_pts->data, x_new+my*(py+1)*sp.N_eff, sp.N_eff);
+        Theiler_embed_mask(y+j+lag, npts, my,  1, stride, ind_shuffled, x_new,                    sp.N_eff);
+        Theiler_embed_mask(y+j,     npts, my, py, stride, ind_shuffled, x_new+my*sp.N_eff,        sp.N_eff);
+        Theiler_embed_mask(x+j,     npts, mx, px, stride, ind_shuffled, x_new+my*(py+1)*sp.N_eff, sp.N_eff);
        
 /*        for (i=0; i<nx_new; i++)        // loop on time over acceptable points for the current window
         {   for (d=0; d<mx; d++)        // loop over dimensions in x (future point)
@@ -641,6 +637,7 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
  * 2013-07-19 : fork from function "compute_transfer_entropy_nd_ann_mask"
  *              untested
  * 2023-02-23 : now PTE(X->Y) (1st -> 2nd argument) instead of the opposite
+ * 2023-12-01 : bug correction (same as in MI)
  *************************************************************************************/
 int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int npts, int *dim, int stride, int lag, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2)
@@ -651,13 +648,11 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
     int     N_real_max=0, npts_good;	
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
-    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
 	    
     // default value (in case of return on error):
-#ifdef NAN
-    *T1=NAN; *T2=NAN;
-#endif
+    *T1=my_NAN; *T2=my_NAN;
     
 	if (lag<1)      return(printf("[compute_partial_TE_ann_mask] : lag has to be equal or larger than 1.\n"));
 	if (stride<1)   return(printf("[compute_partial_TE_ann_mask] : stride must be at least 1 !\n"));
@@ -691,27 +686,11 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
 
         // note: in the calls below, the shift must not include (p-1)*stride, because it is already
         // accounted for in the indices in 'ind_shuffled'
-        Theiler_embed_mask(y+j+lag, npts, my,  1, stride, perm_pts->data, x_new,                            sp.N_eff);
-        Theiler_embed_mask(y+j,     npts, my, py, stride, perm_pts->data, x_new+my*sp.N_eff,                sp.N_eff);
-        Theiler_embed_mask(z+j,     npts, mz, pz, stride, perm_pts->data, x_new+my*(py+1)*sp.N_eff,         sp.N_eff);
-        Theiler_embed_mask(x+j,     npts, mx, px, stride, perm_pts->data, x_new+(my*(py+1)+mz*pz)*sp.N_eff, sp.N_eff);
-/*
-        x_new  = (double*)calloc(n*nx_new, sizeof(double));
-        for (i=0; i<nx_new; i++)        // loop on time over acceptable points for the current window
-        {   for (d=0; d<mx; d++)        // loop over dimensions in x (future point)
-                x_new[i +                      d*nx_new] = x[ind_epoch[i] + d*npts + shift + lag ];
-            for (d=0; d<mx; d++)        // loop over existing dimensions in x
-            for (l=0; l<px; l++)        // loop over embedding in x
-                x_new[i +        (mx + d + l*mx)*nx_new] = x[ind_epoch[i] + d*npts + shift - stride*l];
-            for (d=0; d<mz; d++)        // loop over existing dimensions in z
-            for (l=0; l<pz; l++)        // loop over embedding in z
-                x_new[i + (mx*(px+1) + d + l*mz)*nx_new] = z[ind_epoch[i] + d*npts + shift - stride*l];
-            for (d=0; d<my; d++)        // loop over dimensions in y
-            for (l=0; l<py; l++)        // loop over embedding  in y
-                x_new[i + (mx*(px+1) + mz*pz
-                                     + d + l*my)*nx_new] = y[ind_epoch[i] + d*npts + shift - stride*l];
-        }
-*/
+        Theiler_embed_mask(y+j+lag, npts, my,  1, stride, ind_shuffled, x_new,                            sp.N_eff);
+        Theiler_embed_mask(y+j,     npts, my, py, stride, ind_shuffled, x_new+my*sp.N_eff,                sp.N_eff);
+        Theiler_embed_mask(z+j,     npts, mz, pz, stride, ind_shuffled, x_new+my*(py+1)*sp.N_eff,         sp.N_eff);
+        Theiler_embed_mask(x+j,     npts, mx, px, stride, ind_shuffled, x_new+(my*(py+1)+mz*pz)*sp.N_eff, sp.N_eff);
+
         if (USE_PTHREAD>0)  // if we want multithreading
             nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, my, mx*px, my*py+mz*pz, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
         else                 // single threaded algorithms:
@@ -768,8 +747,9 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
  *
  * This is just a wrapper to the function "compute_partial_MI_direct_ann"
  *
- * 2013-06-18 : fork from compute_partial_MI_nd_ann 
+ * 2013-06-18: fork from compute_partial_MI_nd_ann 
  *              and getting inspiration from compute_mutual_information_nd_ann_mask
+ * 2023-12-01: bug correction (same as in MI)
  *************************************************************************************/
 int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int npts, int *dim, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
@@ -780,12 +760,10 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
     int     N_real_max=0, npts_good;	
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
-    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
-	
-#ifdef NAN
-    *I1=NAN; *I2=NAN;
-#endif
+
+    *I1=my_NAN; *I2=my_NAN;
     
 	if (stride<1)   return(printf("[compute_partial_MI_ann_mask] : stride has to be equal or larger than 1.\n"));
 	if ((px<1) || (py<1) || (pz<1))
@@ -818,9 +796,9 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
 
         // note: in the calls below, the shift must not include (p-1)*stride, because it is already
         // accounted for in the indices in 'ind_shuffled'
-        Theiler_embed_mask(x+j, npts, mx, px, stride, perm_pts->data, x_new,                        sp.N_eff);
-        Theiler_embed_mask(z+j, npts, mz, pz, stride, perm_pts->data, x_new+(mx*px      )*sp.N_eff, sp.N_eff);
-        Theiler_embed_mask(y+j, npts, my, py, stride, perm_pts->data, x_new+(mx*px+mz*pz)*sp.N_eff, sp.N_eff);
+        Theiler_embed_mask(x+j, npts, mx, px, stride, ind_shuffled, x_new,                        sp.N_eff);
+        Theiler_embed_mask(z+j, npts, mz, pz, stride, ind_shuffled, x_new+(mx*px      )*sp.N_eff, sp.N_eff);
+        Theiler_embed_mask(y+j, npts, my, py, stride, ind_shuffled, x_new+(mx*px+mz*pz)*sp.N_eff, sp.N_eff);
 /*
     
     //        n_sets_total += nx_new;
@@ -904,12 +882,10 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
     int     N_real_max=0, npts_good;	
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
-    samp_param  sp = { .Theiler=Theiler, .N_eff=N_eff, .N_real=N_realizations};
+    samp_param  sp = { .Theiler=Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_real, *perm_pts;
 
-#ifdef NAN
-    *I1=NAN; *I2=NAN;
-#endif
+    *I1=my_NAN; *I2=my_NAN;
 
 	if ((mx<1)||(my<1)) return(printf("[compute_directed_information_ann_mask] : nx and ny have to be equal or larger than 1.\n"));	
 	if (N<1)            return(printf("[compute_directed_information_ann_mask] : N has to be equal or larger than 1.\n"));
@@ -940,8 +916,8 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
         for (n=1; n<=N; n++)            // loop on time-embedding, for a fixed realization since 2022-06-10
         {   // note: in the calls below, the shift must not include (p-1)*stride, because it is already
             // accounted for in the indices in 'ind_shuffled'
-            Theiler_embed_mask(y+perm_real->data[j], npts, my, n, stride, perm_pts->data, x_new,               sp.N_eff);
-            Theiler_embed_mask(x+perm_real->data[j], npts, mx, n, stride, perm_pts->data, x_new+my*n*sp.N_eff, sp.N_eff);
+            Theiler_embed_mask(y+perm_real->data[j], npts, my, n, stride, ind_shuffled, x_new,               sp.N_eff);
+            Theiler_embed_mask(x+perm_real->data[j], npts, mx, n, stride, ind_shuffled, x_new+my*n*sp.N_eff, sp.N_eff);
 
             if (n==1) // first term of the sum is regular MI (DI = MI if N==1): 
             {   if (USE_PTHREAD>0) nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, 

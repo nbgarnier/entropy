@@ -6,7 +6,7 @@ requires = ["setuptools", "wheel", "Cython", "numpy"]  # PEP 508 specifications.
 
 [project]
 name = "entropy"
-version = "2023.10.09" 
+version = "2023.12.19" 
 description = "Information Theory tools and entropies for multi-scale analysis of continuous signals"
 # readme = "README.rst"
 authors = [{name = "Nicolas B. Garnier", email = "nicolas.garnier@ens-lyon.fr"}]

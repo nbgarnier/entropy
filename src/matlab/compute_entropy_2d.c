@@ -12,7 +12,7 @@ usage : S = compute_entropy_2d(x, [k, [m, stride, [mask]]]) (see help)
 #include "matrix.h"
 
 // #include "math_tools.h"		// for the function "check_continuity"
-#include "entropy_ann.h"
+#include "entropy_ann_2d.h"
 #include "library_commons.h"    // for global variables
 #include "samplings.h"
 

@@ -8,7 +8,10 @@ from entropy.entropy import get_last_sampling
 # 2023-10-26: now also insures that data is C-contiguous
 def reorder(x):
     """
-    Function to make any ndarray compatible with any function of the code for temporal-like signals
+    makes any nd-array compatible with any function of the code for temporal-like signals
+    
+    :param x: any nd-array
+    :returns: a well aligned and ordered nd-array containing the same data as input x
     """
     if (x.ndim==1):    # ndarray of dim==1
         x=x.reshape((1,x.size))
@@ -18,14 +21,14 @@ def reorder(x):
     else:
         print("please use reorder_2d for multivariate images")
     if x.flags['C_CONTIGUOUS']: return x
-    else:                      return x.copy()
+    else:                       return x.copy()
     
 
 # this function is for (possibly multivariate) images
 # 2023-10-26: now also insures that data is C-contiguous
-def reorder_2(x, nx=-1, ny=-1, d=-1):
+def reorder_2d(x, nx=-1, ny=-1, d=-1):
     """
-    Function to make any ndarray compatible with any function of the 2d code (images)
+    makes any nd-array compatible with any function of the 2d code (images)
     """
     if (x.ndim==1):    # ndarray of dim==1
         if ((nx>0) and (ny>0)):
@@ -44,10 +47,16 @@ def reorder_2(x, nx=-1, ny=-1, d=-1):
 ## 2020-02-23: this embedding is causal, checked OK
 def embed(x, m=1, stride=1, i_window=0):
     """
-    Function to time-embed a vector x (possibly multi-dimensional)
-    m        : embedding dimension (default=1)
-    stride   : distance between successive points (default=1)
-    i_window : returns the (i_window)th set (0<=i_window<stride)
+    (time-)embeds an nd-array x (possibly multi-dimensional)
+    
+    note: this function is only here for test purposes; it is absolutely not optimized in any way.
+    
+    :param x: signal (NumPy array with ndim=2, time along second dimension)
+    :param  m: embedding dimension (default=1)
+    :param stride: distance between successive points (default=1)
+    :param i_window: returns the (i_window)th set (0<=i_window<stride)
+    :returns: an nd-array with the requested (time-)embeded verion of input data x
+
     """
     
     x    = reorder(x)
@@ -76,16 +85,29 @@ def embed(x, m=1, stride=1, i_window=0):
 #%% 2023-10-26, added to the library after thoughful testing
 def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=0, **kwargs):
     """
-    Function to run iteratively an estiation over a range of time-scales/stride values
-    func             : (full) name of the function to run
-    tau_set          : 1-d numpy array containing the set of values for stride (time-scales)
-    verbosity_timing : 0 for no output, or 1,2 or more for more and more detailed output
-    get_samplings    : 1 for extra returned array, with samplings parameters used for each stride
-    all parameters to pass to the function are accepted, with the same syntax as usual (e.g.: x, y, k=5, ...)
+    runs iteratively an estimation over a range of time-scales/stride values
     
-    returned are 2 numpy arrays of last dimension tau_set.size: 
-    - the first one contains result(s) as a function of stride,
-    - the second one contains an estimator of the std, as a function of stride
+    :param func: (full) name of the function to run
+    :param tau_set: 1-d numpy array containing the set of values for stride (time-scales)
+    :param verbosity_timing: 0 for no output, or 1,2 or more for more and more detailed output
+    :param get_samplings: 1 for extra returned array, with samplings parameters used for each stride
+    :param any parameter to pass to the function: is accepted, with the same syntax as usual (e.g.: x, y, k=5, ...)
+    
+    :returns: 2 or 3 nd-arrays, each having their last dimension equal to tau_set.size (see below).
+    
+    example::
+        
+        # assuming you have data x and y available and ready for analysis
+        
+        tau_set = numpy.arange(20)      # a set of (time-)scales to examine
+        MI, MI_std = compute_over_scales(entropy.compute_MI, tau_set, x, y, N_eff=1973)
+        
+        plt.errorbar(tau_set, MI, yerr=MI_std)
+        
+    About returned values:
+      - the first returned array contains result(s) as a function of stride. If the function func returns more than one value, then this first nd-array will have more than one dimension.
+      - the second returned array contains an estimator of the std, as a function of stride.
+      - the third returned array (returned only if the parameter get_samplings is set to 1) contains all sampling parameters used for each estimation. This is usefull to track the value of N_eff or tau-Theiler used in the estimation as a function of the (time-)scale. See :any:`get_sampling` for a list of returned values, and how they are ordered.
     """
     test = func(*args, **kwargs, stride=2)
     if isinstance(test, list):      # multiple returned values
@@ -118,5 +140,5 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
     if (verbosity_timing==1): print()
     
     if get_samplings: return res, res_std, samplings
-    return res, res_std
+    else:             return res, res_std
 

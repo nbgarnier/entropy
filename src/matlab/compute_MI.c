@@ -16,7 +16,7 @@ usage : see .m in /bin/matlab/
 #include <string.h>
 #include "mex.h"
 
-#include "entropy_ann_N.h"      // for non-masking version
+#include "entropy_ann.h"        // for non-masking version
 #include "entropy_ann_mask.h"   // for masking version
 #include "entropy_ann_threads.h"
 #include "library_commons.h"    // for global variables
@@ -70,7 +70,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs,const mxArray  *prhs[])
     I2 = mxGetPr(plhs[1]);
 
     if (do_use_mask==1) compute_mutual_information_ann_mask(x,y, mask, npts, mx, my, px, py, stride, Theiler, N_eff, N_real, k, I1, I2);
-    else                compute_mutual_information_ann_N   (x,y,       npts, mx, my, px, py, stride, Theiler, N_eff, N_real, k, I1, I2);
+    else                compute_mutual_information_ann     (x,y,       npts, mx, my, px, py, stride, Theiler, N_eff, N_real, k, I1, I2);
     
     if (nlhs>2) 
     {   plhs[2] = mxCreateDoubleMatrix(1,1,mxREAL);

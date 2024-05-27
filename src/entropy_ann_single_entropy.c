@@ -77,21 +77,19 @@ double compute_entropy_nd_ann(double *x, int npts, int n, int k)
 #endif           
         }
         else /* estimateur de l'entropie : esperance de la grandeur suivante : */
-        {  h = h + log(epsilon);
+        {  h += log(epsilon);
 //           fprintf(fe,"%f\n",epsilon);
         }
 	}
     
-#ifdef NAN
-    if (nb_errors_local>=npts) h=NAN;   // big trouble
+    if (nb_errors_local>=npts) h=my_NAN;   // big trouble
     else // we can get an estimate
-#endif
-    {   h = h/(double)(npts-nb_errors_local); /* normalisation de l'esperance */
+    {   h /= (double)(npts-nb_errors_local); /* normalisation de l'esperance */
 	
         /* normalisation : */
-        h = h*(double)n;
-        h = h + gsl_sf_psi_int(npts-nb_errors_local) - gsl_sf_psi_int(k);
-        h = h + (double)n*log((double)2.0);	/* notre epsilon est le rayon, et pas le diametre de la boule */
+        h *= (double)n;
+        h += gsl_sf_psi_int(npts-nb_errors_local) - gsl_sf_psi_int(k);
+        h += (double)n*log((double)2.0);	/* notre epsilon est le rayon, et pas le diametre de la boule */
     }
 //    printf("nb errors local : %d, DBL_MIN = %g\n", nb_errors_local, DBL_MIN*1e13);
     

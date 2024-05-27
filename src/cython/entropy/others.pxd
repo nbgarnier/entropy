@@ -19,7 +19,10 @@ cdef extern from "entropy_ann_Renyi.h":
 
 
 cdef extern from "entropy_others.h":
-	double compute_ApEn_old        (double* data, int m, double r, int npts);
-	double compute_SampEn_old      (double* data, int m, double r, int npts);
-	int compute_complexity(double* data, int npts, int m, int stride, double r, int kernel_type, double *ApEn, double *SampEn);
-
+	double compute_ApEn_old     (double* data, int m, double r, int npts);
+	double compute_SampEn_old   (double* data, int m, double r, int npts);
+	int compute_complexity		(double* data, int npts, int m, int stride, double r, int kernel_type, double *ApEn, double *SampEn);
+	int compute_complexity_mask	(double* data, char *mask, int npts, int m, int stride, 
+                            		int tau_Theiler, int N_eff, int N_realizations, 
+                            		double r, int kernel_type, double *ApEn, double *SampEn);
+                            

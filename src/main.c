@@ -19,7 +19,6 @@
 #include "library_commons.h"
 #include "verbosity.h"
 #include "entropy_ann.h"
-#include "entropy_ann_N.h"
 #include "entropy_ann_combinations.h"
 #include "entropy_ann_threads.h"
 #include "samplings.h" 	// 2022-12-07 for tests
@@ -147,6 +146,7 @@ int main(void)
 //	char filename[128] = "donnees_erreur_emb7_lag6.dat"; //"donnees_erreur_emb2_lag1.dat";
 	int i, stride=777;
 	double *x=NULL, *y=NULL, *z=NULL, *xc=NULL, *yc=NULL, *zc=NULL;
+	int Theiler=4, N_eff=4000, N_real=10;
 	
 	lib_verbosity=1;
 	
@@ -206,7 +206,7 @@ int main(void)
 	
  	if (DO_ENTROPY)
     {   temps=0; tic();
-	    pb = compute_entropy_ann(x, nx, 1, px, stride, k, &H1);
+	    pb = compute_entropy_ann(x, nx, 1, px, stride, Theiler, N_eff, N_real, k, &H1);
 	    toc(&temps);
 	    if (pb!=0) printf("\tregular entropy returned %d\n", pb);
         printf("entropy = %f\t elapsed time = %.3f s (auto-adapted multi-threading)\n\n", H1, temps);
@@ -227,25 +227,13 @@ int main(void)
     	printf("code will use %d threads\n", get_cores_number(GET_CORES_SELECTED));
     	surrogate_improved(xc, nx, 1, 10);
 */
-    
-	    temps=0; tic();
-		printf("%d threads\n", get_cores_number(GET_CORES_SELECTED));
-	    pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, k, &H1, &H2);
-        toc(&temps);
-	    if (pb!=0) printf("\tregular MI (NBG) (legacy) returned %d\n", pb);
-	    printf("MI = %8.5f +/- %f / %8.5f +/- %f\t elapsed time = %.3f s (auto-adapted multi-threading) (NBG) (legacy)\n",
-	    			H1, last_std, H2, last_std2, temps);
-        if (compare(x, xc, nx)>0) printf("\t!!! signal x modified !!!\n");
-        if (compare(y, yc, nx)>0) printf("\t!!! signal y modified !!!\n");
-        printf_sampling_parameters(last_samp, "last_samp"); // for debug
-        printf("\n");
 
 // test new samplings, type 1
         samp_default.Theiler=-1; // impose legacy behavior
 //        printf_sampling_parameters(samp_default, "samp_default before _N type 1"); // for debug
 
         temps=0; tic();
-	    pb = compute_mutual_information_ann_N(x,y, nx, 1, 1, px, py, stride, 
+	    pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, 
 	                                samp_default.Theiler, samp_default.N_eff, samp_default.N_real, k, &H1, &H2);
         toc(&temps);
 //        printf_sampling_parameters(last_samp, "last_samp after _N type 1"); // for debug
@@ -263,7 +251,7 @@ int main(void)
 //        printf_sampling_parameters(samp_default, "samp_default before _N type 2"); // for debug
 
         temps=0; tic();
-	    pb = compute_mutual_information_ann_N(x,y, nx, 1, 1, px, py, stride, 
+	    pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, 
 	                                samp_default.Theiler, samp_default.N_eff, samp_default.N_real, k, &H1, &H2);
         toc(&temps);
 //        printf_sampling_parameters(last_samp, "last_samp after _N type 2"); // for debug
@@ -281,7 +269,7 @@ int main(void)
         samp_default.N_eff = 4096;
 //        printf_sampling_parameters(samp_default, "samp_default before _N type 4"); // for debug  
         temps=0; tic();
-	    pb = compute_mutual_information_ann_N(x,y, nx, 1, 1, px, py, stride, 
+	    pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, 
 	                                samp_default.Theiler, samp_default.N_eff, samp_default.N_real, k, &H1, &H2);
         toc(&temps);
 //        printf_sampling_parameters(last_samp, "last_samp after _N type 4"); // for debug
@@ -299,7 +287,7 @@ int main(void)
         samp_default.N_eff = 4096;
 //        printf_sampling_parameters(samp_default, "samp_default before _N type 4"); // for debug  
         temps=0; tic();
-	    pb = compute_mutual_information_ann_N(x,y, nx, 1, 1, px, py, stride, 
+	    pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, 
 	                                samp_default.Theiler, samp_default.N_eff, samp_default.N_real, k, &H1, &H2);
         toc(&temps);
 //        printf_sampling_parameters(last_samp, "last_samp after _N type 4"); // for debug
@@ -314,7 +302,7 @@ int main(void)
     	
         ANN_choose_algorithm((1|2)+COUNTING_ANN);
         temps=0; tic();
-	    pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, k, &H1, &H2);
+	    pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, Theiler, N_eff, N_real, k, &H1, &H2);
         toc(&temps);
 	    if (pb!=0) printf("\tregular MI (ANN) returned %d\n", pb);
 	    printf("MI = %8.5f +/- %f / %8.5f +/- %f\t elapsed time = %.3f s (auto-adapted multi-threading) (ANN)\n",
@@ -328,7 +316,7 @@ int main(void)
 	{   ANN_choose_algorithm((1|2));
     
 	    temps=0; tic();
-	    pb = compute_partial_MI_ann(x,y,z, nx, PMI_dims, stride, k, &H1, &H2);
+	    pb = compute_partial_MI_ann(x,y,z, nx, PMI_dims, stride, Theiler, N_eff, N_real, k, &H1, &H2);
         toc(&temps);
 	    if (pb!=0) printf("\tregular PMI returned %d\n", pb);
 	    printf("PMI = %f / %f\t elapsed time = %.3f s (auto-adapted multi-threading) (NBG)\n\n", H1, H2, temps);
@@ -338,7 +326,7 @@ int main(void)
     
         ANN_choose_algorithm((1|2)+COUNTING_ANN);
         temps=0; tic();
-	    pb = compute_partial_MI_ann(x,y,z, nx, PMI_dims, stride, k, &H1, &H2);
+	    pb = compute_partial_MI_ann(x,y,z, nx, PMI_dims, stride, Theiler, N_eff, N_real, k, &H1, &H2);
         toc(&temps);
 	    if (pb!=0) printf("\tregular PMI returned %d\n", pb);
 	    printf("PMI = %f / %f\t elapsed time = %.3f s (auto-adapted multi-threading) (ANN)\n\n", H1, H2, temps);
@@ -354,7 +342,7 @@ int main(void)
     {	for (i=0; i<=get_cores_number(GET_CORES_AVAILABLE)*0+4; i++)
 	    {   set_cores_number((int)exp2(i));
  	        temps=0; tic();
-	        pb = compute_entropy_ann(x, nx, 1, px, stride, k, &H2);
+	        pb = compute_entropy_ann(x, nx, 1, px, stride, Theiler, N_eff, N_real, k, &H2);
 	        toc(&temps);
 	        if (pb!=0) printf("\tthreaded entropy returned %d\n", pb);
 	        printf("entropy = %f\t elapsed time = %.3f s with %d core(s)\n", H2, temps, get_cores_number(GET_CORES_SELECTED));
@@ -367,7 +355,7 @@ int main(void)
 
             ANN_choose_algorithm((1|2));
             temps=0; tic();
-	        pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, k, &H1, &H2);
+	        pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, Theiler, N_eff, N_real, k, &H1, &H2);
             toc(&temps);
 	        if (pb!=0) printf("\tregular MI (NBG counting) returned %d\n", pb);
 	        printf("MI = %f / %f\t elapsed time = %.3f s with %2d core(s) (NBG counting)\n\n", H1, H2, temps, get_cores_number(GET_CORES_SELECTED));
@@ -380,7 +368,7 @@ int main(void)
 
             ANN_choose_algorithm((1|2)+COUNTING_ANN);
             temps=0; tic();
-	        pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, k, &H1, &H2);
+	        pb = compute_mutual_information_ann(x,y, nx, 1, 1, px, py, stride, Theiler, N_eff, N_real, k, &H1, &H2);
             toc(&temps);
 	        if (pb!=0) printf("\tregular MI (ANN counting) returned %d\n", pb);
 	        printf("MI = %f / %f\t elapsed time = %.3f s with %2d core(s) (ANN counting)\n\n", H1, H2, temps, get_cores_number(GET_CORES_SELECTED));
@@ -395,7 +383,7 @@ int main(void)
 	    
 	        ANN_choose_algorithm((1|2));
     	    temps=0; tic();
-	        pb = compute_partial_MI_ann(x,y,z, nx, PMI_dims, stride, k, &H1, &H2);
+	        pb = compute_partial_MI_ann(x,y,z, nx, PMI_dims, stride, Theiler, N_eff, N_real, k, &H1, &H2);
             toc(&temps);
 	        if (pb!=0) printf("\tthreated PMI returned %d\n", pb);
 	        printf("PMI = %f / %f\t elapsed time = %.3f s with %d core(s) (NBG counting)\n\n", H1, H2, temps, get_cores_number(GET_CORES_SELECTED));
@@ -409,7 +397,7 @@ int main(void)
 	    
 	        ANN_choose_algorithm((1|2)+COUNTING_ANN);
     	    temps=0; tic();
-	        pb = compute_partial_MI_ann(x,y,z, nx, PMI_dims, stride, k, &H1, &H2);
+	        pb = compute_partial_MI_ann(x,y,z, nx, PMI_dims, stride, Theiler, N_eff, N_real, k, &H1, &H2);
             toc(&temps);
 	        if (pb!=0) printf("\tthreated PMI returned %d\n", pb);
 	        printf("PMI = %f / %f\t elapsed time = %.3f s with %d core(s) (ANN counting)\n\n", H1, H2, temps, get_cores_number(GET_CORES_SELECTED));

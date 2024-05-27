@@ -15,7 +15,7 @@ void QuickSort_int   (int    *xd, int *yd, int l, int r);
 void QuickSort_float (float  *xd, int *yd, int l, int r); /* float version (not used, dangerous !!!)*/
 void QuickSort_double(double *xd, int *yd, int l, int r); /* double version */
 /* a function to "unsort" the data, and recover initial pointer	:	*/
-int unsort_double    (double *x, int *ind, int nx);
+int unsort_d_i       (double *x, int *ind, int nx);
 
 /* to check that a dataset x has no identical points : returns 0 if it is OK, or the nb of identical pairs */
 int check_continuity   (double *x, int nx);

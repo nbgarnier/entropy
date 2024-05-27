@@ -17,40 +17,32 @@
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_entropy_Renyi(double[:, ::1] x, double q, int n_embed=1, int stride=1, 
+def compute_entropy_Renyi(double[:, ::1] x, double q, int inc_type=0, int n_embed=1, int stride=1, 
                     int Theiler=0, int N_eff=0, N_real=0,
-                    int k=commons.k_default, int method=0, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
-     ''' H = compute_entropy_Renyi(x, q, n_embed=1, stride=1, method=0, ..., mask)
+                    int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
+     """
+     computes Renyi entropy of order q of a signal x (possibly multi-dimensional) or of its increments, using nearest neighbors search with ANN library.
+     (time-)embedding is performed on the fly.
     
-     computes Renyi entropy of order q of a vector x (possibly multi-dimensional)
-     using nearest neighbors search with ANN library.
-     embedding is performed on the fly.
-    
-     x        : signal (NumPy array with ndim=2, time as second dimension)
-     q        : order of the Renyi entropy
-     n_embed  : embedding dimension (default=1)
-     stride   : stride (Theiler correction will be used accordingly, even if n_embed=1) (default=1)
-     method   : which entropy to compute, possible values are:
-                0 for regular entropy
-                1 for entropy of the increments
-                2 for entropy of the averaged increments
-     Theiler  : Theiler correction (should be >= stride, but lower values are tolerated) 
-             !!! if Theiler<0, then automatic Theiler is applied as follows:
-               -1 for Theiler=tau, and uniform sampling (thus localized in the dataset) (legacy)
-               -2 for Theiler=max, and uniform sampling (thus covering the all dataset)
-               -3 for Theiler=tau, and random sampling 
-               -4 for Theiler=max, and random sampling (default)         
-     N_eff    : nb of points to consider in the statistics (default=4096)
-               -1 for legacy behavior (largest possible value)
-     N_real   : nb of realizations to consider (default=10)
-               -1 for legacy behavior (N_real=stride)
-     k        : number of neighbors to consider (typically 7 or 10) (default=5)
-     mask     : mask to use (NumPy array of dtype=char) (default=no mask)
-                if a mask is provided, only values given by the mask will be used
-     '''
+     :param x: signal (NumPy array with ndim=2, time as second dimension)
+     :param q: order of the Renyi entropy (should not be 1)
+     :param inc_type: which pre-processing to operate, possible values are:
+                0 for entropy of the signal x itself,
+                1 for entropy of the increments of the signal x,
+                2 for entropy of the averaged increments of x.   
+     :param n_embed: embedding dimension (default=1)
+     :param stride: stride for embedding (default=1) 
+     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)             
+     :returns: the entropy estimate for the increments 
      
-     if (q==1.0):
-         raise ValueError("you want Renyi entropy of order 1, please use Shannon entropy instead")
+     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+     """
+     
+     if (q==1.0): raise ValueError("you want Renyi entropy of order 1, please use Shannon entropy instead")
  
      cdef double S=0.
      cdef int npts=x.shape[1], m=x.shape[0]
@@ -61,12 +53,13 @@ def compute_entropy_Renyi(double[:, ::1] x, double q, int n_embed=1, int stride=
      if (Theiler==0): Theiler=commons.samp_default.Theiler
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
+     
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts):
             raise ValueError("mask does not have the same number of points in time as the data")
-        others.compute_Renyi_ann_mask(&x[0,0], &mask[0], npts, m, n_embed, stride, q, Theiler, N_eff, N_real, k, method, &S)
+        others.compute_Renyi_ann_mask(&x[0,0], &mask[0], npts, m, n_embed, stride, q, Theiler, N_eff, N_real, k, inc_type, &S)
      else:
-        others.compute_Renyi_ann     (&x[0,0],           npts, m, n_embed, stride, q, Theiler, N_eff, N_real, k, method, &S)
+        others.compute_Renyi_ann     (&x[0,0],           npts, m, n_embed, stride, q, Theiler, N_eff, N_real, k, inc_type, &S)
 
      return S
 
@@ -74,20 +67,21 @@ def compute_entropy_Renyi(double[:, ::1] x, double q, int n_embed=1, int stride=
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r=1.0):
-     ''' ApEn, SampEn = compute_complexities(x, [n_embed, stride, r])
+def compute_complexities_old(double[:, ::1] x, int n_embed=1, int stride=1, double r=0.2):
+     """
+     computes ApEn and SampEn complexities (kernel estimates).
+     OLD VERSION
      
-     computes complexities.
+     :param x: signal (NumPy array with ndim=2, time as second dimension)
+     :param n_embed: embedding dimension (default=1)
+     :param stride: stride for embedding (default=1) 
+     :param r: radius (default=0.2)
+     :returns: two nd-arrays of size (n_embed+1). The first array contains ApEn and the second SampEn, each estimate being a function of the embedding dimension, up to the provided value n_embed.
      
-     x        : signal (NumPy array with ndim=2, but unidimensional)
-     n_embed  : embedding dimension (default=1)
-     stride   : stride (no Theiler correction for ApEn or SampEn) (default=1)
-     r        : radius (default=0.2)
-#     mask     : mask to use (NumPy array of dtype=char) (default=no mask)
-#                if a mask is provided, only values given by the mask will be used
+     Note that enhanced samplings and/or masking are not available for this function. 
+     contact nicolas.b.garnier (@) ens-lyon .fr if interested.
+     """
      
-     two arrays of size (n_embed+1) are returned, the first for ApEn, the second for SampEn 
-     '''
      cdef double S=0
      cdef int npts=x.shape[1], m=x.shape[0], ratou
 #     cdef int npts_mask=mask.size
@@ -102,8 +96,52 @@ def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r
 #     print("ApEn   = %f" %S)
 #     S = others.compute_SampEn_old(&x[0,0], n_embed, r, npts)
 #     print("SampEn = %f" %S)
-     ratou = others.compute_complexity    (&x[0,0], npts, n_embed, stride, r, 0, &ApEn[0], &SampEn[0])
+     ratou = others.compute_complexity(&x[0,0], npts, n_embed, stride, r, 0, &ApEn[0], &SampEn[0])
 #     print("ApEn   = ", ApEn)
 #     print("SampEn = ", SampEn)
      return ApEn, SampEn
+
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r=0.2,
+                            int Theiler=commons.samp_default.Theiler, int N_eff=commons.samp_default.N_eff, N_real=commons.samp_default.N_real,
+                            char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
+    """
+    computes ApEn and SampEn complexities (kernel estimates).
+ 
+    :param x: signal (NumPy array with ndim=2, time as second dimension)
+    :param n_embed: embedding dimension (default=1)
+    :param stride: stride for embedding (default=1) 
+    :param r: radius (default=0.2)
+    :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+    :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+    :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+    :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+    :returns: two nd-arrays of size (n_embed+1). The first array contains ApEn and the second SampEn, each estimate being a function of the embedding dimension, up to the provided value n_embed.
+     
+    see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+    """
+     
+    cdef double S=0
+    cdef int npts=x.shape[1], m=x.shape[0]
+    cdef int npts_mask=mask.size
+     
+    if (n_embed<0): raise ValueError("n_embed should be positive (or 0)")
+    if (npts<m):    raise ValueError("please transpose x")
+    
+    cdef CNP.ndarray[dtype=double, ndim=1] ApEn   = PNP.zeros(n_embed+1, dtype='float')
+    cdef CNP.ndarray[dtype=double, ndim=1] SampEn = PNP.zeros(n_embed+1, dtype='float')
+     
+    if (npts_mask>1): # then this is a real mask, not just the default value
+        if (npts_mask!=npts): raise ValueError("mask does not have the same number of points in time as the data")
+    else:
+#       mask = PNP.ones(shape=(1,npts), dtype='i1') # arbitrary convention #1 (deprecated)
+        mask = PNP.ones(npts, dtype='i1')           # simpler arbitrary convention 
+
+    ratou = others.compute_complexity_mask(&x[0,0], &mask[0], npts, n_embed, stride, Theiler, N_eff, N_real, r, 0, &ApEn[0], &SampEn[0])
+#     print("ApEn   = ", ApEn)
+#     print("SampEn = ", SampEn)
+    return ApEn, SampEn
 

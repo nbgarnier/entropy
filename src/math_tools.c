@@ -16,7 +16,6 @@
 
 
 
-
 void QuickSort_int(int * xd, int * yd, int l, int r)
 {	int i, j, x, y;
 	int	k;
@@ -39,8 +38,6 @@ void QuickSort_int(int * xd, int * yd, int l, int r)
 	
 	return;
 } 
-
-
 
 /********************************************************/
 /* this function operates on 2 arrays,					*/
@@ -70,8 +67,6 @@ void QuickSort_float(float *xd, int *yd, int l, int r)
 	return;
 } 
 /* end of the "QuickSort_f_i" function */
-
-
 
 /********************************************************/
 /* this function operates on 2 arrays,					*/
@@ -104,12 +99,12 @@ void QuickSort_double(double *xd, int *yd, int l, int r)
 
 
 
-/*********************************************************************/
+/********************************************************************/
 /* a function to "unsort" the data, and recover initial pointer		*/
-/* Why ? after a Quicksort, pointers x and ind have been sorted !!!	*/
+/* Why ? after a Quicksort, pointers x and ind have been sorted !!! */
 /* so we may have to "clean" them up, by making back pairs (xi,yi)	*/
-/* if not, we have badly altered the dataset of z=(x,y)			*/
-/*********************************************************************/
+/* if not, we have badly altered the dataset of z=(x,y)			    */
+/********************************************************************/
 int unsort_d_i(double *x, int *ind, int nx)
 {	double  *x_tmp;
 	int		*ind_inv;
@@ -200,17 +195,14 @@ int check_continuity_nd(double *x, int nx, int nd)
 
 
 
-/*********************************************************************/
-/* maximum norm in 2d											*/
-/*********************************************************************/
+/********************************************************************/
+/* maximum norm in 2d												*/
+/********************************************************************/
 double mn(double x1, double y1, double x2, double y2)
-{	float norm, dx, dy;
-	
-	dx = fabs(x2-x1);
-	dy = fabs(y2-y1);
-	norm = (dx > dy) ? dx : dy;
-	
-	return(norm);
+{	double dx = fabs(x2-x1);
+	double dy = fabs(y2-y1);
+
+	return((dx > dy) ? dx : dy);
 }
 
 
@@ -263,31 +255,35 @@ double mn(double x1, double y1, double x2, double y2)
 double find_min_double(double *x, int nb_pts)
 {	register int i;
 	double min = x[0];
-//	int	   a   = 0;
 	
-	for (i=1; i<nb_pts; i++)
-	{	if (x[i]<=min)
-		{	min = x[i];
-//			a   = i;
-		}
-	} 
+	for (i=1; i<nb_pts; i++) if (x[i]<=min) min = x[i];
 	return(min);
 }
-
 
 double find_max_double(double *x, int nb_pts)
 {	register int i;
 	double max = x[0];
-//	int	   a   = 0;
 	
-	for (i=1; i<nb_pts; i++)
-	{	if (x[i]>=max)
-		{	max = x[i];
-//			a   = i;
-		}
-	} 	
+	for (i=1; i<nb_pts; i++) if (x[i]>=max) max = x[i];
 	return(max);
 }
+
+int find_min_int(int *x, int nx)		/* find the min value in an integer pointer */
+{	int mm=x[0];
+	register int i;
+	
+	for (i=1; i<nx; i++) if (x[i]<mm) mm=x[i];
+	return(mm);
+}
+
+int find_max_int(int *x, int nx)		/* find the max value in an integer pointer */
+{	int mm=x[0];
+	register int i;
+	
+	for (i=1; i<nx; i++) if (x[i]>mm) mm=x[i];
+	return(mm);
+}
+
 
 
 double find_mean(double *x, int nb_pts)
@@ -297,7 +293,6 @@ double find_mean(double *x, int nb_pts)
 	for (i=0; i<nb_pts; i++) m+=x[i];
    	return(m/(double)nb_pts);
 }
-
 
 double find_sigma(double *x, int nb_pts, double mean)
 {	register int i;
@@ -309,73 +304,14 @@ double find_sigma(double *x, int nb_pts, double mean)
 }
 
 
-/* find the max value in a float pointer */
-float my_max_float(float *x, int nx)
-{	float mm=x[0];
-	register int i;
-	
-	for (i=1; i<nx; i++)
-		if (x[i]>mm) mm=x[i];
-	
-	return(mm);
-}
-
-/* find the min value in a float pointer */
-float my_min_float(float *x, int nx)
-{	float mm=x[0];
-	register int i;
-	
-	for (i=1; i<nx; i++)
-		if (x[i]<mm) mm=x[i];
-	
-	return(mm);
-}
-
-
-/* find the max value in an integer pointer */
-int find_max_int(int *x, int nx)
-{	int mm=x[0];
-	register int i;
-	
-	for (i=1; i<nx; i++)
-		if (x[i]>mm) mm=x[i];
-	
-	return(mm);
-}
-
-/* find the min value in an integer pointer */
-int find_min_int(int *x, int nx)
-{	int mm=x[0];
-	register int i;
-	
-	for (i=1; i<nx; i++)
-		if (x[i]<mm) mm=x[i];
-	
-	return(mm);
-}
 
 /* computes a power of 2, returns 2^p */
 int pow2(int p)
-{	
-	if (p>0) return(2*pow2(p-1));
+{	if (p>0) return(2*pow2(p-1));
 	else     return(1);
 }
 
 
-
-
-/* conversion de int vers float d'un pointeur. */
-/* le nouveau pointeur est créé à la volée */
-float *int2float(int *x, int nx)
-{	float *y;
-	register int i;
- 
-	y=(float*)calloc(nx, sizeof(float));
-	for (i=0; i<nx; i++) y[i] = (float)x[i];
-
-	return(y);
-}
- 
 
 
 

@@ -127,11 +127,7 @@ double compute_entropy_nd_ann_threads(double *x, int npts, int n, int k, int nb_
         ret=pthread_create(&thread[core], NULL, threaded_Shannon_entropy_func, (void *)&my_arguments[core]);
         if (ret!=0)
         {   printf("[compute_entropy_nd_ann_threads] TROUBLE! couldn't create thread!\n");
-#ifdef NAN        
-            return(NAN);
-#else
-            return(0.0);
-#endif  
+            return(my_NAN); 
         }
     }
     for (core=0; core<nb_cores; core++)
@@ -145,10 +141,8 @@ double compute_entropy_nd_ann_threads(double *x, int npts, int n, int k, int nb_
     // sanity check:
     if (n_total!=npts) printf("[compute_entropy_nd_ann_threads] TROUBLE! npts altered!\n");
     
-#ifdef NAN
-    if (nb_errors_local>=npts) h=NAN;   // big trouble
+    if (nb_errors_local>=npts) h=my_NAN;   // big trouble
     else // we can get an estimate
-#endif
     {   h = h/(double)(npts-nb_errors_local); /* normalisation de l'esperance */
 	
         /* normalisation : */

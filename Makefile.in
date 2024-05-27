@@ -12,6 +12,7 @@
 # make zip           : to produce an archive with source files only #
 #####################################################################
 PLATFORM=@PLATFORM@
+BUILD_DIR=@abs_builddir@
 
 default:
 	@echo "Enter one of the following:"
@@ -24,6 +25,7 @@ default:
 	@echo ""
 	@echo "Note that the output/library will be stored under the bin/ directory,"
 	@echo "in the relevant subdirectory. Please go there to use/copy the code !"
+
 
 #####################################################################
 # main make entry point                                             #
@@ -63,7 +65,7 @@ zip : clean
 	$(TAR) -rvf code.tar src/ANN_wrapper.cpp src/ANN_wrapper_second_level.cpp \
 		src/math_tools.c src/nns_count.c src/library_commons.c \
 		src/mask.c src/samplings.c src/surrogates.c src/timings.c src/verbosity.c \
-		src/entropy_ann_N.c \
+		src/entropy_ann_legacy.c \
 		src/entropy_ann.c src/entropy_ann_threads.c src/entropy_ann_mask.c \
 		src/entropy_ann_single_entropy.c src/entropy_ann_threads_entropy.c \
 		src/entropy_ann_single_RE.c src/entropy_ann_threads_RE.c \
@@ -81,8 +83,6 @@ zip : clean
 		src/cython/entropy/computes.pyx src/cython/entropy/computes.pxd \
 		src/cython/entropy/others.pyx src/cython/entropy/others.pxd \
 		src/cython/entropy/tools.py src/cython/entropy/masks.py
-	$(TAR) -rvf code.tar src/cython/tools/__init__.py src/cython/tools/tools.py \
-		src/cython/tools/masks.py
 	$(TAR) -rvf code.tar src/matlab/matlab_commons.c \
 		src/matlab/compute_entropy.c src/matlab/compute_entropy_inc.c \
 		src/matlab/compute_entropy_rate.c src/matlab/compute_regularity_index.c \

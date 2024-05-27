@@ -29,8 +29,9 @@ CYTHON_DIR =$(BASE_DIR)/src/cython
 # inherit definitions from ./configure step
 #-----------------------------------------------------------------------------
 PLATFORM = MACOS
+BUILD_DIR = /Users/ngarnier/Documents/research/entropy/dev/src
 CC = gcc
-CXX = g++
+CXX = g++ -std=gnu++11
 CFLAGS = -O3 -fPIC -std=c99 -pthread
 CXXFLAGS = -O3 -fPIC -pthread
 CPPFLAGS = -pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code
@@ -52,8 +53,7 @@ OBJS = ANN_wrapper.o ANN_wrapper_second_level.o \
 	entropy_ann_threads.o entropy_ann_threads_entropy.o \
 	entropy_ann_threads_Renyi.o entropy_ann_threads_RE.o\
 	entropy_ann_threads_MI.o entropy_ann_threads_PMI.o \
-	entropy_ann_combinations.o entropy_others.o \
-	entropy_ann_2d.o entropy_ann_N.o \
+	entropy_ann_combinations.o entropy_others.o entropy_ann_2d.o \
 	entropy_Gaussian.o entropy_Gaussian_single.o entropy_Gaussian_combinations.o
 
 LDFLAGS += -L$(LIB_DIR)
@@ -115,16 +115,17 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 
 #####################################################################
 # Python and Cython stuff                                           #
-# Warning : the library will automatically be installed in the      #
-# user Python library directory (so no need to copy it manually)    #
+# Warning : the library will automatically be installed 			#
+# see https://docs.python.org/3/tutorial/venv.html					#
 #####################################################################
 python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 #	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
-	cd cython; CC=$(CC) pip install --user . -v -v -v; cd ..
+	cd cython; CC=$(CC) pip install .; cd ..
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
+	echo "building from" $(BUILD_DIR)
 	rm -f cython/entropy/entropy.c
-	cd cython; CC=$(CC) pip install --user -v -v -v .; cd ..
+	cd cython; CC=$(CC); BUILD_DIR=$(BUILD_DIR); pip install .; cd ..
 
 #####################################################################
 # Matlab stuff                                                      #
@@ -134,8 +135,7 @@ cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx 
 #####################################################################
 matlab : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 	cd matlab; $(MAKE); cd ..
-	
-		
+
 
 #####################################################################
 # rules to clean all intermediate and output files                  #

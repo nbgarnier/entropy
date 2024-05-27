@@ -5,6 +5,9 @@ import numpy
 # the following function returns True if there is a NaN somewhere in the data x,
 # and returns False otherwise.
 def no_NaN(x):
+    """
+    :meta private:
+    """
     return numpy.isfinite(x).all()
    
 
@@ -15,7 +18,7 @@ def no_NaN(x):
 # the mask is uni-dimensional (flatten), as required by Cython module (as of 2020-02-27)
 def mask_NaN(x):
     """
-    Returns the mask corresponding to NaN values in the data x
+    returns the mask corresponding to NaN values in the data x
     """
     mask_nan = numpy.isnan(x).astype('i1')
     return mask_clean(mask_nan)
@@ -29,7 +32,7 @@ def mask_NaN(x):
 # 2020-03-02: tests => this function is as fast (if not faster) than "entropy.mask_finite"
 def mask_finite(x):
     """
-    Returns the mask corresponding to finite, correct values in the data x
+    returns the mask corresponding to finite, correct values in the data x
     """
     mask_finite = numpy.isfinite(x).astype('i1')
     return mask_clean(mask_finite)
@@ -38,9 +41,10 @@ def mask_finite(x):
 
 def mask_clean(x):
     """
-    Makes any ndarray a compatible mask for the code
+    makes any nd-array a compatible mask for the code
+    
     at any given time t, if the mask has a True value in one dimension, 
-      then the resulting mask will also have a True value at that time t (AND logic)
+    then the resulting mask will also have a True value at that time t (AND logic)
     """
     y=x.astype('i1') 
     if (y.ndim>1): # ndarray with at least 2 dimensions: not good

@@ -29,6 +29,14 @@
 #define SINGLE_TH               1       // when not using pthread, use a single thread (for various mallocs) 
 
 
+/**********************************************************************************************************/
+#ifdef NAN
+    #define my_NAN NAN
+#else
+    #define my_NAN 0.0
+#endif
+
+
 /********************************************************************************************************************/
 // choice of the Kraskov et al. algorithm for MIs:
 extern int MI_algo;             // defined in entropy_ann.c with values from library_commons.h

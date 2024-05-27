@@ -10,6 +10,7 @@
 # make               : to produce executable from C                 #
 # make python        : to produce python library                    #
 # make matlab        : to produce matlab mex-files                  #
+# make uninstall     : to uninstall the python library				#
 # make clean         : to remove all non-source files and clean     #
 # make zip           : to produce an archive with source files only #
 #####################################################################
@@ -29,6 +30,7 @@ CYTHON_DIR =$(BASE_DIR)/src/cython
 # inherit definitions from ./configure step
 #-----------------------------------------------------------------------------
 PLATFORM = @PLATFORM@
+BUILD_DIR = @abs_builddir@
 CC = @CC@
 CXX = @CXX@
 CFLAGS = @CFLAGS@
@@ -52,8 +54,7 @@ OBJS = ANN_wrapper.o ANN_wrapper_second_level.o \
 	entropy_ann_threads.o entropy_ann_threads_entropy.o \
 	entropy_ann_threads_Renyi.o entropy_ann_threads_RE.o\
 	entropy_ann_threads_MI.o entropy_ann_threads_PMI.o \
-	entropy_ann_combinations.o entropy_others.o \
-	entropy_ann_2d.o entropy_ann_N.o \
+	entropy_ann_combinations.o entropy_others.o entropy_ann_2d.o \
 	entropy_Gaussian.o entropy_Gaussian_single.o entropy_Gaussian_combinations.o
 
 LDFLAGS += -L$(LIB_DIR)
@@ -120,11 +121,15 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 #####################################################################
 python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 #	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
-	cd cython; CC=$(CC) pip install -v .; cd ..
+	cd cython; CC=$(CC) pip install .; cd ..
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
+	echo "building from" $(BUILD_DIR)
 	rm -f cython/entropy/entropy.c
-	cd cython; CC=$(CC) pip install -v .; cd ..
+	cd cython; CC=$(CC); BUILD_DIR=$(BUILD_DIR); pip install .; cd ..
+	
+uninstall :
+	CC=$(CC) pip uninstall entropy
 
 #####################################################################
 # Matlab stuff                                                      #
@@ -134,8 +139,7 @@ cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx 
 #####################################################################
 matlab : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 	cd matlab; $(MAKE); cd ..
-	
-		
+
 
 #####################################################################
 # rules to clean all intermediate and output files                  #
