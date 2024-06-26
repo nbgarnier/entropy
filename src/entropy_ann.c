@@ -118,10 +118,13 @@ void debug_trace(char *text, double *x, int npts, int m, int p, int stride, int 
 /****************************************************************************************/
 int compute_entropy_ann(double *x, int npts, int m, int p, int tau, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *S)
-{	register int j, d; 
+{	register int j;
+#ifdef JAYNES
+    register int d; 
+    double x_new_std[n];    // stack allocation (should be faster)
+#endif
 	int    n=m*p; // total dimensionality
 	double *x_new, S_tmp, avg=0.0, var=0.0;
-	double x_new_std[n];    // stack allocation (should be faster)
 	int    N_real_max=0;
 	samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
