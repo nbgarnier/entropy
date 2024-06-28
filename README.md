@@ -17,5 +17,5 @@ import numpy
 import entropy.entropy as entropy
 
 x = numpy.random.randn(1,100000)
-H = entropy.compute.entropy(x)
+H = entropy.compute_entropy(x)
 </code></pre>
