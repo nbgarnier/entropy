@@ -14,7 +14,7 @@ an efficient C/C++ library integrated with Python and Matlab to estimate various
 - Matlab binaries and scripts are located in the subdirectory /bin/matlab ; you should add this path to your matlab environement in order to be able to run the functions provided by the library.
 
 # Python version
-- "make python" will both compile the library and install it in your python path, which depends on you current environment. You should select your environment first, then run ./configure and make python, in order to have the library and its functions available in your favored environment.
+- "make python" will both compile the library and install it in your python path, which depends on you current environment. You should select your environment first, then run "./configure" and "make python", in order to have the library and its functions available in your favored environment.
 - there are examples in the bin/python subdirectory: please look at them to learn how to import and use the library, which should be as easy as:
 <pre><code>
 import numpy
