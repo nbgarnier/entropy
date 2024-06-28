@@ -7,8 +7,10 @@ an efficient C/C++ library integrated with Python and Matlab to estimate various
   
 # Matlab version
 - The Matlab version is fully supported as of 2023/10/09.
-- "make matlab" should be working fine, as long as the configure step has correctly detected your matlab installation. To ensure the correct Matlab version is used (if you have several versions installed, or on MacOs if the auto-detection fails), re-run ./configure using the MATLAB option, e.g.,
-./configure MATLAB=/Applications/MATLAB_R2023a.app on MacOs.
+- "make matlab" should be working fine, as long as the configure step has correctly detected your matlab installation. To ensure the correct Matlab version is used (if you have several versions installed, or on MacOs if the auto-detection fails), re-run ./configure using the MATLAB option, e.g. on MacOs:
+<pre><code>
+./configure MATLAB=/Applications/MATLAB_R2023a.app
+</code></pre>
 - Matlab binaries and scripts are located in the subdirectory /bin/matlab ; you should add this path to your matlab environement in order to be able to run the functions provided by the library.
 
 # Python version
