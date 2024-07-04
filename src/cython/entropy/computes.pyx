@@ -23,15 +23,24 @@
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1, 
-                int Theiler=commons.samp_default.Theiler, int N_eff=commons.samp_default.N_eff, int N_real=commons.samp_default.N_real,
+                int Theiler=0, int N_eff=0, int N_real=0,
                 int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
     """     
-    computes the Shannon entropy of a signal (possibly multi-dimensional) using nearest neighbors search with ANN library.
-    (time-)embedding is performed on the fly.           
-      
+    computes the Shannon entropy :math:`H` of a signal :math:`x` (possibly multi-dimensional) using nearest neighbors search with ANN library.
+    
+    .. math::
+        H = - \\int p(x^{(m,\\tau)}) \\ln p(x^{(m,\\tau)}) {\\rm d}^m x^{(m,\\tau)}
+
+    (time-)embedding of x into x^(n_embed, stride) is performed on the fly:
+
+    .. math::
+        x \\rightarrow x^{(m,\\tau)}=(x_t, x_{t-\\tau}, ..., x_{t-(m-1)\\tau})
+    
+    where :math:`m` is given by the parameter n_embed and :math:`\\tau` is given by the parameter stride.   
+    
     :param x: signal (NumPy array with ndim=2, time along second dimension)
     :param n_embed: embedding dimension (default=1)
-    :param stride: stride for embedding (default=1) 
+    :param stride: stride (e.g., time scale \\tau) for embedding (default=1) 
     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
@@ -46,7 +55,10 @@ def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1,
     cdef int npts=x.shape[1], m=x.shape[0], ratou # 2018-04-13: carefull with ordering of dimensions!
     cdef int npts_mask=mask.size
      
-    if (npts<m): raise ValueError("please transpose x")
+    if (npts<m):     raise ValueError("please transpose x")
+    if (Theiler==0): Theiler=commons.samp_default.Theiler
+    if (N_eff==0):   N_eff =commons.samp_default.N_eff
+    if (N_real==0):  N_real=commons.samp_default.N_real
 
 #     if (Theiler==-1) and (N_eff==-1) and (N_real==-1) and (npts_mask==1): # legacy automatic behavior: use all available points
 #        print("legacy sampling")

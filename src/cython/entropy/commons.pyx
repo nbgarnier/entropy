@@ -63,8 +63,7 @@ def get_extra_info(int verbosity=0):
      returns extra information from the last computation
      
      :param verbosity: an integer. If ==0 (default), then nothing is printed on the screen, but values are returned (useful for use in scripts).
-     :returns: statistics on the processed input data (e.g.: increments of the input)
-      
+     :returns: statistics on the processed input data (e.g.: increments of the input):
        - the standard deviation of the last data used (i.e., the std of the input, not of the output!)
        - the standard deviation of this standard deviation
        
@@ -89,6 +88,7 @@ def choose_algorithm(int algo=1, int version=1):
      :param version: counting algorithm version, possible values are {1, 2} for (legacy, mixed ANN) (default=1)
      :returns: no output
      
+     about the "version" paramter:
        - 1 : legacy (NBG) : faster for small embedding dimensions (<=2)
        - 2 : mixed ANN    : faster for large embedding dimensions (>=4)
      """
@@ -146,14 +146,14 @@ def set_Theiler(int Theiler=4):
     :param Theiler: Theiler prescription. Possible values are {1, 2, 3, 4} or ("legacy", "smart", "random", "adapted") (default=4)
     :returns: no output values, but a message is printed in the console.
         
-    The parameter Theiler here is a positive integer which indicates the prescription to follow:
+    The parameter "Theiler" indicates the Theiler prescription to follow:
         
         * 1 or "legacy"  : tau_Theiler=tau(=stride) + uniform sampling (thus localized in the dataset) (legacy)
         * 2 or "smart"   : tau_Theiler=max>=tau(=stride) + uniform sampling (covering the full dataset)
         * 3 or "random"  : tau_Theiler=tau(=stride) + random sampling
         * 4 or "adapted" : tau_Theiler>(or <)tau(=stride) 
         
-    Depending on the Theiler prescription, the effective value of ''tau_Theiler'' can be smaller than tau(=stride) in order to satisfy the imposed N_eff; use this with caution, for example by tracking the effectively selected Theiler value with the function :any:`get_last_info`. 
+    Depending on the Theiler prescription, the effective value of ''tau_Theiler'' can be smaller than tau(=stride) in order to satisfy the imposed N_eff. Use this with caution, for example by tracking the effectively selected ''tau_Theiler'' value with the function :any:`get_last_info`. 
     """
     if   ( (Theiler==1) or (Theiler=='legacy')  ): 
         commons.samp_default.type   =1
@@ -197,7 +197,7 @@ def get_sampling(verbosity=1):
     prints the default values of sampling parameters used in all functions.
     
     :param verbosity: an integer in {0,1} (default=1)
-    :returns: 4 values described below. If verbosity>0, a human-readable message expliciting these 4 values is printed in the console.
+    :returns: 4 values described below. If verbosity>0, a human-readable message expliciting these 4 values is also printed in the console.
     
     Returned are the following 4 values, in the following order: 
       - the default type of Theiler prescription
