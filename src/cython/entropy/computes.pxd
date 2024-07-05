@@ -7,18 +7,6 @@
 # 2022-01-13: re-organisation
 
 
-cdef extern from "entropy_ann_legacy.h": 
-	int compute_entropy_ann_legacy(double *x, int nx, 
-				int n, int p, int stride, int k, double *S)
-	
-#	int compute_relative_entropy_ann_legacy(double *x, int nx, double *y, int ny, 
-#				int mx, int my, int px, int py, int stride, int k, double *H)
-#
-	int compute_mutual_information_ann_legacy(double *x, double *y, int nx, 
-				int mx, int my, int px, int py, int  stride, int k, double *I1, double *I2)
-#				
-#	int compute_partial_MI_ann_legacy(double *x, double *y, double *z, int nx, 
-#				int *dim, int stride, int k, double *I1, double *I2)
 
 cdef extern from "entropy_ann.h":
 	int compute_entropy_ann            (double *x, int nx, int m, int p, 

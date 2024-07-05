@@ -155,7 +155,7 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
     
         Theiler_embed(x+(tau*(p-1)+perm_real->data[j]), npts, m, p, tau, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 #ifdef DEBUG
-        debug_trace("[compute_entropy_ann_legacy] signal x_new", x_new, sp.N_eff, n, 1, tau, k);
+        debug_trace("[compute_entropy_ann] signal x_new", x_new, sp.N_eff, n, 1, tau, k);
 #endif
 
 #ifdef JAYNES // unfinished
