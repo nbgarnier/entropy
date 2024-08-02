@@ -17,13 +17,12 @@
 #include "math_tools.h"
 
 #ifndef M_PI
-// #define M_PI (3.14159265358979323846)
 #define M_PI (3.14159265358979323846264338327950288)
 #endif
 
-#define noDEBUG	    // for debug information, replace "noDEBUG" by "DEBUG"
+#define noDEBUG	                // for debug information, replace "noDEBUG" by "DEBUG"
 #define noDEBUG_EXPORT
-#define LOOK 17 	// for debug also (of which point(s) will we save the data ?)
+#define LOOK 17 	            // for debug also (of which point(s) will we save the data ?)
 
 
 
@@ -60,7 +59,6 @@ double compute_entropy_nd_Gaussian(double *x, int npts, int n)
         }
     }  
     det = determinant(M, n);
-//    printf("\tdet = %f\n", det);
 
     if (det>0.0) h = (double)n/2.*(1. + log(2.*M_PI)) + 1./2.*log(det);
     else printf("[compute_entropy_nd_Gaussian] negative det : %f\n", det);

@@ -86,10 +86,6 @@ int compute_entropy_increments_Gaussian(double *x, int npts, int m, int px, int 
     
     // additional checks and auto-adjustments of parameters:
     N_real_max = set_sampling_parameters(npts, p, stride, &sp, "compute_entropy_increments_Gaussian");
-/*    printf("stride  : %d\tmax : %d (Theiler) new function:\n", stride, tau_Theiler);
-    print_samp_param(sp); fflush(stdout);
-    printf("\n");
-*/
 
     if (N_real_max<1)   return(printf("[compute_entropy_increments_Gaussian] : aborting ! (Theiler %d, N_eff %d, N_real %d)\n", 
                                 sp.Theiler, sp.N_eff, sp.N_real));

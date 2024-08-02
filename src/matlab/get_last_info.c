@@ -26,7 +26,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 /*    algo_type=mexGetVariable("global", "MI_algo");
     if (algo_type==0) // couldn't get global value, using default
-            MI_algo = MI_ALGO_1 | COUNTING_NG | MASK_OPTIMIZED;
+            MI_algo = MI_ALGO_1 | COUNTING_NG;
     else    MI_algo = (int)mxGetScalar(algo_type);
 */
 

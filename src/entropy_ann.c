@@ -64,8 +64,8 @@
 const int k_default = 5;
 
 // choice of the Kraskov et al. algorithm for MIs:
-// default = algo 1 from Kraskov, and legacy counting, and optimized masks
-int MI_algo = MI_ALGO_1 | COUNTING_NG; // | MASK_OPTIMIZED;
+// default = algo 1 from Kraskov, and legacy counting
+int MI_algo = MI_ALGO_1 | COUNTING_NG;
 
 
 #ifdef DEBUG

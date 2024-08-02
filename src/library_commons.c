@@ -75,10 +75,7 @@ void ANN_choose_algorithm(int algo)
         if (algo&MI_ALGO_2)             MI_algo |= MI_ALGO_2;
         // check that at least one algo is selected:
         if (!(MI_algo&MI_ALGO_1) && !(MI_algo&MI_ALGO_2)) MI_algo |= MI_ALGO_1;
-        
-/*        if (algo&MASK_CONSERVATIVE)     MI_algo |= MASK_CONSERVATIVE;
-        else                            MI_algo |= MASK_OPTIMIZED;
-*/    
+  
         if (algo&COUNTING_ANN)          MI_algo |= COUNTING_ANN;
         else                            MI_algo |= COUNTING_NG;
         
@@ -98,8 +95,6 @@ void ANN_choose_algorithm(int algo)
     }
 //    printf("variable = %d\n", MI_algo);
 //    printf("variable & MI_ALGO_1 = %d\n", (MI_algo&MI_ALGO_1));
-//    printf("variable & MASK_CONSERVATIVE = %d\n", (MI_algo&MASK_CONSERVATIVE));
-//    printf("variable & MASK_OPTIMIZED = %d\n", (MI_algo&MASK_OPTIMIZED));
     return;
 }
 

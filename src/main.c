@@ -3,7 +3,7 @@
  *  
  *
  *  Created by Nicolas Garnier on 26/07/10.
- *  Copyright 2010 ENS-Lyon CNRS. All rights reserved.
+ *  Copyright 2010-2024 ENS-Lyon CNRS. All rights reserved.
  *
  */
 
@@ -25,8 +25,6 @@
 #include "surrogates.h" // 2023-03-04 for tests
 //#include "integration-cml.h"
 //#include "stat.h"
-//#include "test_functions.h"
-//#include "Vicente.h"
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 

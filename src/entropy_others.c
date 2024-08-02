@@ -418,7 +418,7 @@ double apply_kernel_Gaussian_nd(double* data, int npts, int m, double r)
 /*                                                                                    */
 /* 2014-03-30 : first version, no stride                                              */
 /* 2020-03-04 : new version, with stride, but no Theiler correction                   */
-/* 2023-12-06 : forked from "compute_complexity_mask"                                 */
+/* 2023-12-06 : forked from "compute_complexity"                                      */
 /* 2023-12-08 : tested OK (see python script)                                         */
 /**************************************************************************************/
 int compute_complexity_mask(double* data, char *mask, int npts, int m, int stride, 
@@ -437,7 +437,7 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
     *ApEn=my_NAN;  *SampEn=my_NAN;
 
     if (m<0)        return(print_error("compute_complexity_mask", "m cannot be negative"));
-    if (r==0)       return(print_error("compute_complexity_mask", "m cannot be negative"));
+    if (r==0)       return(print_error("compute_complexity_mask", "r must be strictly positive"));
     if (stride<1)   return(print_error("compute_complexity_mask", "stride must be at least 1"));
     
     N_real_max = set_sampling_parameters_mask(mask, npts, m+1, stride, 0, &sp, "compute_complexity_mask");
@@ -513,4 +513,4 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
   
     free(x_new);
     return(0); // no problem
-}
+} // end oof function "compute_complexity_mask"

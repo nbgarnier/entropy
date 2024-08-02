@@ -509,7 +509,7 @@ int check_sampling_parameters(int npts, int p, int stride, samp_param *sp, char 
             }
         }
     }
-/*  // comented out 2023-02-15
+/*  // commented out 2023-02-15
     if (lib_warning_level>=1)   // physical checks, treated as a warning
     {   if (sp->N_real_max<stride)
         {   if (lib_verbosity>2) 
@@ -716,10 +716,6 @@ int set_sampling_parameters_2d(int nx, int ny, int p, int stride_x, int stride_y
         sp_y->N_real = sp_x->N_real;
     }
 
-/*    printf("test in 2d function (start)\n");
-    print_samp_param(*sp_x);
-    print_samp_param(*sp_y);
-*/
     // tmp variables:   
     if (sp_x->Theiler<0)                         // automatic Theiler
     {   sp_y->Theiler   =  sp_x->Theiler;

@@ -26,7 +26,7 @@ def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1,
                 int Theiler=0, int N_eff=0, int N_real=0,
                 int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
     """     
-    computes the Shannon entropy :math:`H` of a signal :math:`x` (possibly multi-dimensional) using nearest neighbors search with ANN library.
+    compute Shannon entropy :math:`H` of a signal :math:`x` (possibly multi-dimensional) using nearest neighbors search with ANN library.
     
     .. math::
         H = - \\int p(x^{(m,\\tau)}) \\ln p(x^{(m,\\tau)}) {\\rm d}^m x^{(m,\\tau)}
@@ -35,6 +35,7 @@ def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1,
 
     .. math::
         x \\rightarrow x^{(m,\\tau)}=(x_t, x_{t-\\tau}, ..., x_{t-(m-1)\\tau})
+        :label: embedding
     
     where :math:`m` is given by the parameter n_embed and :math:`\\tau` is given by the parameter stride.   
     
@@ -59,11 +60,6 @@ def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1,
     if (Theiler==0): Theiler=commons.samp_default.Theiler
     if (N_eff==0):   N_eff =commons.samp_default.N_eff
     if (N_real==0):  N_real=commons.samp_default.N_real
-
-#     if (Theiler==-1) and (N_eff==-1) and (N_real==-1) and (npts_mask==1): # legacy automatic behavior: use all available points
-#        print("legacy sampling")
-#        ratou = computes.compute_entropy_ann-legacy(&x[0,0], npts, m, n_embed, stride, k, &S)
-#        return S
        
     if (k==-1):
 #        print("Gaussian entropy")
@@ -86,9 +82,17 @@ def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, i
                 int Theiler=0, int N_eff=0, int N_real=0,
                 int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
      """
-     computes entropy of the increments of a signal (possibly multi-dimensional) using nearest neighbors search with ANN library.
-     (time-)increments are computed on the fly.
+     compute entropy of the increments of a signal (possibly multi-dimensional) using nearest neighbors search with ANN library.
      
+      .. math::
+        H(\\delta_\\tau x) = - \\int p(\\delta_\\tau x) \\ln p(\\delta_\\tau x) {\\rm d} \\delta_\\tau x
+
+     (time-)increments :math:`\\delta_\\tau x` are computed from signal :math:`x` on the fly.
+     
+     .. math::
+        x \\rightarrow \\delta_\\tau x &= x_t - x_{t-\\tau} {\\rm for regular increments of order 1} \\
+        &= x_t - \\sum_{k=1}^{\\tau} x_{t-k} {\\rm for averaged increments of order 1}
+    
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param inc_type: increments type (regular or averaged):
                   1 for regular increments (of given order)
@@ -139,7 +143,7 @@ def compute_entropy_rate( double[:, ::1] x, int method=1, int m=1, int stride=1,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
      """
      computes entropy rate of order m of a vector (possibly multi-dimensional) using nearest neighbors search with ANN library.
-     (time-)embedding is performed on the fly.           
+     (time-)embedding (see equation :eq:`embedding`) is performed on the fly.           
 
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param method: an integer. in {0,1,2} to indicate which method to use (default=1) (see below)
