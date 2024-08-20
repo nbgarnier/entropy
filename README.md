@@ -23,3 +23,7 @@ import entropy.entropy as entropy
 x = numpy.random.randn(1,100000)
 H = entropy.compute_entropy(x)
 </code></pre>
+
+# notes
+
+this library provides continuous entropies estimates using nearest neighbors. It relieson the [ANN library](http://www.cs.umd.edu/~mount/ANN/) by David Mount and Sunil Arya
