@@ -77,10 +77,7 @@ double compute_Renyi_nd_ann(double *x, int nx, int n, double q, int k)
                     + n*log((double)2.0);           // XII.153
     }
     else    // big trouble
-    {   h = 0.0;
-#ifdef NAN
-        h = NAN;   
-#endif
+    {   h = my_NAN;   
     }
     
     
@@ -130,9 +127,8 @@ int compute_Renyi_ann(double *x, int npts, int m, int p, int tau, double q, int 
 	samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 	
-#ifdef NAN
-    *S = NAN;
-#endif
+    *S = my_NAN;
+
     if ((m<1) || (p<1))     return(printf("[compute_Renyi_ann] : m and p must be at least 1 !\n"));
     if (tau<1)              return(printf("[compute_Renyi_ann] : stride must be at least 1 !\n"));
     if ((k<1))              return(printf("[compute_Renyi_ann] : k must be at least 1 !\n"));

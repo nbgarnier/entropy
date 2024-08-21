@@ -425,9 +425,7 @@ int compute_partial_MI_direct_ann_threads(double *x, int npts, int mx, int my, i
 	double *y, *toto;   // will be allocated
 	double *y_tmp;      // pure pointer
     
-#ifdef NAN
-    *I1=NAN; *I2=NAN;
-#endif
+    *I1=my_NAN;     *I2=my_NAN;
 
 	n = mx+my+mz; /* total dimensionality of data */
 	if (n<3) return(printf("[compute_partial_MI_direct_ann_threads] : not enough dimensions in data (at least 3 required)\n"));
@@ -520,14 +518,14 @@ int compute_partial_MI_direct_ann_threads(double *x, int npts, int mx, int my, i
             else
             pthread_create(&thread_algo1[core], NULL, threaded_PMI_algo1_NBG_func, (void *)&my_arguments[core]);
         }
-        else h1=NAN;
+        else h1=my_NAN;
         if (MI_algo & MI_ALGO_2)
         {   if (MI_algo&COUNTING_ANN)
             pthread_create(&thread_algo2[core], NULL, threaded_PMI_algo2_ANN_func, (void *)&my_arguments[core]);
             else
             pthread_create(&thread_algo2[core], NULL, threaded_PMI_algo2_NBG_func, (void *)&my_arguments[core]);
         }
-        else h2=NAN;
+        else h2=my_NAN;
     }
 
     for (core=0; core<nb_cores; core++)

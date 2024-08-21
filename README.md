@@ -26,4 +26,4 @@ H = entropy.compute_entropy(x)
 
 # notes
 
-this library provides continuous entropies estimates using nearest neighbors. It relieson the [ANN library](http://www.cs.umd.edu/~mount/ANN/) by David Mount and Sunil Arya
+this library provides continuous entropies estimates using nearest neighbors. It relies on the [ANN library](http://www.cs.umd.edu/~mount/ANN/) by David Mount and Sunil Arya

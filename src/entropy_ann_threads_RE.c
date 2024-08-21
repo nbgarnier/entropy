@@ -155,10 +155,7 @@ double compute_relative_entropy_2xnd_ann_threads(double *x, int nx, double *y, i
         h = h + (double)n*log((double)2.0);     /* notre epsilon est le rayon, et pas le diametre de la boule */
     }
     else
-    {
-#ifdef NAN
-        h = NAN;   // big trouble
-#endif        
+    {   h = my_NAN;   // big trouble
     }
     
     /* free pointers : */

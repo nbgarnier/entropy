@@ -12,7 +12,7 @@
 /****************************************************************************************/
 #include <stddef.h>                 // for size_t
 #include <stdio.h>                  // for printf
-#include <math.h>                   // for trunc (to replace by %)
+#include <math.h>                   // for trunc (to replace %)
 
 #include <gsl/gsl_rng.h>            // for random permutations
 #include <gsl/gsl_randist.h>
@@ -56,19 +56,6 @@ static gsl_rng *realizations_rng;
 /*                                                                                      */
 /* 2021-12-17 : new function                                                            */
 /****************************************************************************************/
-void Theiler_embed_old(double *x, int npts, int mx, int px, int tau, int Theiler, double *x_new, int npts_new)
-{   register int i,                 // indices for time positions
-                 d, l;              // indices for dimensionality
-    
-    for (i=0; i<npts_new; i++)      // loop on time in 1 window
-        {   for (d=0; d<mx; d++)    // loop on existing dimensions in x
-            for (l=0; l<px; l++)    // loop on embedding
-                 x_new[i + npts_new*( d + l*mx )] = x[Theiler*i - l*tau + d*npts];
-        }
-
-    return;
-}
-
 void Theiler_embed(double *x, int npts, int mx, int px, int tau, int Theiler, size_t *ind, double *x_new, int npts_new)
 {   register int i,                 // indices for time positions
                  d, l;              // indices for dimensionality
@@ -127,41 +114,14 @@ void Theiler_embed_2d(double *x, int npts_x, int npts_y, int m, int p, int strid
 
 /****************************************************************************************/
 /* to compute causal increments of data according to Theiler prescription               */
+/* with indices given by ind (from, e.g., a random permutation)                         */
 /*                                                                                      */
 /* used by "compute_entropy_increments".                                                */
 /*         "compute_regularity_index_ann"                                               */
 /*          and so on...                                                                */
 /*                                                                                      */
 /* 2021-12-17 : new function                                                            */
-/****************************************************************************************/
-void increments_old(double *x, int npts, int mx, int px, int tau, int Theiler, double *x_new, int npts_new)
-{   register int i,                 // indices for time positions
-                 d, l;              // indices for dimensionality
-    register int *binome=get_binomial(px);
-       
-    if (binome==NULL) return;    
-    for (i=0; i<npts_new; i++)      // loop on time in 1 window
-    {   for (d=0; d<mx; d++)        // loop on existing dimensions in x
-        {   x_new[i + npts_new*d] = x[Theiler*i + d*npts];
-            for (l=1; l<px; l++)    // loop on embedding (here, increment order)
-                x_new[i + npts_new*d] += binome[l]*x[Theiler*i - l*tau + d*npts];
-        }
-    }
-
-    return;           
-}
-
-
-
-/****************************************************************************************/
-/* to compute causal increments of data according to Theiler prescription               */
-/* same as "increments", but with indices given by ind (from a random ppermutation)     */
-/*                                                                                      */
-/* used by "compute_entropy_increments".                                                */
-/*         "compute_regularity_index_ann"                                               */
-/*          and so on...                                                                */
-/*                                                                                      */
-/* 2022-05-10 : new function                                                            */
+/* 2022-05-10 : use of prescribed indices *ind                                          */
 /****************************************************************************************/
 void increments(double *x, int npts, int mx, int px, int tau, int Theiler, size_t *ind, double *x_new, int npts_new)
 {   register int i,                 // indices for time positions

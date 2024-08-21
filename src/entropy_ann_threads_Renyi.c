@@ -134,10 +134,8 @@ double compute_Renyi_nd_ann_threads(double *x, int npts, int n, double q, int k,
     // sanity check:
     if (n_total!=npts) printf("[compute_Renyi_nd_ann_threads] TROUBLE! npts altered!\n");
     
-#ifdef NAN
-    if (nb_errors_local>=npts) h=NAN;   // big trouble
+    if (nb_errors_local>=npts) h=my_NAN;   // big trouble
     else // we can get an estimate
-#endif
     {   h = h/(double)(npts-nb_errors_local); /* normalisation de l'esperance */
     
         /* ci-après, application de la formule (XII.153) : */

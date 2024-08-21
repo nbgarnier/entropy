@@ -125,9 +125,7 @@ int compute_entropy_ann_2d(double *x, int nx, int ny, int d, int p, int stride_x
     printf("THEILER_2D = %d\n", THEILER_2D);
 #endif
 
-#ifdef NAN // default returned value
-    *S = NAN;
-#endif
+    *S = my_NAN; // default returned value
     if (Theiler_x<-2) do_shuffle=1; // 2022-05-19: if Theiler==-3 or -4, then we shuffle N_eff pts amongst N_eff_max
         
 /*    printf("[compute_entropy_ann_2d] : before params checks in x (total N_eff_max=%d, total N_real_max=%d):\n", N_eff_tot, N_real_tot);

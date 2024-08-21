@@ -94,9 +94,7 @@ int compute_partial_MI_engine_ann(double *x, int nx, int m, int p, int q, int k,
 	double *yi; 
 	double *y_tmp;      // pure pointer
     
-#ifdef NAN
-    *I1=NAN; *I2=NAN;
-#endif
+    *I1=my_NAN; *I2=my_NAN;
 
 	n = m+p+q; /* total dimensionality of data */
 	if (n<3) return(printf("[compute_partial_MI_engine_ann] : not enough dimensions in data (at least 3 required)\n"));
@@ -192,7 +190,7 @@ int compute_partial_MI_engine_ann(double *x, int nx, int m, int p, int q, int k,
 		}
         else nb_errors_1++; // (epsilon<=0)
 	} // algo_1, end of loop on i
-    else h1=NAN;
+    else h1=my_NAN;
 
 
     if (MI_algo & MI_ALGO_2) for (i=0; i<nx; i++)
@@ -219,7 +217,7 @@ int compute_partial_MI_engine_ann(double *x, int nx, int m, int p, int q, int k,
         }
         else nb_errors_2++; // (epsilon<=0)
     } // algo_2, end of loop on i
-    else h2=NAN;
+    else h2=my_NAN;
     
     
     nb_errors_local = nb_errors_1 + nb_errors_2; // 2020-02-27: errors may be counted twice if both algos are used

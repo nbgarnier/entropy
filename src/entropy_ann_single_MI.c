@@ -309,7 +309,7 @@ int compute_mutual_information_direct_ann(double *x, int nx, int m, int p, int k
         fprintf(fic, "\n");
 #endif 
 	} // algo_1, end of loop on i
-    else h1=NAN;
+    else h1=my_NAN;
  
     if (MI_algo & MI_ALGO_2) for (i=0; i<nx; i++)
     {   for (d=0; d<n; d++) yi[d] = x[d*nx + i];    /* composantes zi de z */
@@ -358,7 +358,7 @@ int compute_mutual_information_direct_ann(double *x, int nx, int m, int p, int k
 #endif     
         
     } // algo_2, end of loop on i
-    else h2=NAN;
+    else h2=my_NAN;
 
 #ifdef DEBUG_EXPORT
     fclose(fic);

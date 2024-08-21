@@ -630,11 +630,9 @@ int compute_mutual_information_2xnd_ann_threads(double *x, int npts, int mx, int
 	double *y_tmp;
 	int     nb_points_check1=0, nb_points_check2=0;
 
-#ifdef NAN
-    *I1 = NAN;
-    *I2 = NAN;
-#endif
-	n = mx+my; /* total dimensionality of data */
+    *I1 = my_NAN;   *I2 = my_NAN;
+    
+    n = mx+my; /* total dimensionality of data */
 	if (n<2) return(print_error(fname, "not enough dimensions in data (at least 2 required)"));
 	
     toto      = (double*)calloc(npts, sizeof(double));  /* pure tmp variable  */
@@ -750,8 +748,8 @@ int compute_mutual_information_2xnd_ann_threads(double *x, int npts, int mx, int
         }          
     }
     
-    if (!(MI_algo & MI_ALGO_1)) h1=NAN;
-    if (!(MI_algo & MI_ALGO_2)) h2=NAN;
+    if (!(MI_algo & MI_ALGO_1)) h1=my_NAN;
+    if (!(MI_algo & MI_ALGO_2)) h2=my_NAN;
 
     if (lib_verbosity>1)
     {   if ( (MI_algo & MI_ALGO_1) && (nb_points_check1 != npts) )

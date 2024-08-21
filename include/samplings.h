@@ -43,10 +43,7 @@ extern samp_param_2d samp_2d;       // values computed and used in the last func
 
 /********************************************************************************************************************/
 // functions to perform sampling operations
-// - legacy:
-void Theiler_embed_old(double *x, int npts, int mx, int px, int tau, int Theiler, double *x_new, int npts_new);
-void increments_old   (double *x, int npts, int mx, int px, int tau, int Theiler, double *x_new, int npts_new);
-// - new (2022):
+// - 1-d:
 void Theiler_embed(double *x, int npts, int mx, int px, int tau, int Theiler, size_t *ind, double *x_new, int npts_new);
 void increments   (double *x, int npts, int mx, int px, int tau, int Theiler, size_t *ind, double *x_new, int npts_new);
 void incr_avg     (double *x, int npts, int mx, int px, int tau, int Theiler, size_t *ind, double *x_new, int npts_new);

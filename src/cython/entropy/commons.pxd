@@ -6,7 +6,7 @@
 # 2021-01-19: removed "bins" functions
 # 2021-12-19: forked out of entropy.pxd
 
-# on importe les definitions du C : 
+# import definitions from C : 
 cdef extern from "library_commons.h":
 	int		nb_errors, nb_errors_local, nb_errors_total
 	int		last_npts_eff, last_npts_eff_local

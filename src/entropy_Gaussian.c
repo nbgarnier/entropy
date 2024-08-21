@@ -86,9 +86,7 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
     debug_trace("[compute_entropy_Gaussian] signal x", x, npts, m, p, stride, k);
 #endif
 
-#ifdef NAN // default returned value
-    *S = NAN;
-#endif
+    *S=my_NAN; // default returned value
 
     if ((m<1) || (p<1))     return(printf("[compute_entropy_Gaussian] : m and p must be at least 1 !\n"));
     if ((tau<1))            return(printf("[compute_entropy_Gaussian] : tau must be at least 1 !\n"));
@@ -168,9 +166,7 @@ int compute_relative_entropy_Gaussian(double *x, int nx, double *y, int ny, int 
 	gsl_permutation *perm_real_x, *perm_real_y;
 	gsl_permutation *perm_pts_x,  *perm_pts_y;
 
-#ifdef NAN
-    *H=NAN;
-#endif
+    *H=my_NAN;
 
     if ((mx<1) || (my<1)) return(printf("[compute_relative_entropy_ann_N] : mx and my must be at least 1 !\n"));
     if ((px<1) || (py<1)) return(printf("[compute_relative_entropy_ann_N] : px and py must be at least 1 !\n"));
@@ -265,9 +261,7 @@ int compute_mutual_information_Gaussian(double *x, double *y, int nx, int mx, in
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 
-#ifdef NAN
-    *I1=NAN; 
-#endif
+    *I1=my_NAN; 
 
 #ifdef DEBUG
      debug_trace("[compute_mutual_information_Gaussian] signal x", x, nx, mx, px, stride, k);
@@ -358,9 +352,7 @@ int compute_partial_MI_Gaussian(double *x, double *y, double *z, int npts, int *
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 
-#ifdef NAN
-    *I1=NAN; 
-#endif
+    *I1=my_NAN; 
     
 	if ((px<1) || (py<1) || (pz<1)) return(printf("[compute_partial_MI_Gaussian] : embedding dimensions must be at least 1 !\n"));
     if ((mx<1) || (my<1) || (mz<1)) return(printf("[compute_partial_MI_Gaussian] : initial dimensions of data must be at least 1 !\n"));
