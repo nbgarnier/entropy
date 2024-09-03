@@ -36,6 +36,9 @@ struct sampling_parameters_extra_2d {
 };
 typedef struct sampling_parameters_extra_2d samp_param_2d;
 
+// for increments of any order:
+int *get_binomial(int order);
+
 // variables below are defined in "sampling.c":
 extern samp_param samp_default;     // for default values (used in Python)
 extern samp_param last_samp;        // values computed and used in the last function call
