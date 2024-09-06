@@ -94,6 +94,39 @@ void combine_masks(char *mask_1, char *mask_2, int npts, char *mask_out)
 
 
 /********************************************************************************/
+/* to "project" or "retain" points of a signal x according to a mask            */
+/*                                                                              */
+/* x    is the data (should be order as x_0(t=0), x_0(t=1), ..., x_(m-1)(npts-1)*/
+/* npts is the nb of points in time                                             */
+/* m    is the dimensionality                                                   */
+/* mask is the mask                                                             */
+/*                                                                              */
+/* y    is the output (of size (npts_new,m)   must be pre-allocated!            */
+/* npts_new is the returned value                                               */
+/*                                                                              */
+/* mask is the returned mask (of size npts): should be previously allocated !   */
+/*                                                                              */
+/* 2020-03-01 : first version, untested                                         */
+/********************************************************************************/
+int retain_from_mask(double *x, int npts, int m, char *mask, double *y)
+{   register int i,j,d;
+    int npts_new=0;
+
+    for (i=0; i<npts; i++) if (mask[i]>0) npts_new++;
+    
+    j=0;
+    for (i=0; i<npts; i++)
+    {   if (mask[i]>0)
+        {   for (d=0; d<m; d++) // other dimensions
+               y[j + d*npts_new] = x[i + d*npts];
+            j++;
+        }
+    }
+    
+    return(npts_new);
+}
+
+/********************************************************************************/
 /* search within a mask for sets of indices to work on                          */
 /*                                                                              */
 /* mask               contains the mask.  should be 1-dimensional!!!            */

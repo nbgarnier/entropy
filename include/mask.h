@@ -17,6 +17,9 @@ int finite_mask                     (double *x, int npts, int m, char *mask);
 // to combine two masks into a single one:
 void combine_masks                  (char *mask_1, char *mask_2, int npts, char *mask_out);
 
+// to project/retain points from x,  into y:
+int retain_from_mask(double *x, int npts, int m, char *mask, double *y);
+
 // new function, equivalent (again specialized in "epochs"):
 int analyze_mask_conservative       (char *mask, int npts, int p, int stride, int lag, int i_window, int **ind_epoch);
 // new function, that aggregate all possible points, in each window (so specialized in NaN treatment):

@@ -55,3 +55,18 @@ def mask_clean(x):
         y = y[0,:]
     return y.flatten()
 
+
+
+def retain_from_mask(x, mask):
+    """
+    returns a new nd-array from input nd-array x using input mask
+    """
+    y   = numpy.array(mask).astype('i1')
+    ind = numpy.array(numpy.where(y>0))
+#    print(ind.shape, ind.dtype)
+    out = numpy.array(x)[:,ind].copy()
+#    print(out.shape)
+    out = numpy.array(x)[:,ind[0]].copy()
+#    print(out.shape)
+    return out
+    
