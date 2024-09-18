@@ -109,7 +109,7 @@ int compute_entropy_increments_Gaussian(double *x, int npts, int m, int px, int 
         data_std     += x_new_std;
         data_std_std += x_new_std*x_new_std;
 
-        S_tmp = compute_entropy_nd_Gaussian        (x_new, sp.N_eff, n);
+        S_tmp = compute_entropy_nd_Gaussian(x_new, sp.N_eff, n);
         
         avg  += S_tmp;
         var  += S_tmp*S_tmp;

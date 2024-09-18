@@ -138,7 +138,7 @@ def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, i
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_entropy_rate( double[:, ::1] x, int method=1, int m=1, int stride=1,
+def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
             int Theiler=0, int N_eff=0, int N_real=0,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
      """
@@ -146,7 +146,7 @@ def compute_entropy_rate( double[:, ::1] x, int method=1, int m=1, int stride=1,
      (time-)embedding (see equation :eq:`embedding`) is performed on the fly.           
 
      :param x: signal (NumPy array with ndim=2, time along second dimension)
-     :param method: an integer. in {0,1,2} to indicate which method to use (default=1) (see below)
+     :param method: an integer. in {0,1,2} to indicate which method to use (default=2) (see below)
      :param m: embedding dimension (default=1)
      :param stride: stride for embedding (default=1) 
      :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
@@ -159,8 +159,8 @@ def compute_entropy_rate( double[:, ::1] x, int method=1, int m=1, int stride=1,
      
      The parameter method influences the computation as follows:       
        * 0 for H^(m)/m
-       * 1 for H^(m+1)-H^(m)       (default=1)
-       * 2 for H^(1)-MI(x,x^(m))
+       * 1 for H^(m+1)-H^(m)       
+       * 2 for H^(1)-MI(x,x^(m))    (default=2)
      
      see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
      """     

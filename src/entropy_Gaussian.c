@@ -107,7 +107,7 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
     
         Theiler_embed(x+(tau*(p-1)+perm_real->data[j]), npts, m, p, tau, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 
-        S_tmp = compute_entropy_nd_Gaussian(x_new, N_eff, n);
+        S_tmp = compute_entropy_nd_Gaussian(x_new, sp.N_eff, n);
             
         avg  += S_tmp;
         var  += S_tmp*S_tmp;

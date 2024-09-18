@@ -161,15 +161,17 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
 #ifdef JAYNES // unfinished
         // 2024-03-05: std in each dimension for Jaynes correction:
         for (d=0; d<n; d++)
-        {   x_new_std[d]  = gsl_stats_sd(x_new+d*N_eff, 1, sp.N_eff);
+        {   x_new_std[d]  = gsl_stats_sd(x_new+d*sp.N_eff, 1, sp.N_eff);
         }
         // 2024-03-05: compute Jaynes correction for all dimensions:
         // this may require the "real" std, ie, the one over all the signal, not just over the present realization
 #endif
 
-        if (USE_PTHREAD>0) S_tmp = compute_entropy_nd_ann_threads(x_new, N_eff, n, k, get_cores_number(GET_CORES_SELECTED));
-        else               S_tmp = compute_entropy_nd_ann        (x_new, N_eff, n, k);
-            
+        if (USE_PTHREAD>0) S_tmp = compute_entropy_nd_ann_threads(x_new, sp.N_eff, n, k, get_cores_number(GET_CORES_SELECTED));
+        else               S_tmp = compute_entropy_nd_ann        (x_new, sp.N_eff, n, k);
+#ifdef DEBUG
+        printf("[compute_entropy_ann] entropy computed OK: %f\n", S_tmp);
+#endif            
         avg  += S_tmp;
         var  += S_tmp*S_tmp;
         nb_errors += nb_errors_local; // each call to "compute_entropy_nd_ann" gives a new value of nb_errors_local
