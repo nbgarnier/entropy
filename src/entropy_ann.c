@@ -139,7 +139,7 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
     if ((k<1))              return(printf("[compute_entropy_ann] : k must be at least 1 !\n"));
 	
     // additional checks and auto-adjustments of parameters:
-    N_real_max = set_sampling_parameters(npts, p, tau, &sp, "compute_entropy_ann_N");
+    N_real_max = set_sampling_parameters(npts, p, tau, &sp, "compute_entropy_ann");
 
     if (N_real_max<1)       return(printf("[compute_entropy_ann] : aborting !\n"));
     if (sp.N_eff < 2*k)     return(printf("[compute_entropy_ann] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
