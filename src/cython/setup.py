@@ -80,7 +80,7 @@ if (platform.system()=='Linux'):
 # 2021-12-19: testing with several modules => useless for ELF libraries which do not share symbols
 # 2021-12-20: so only 1 module (named "entropy" below) is used
 entropy_module = Extension("entropy",
-				sources = ['entropy/entropy.pyx'],
+				sources = ['entropy/entropy.pyx'], #, 'entropy/tools.pyx'],
 #				include_path= ["entropy/"],
                 include_dirs = INC_DIR,
                 extra_compile_args = CFLAGS,
@@ -91,6 +91,15 @@ entropy_module = Extension("entropy",
 # 2023/11/21 For Sphinx doc: by setting this compiler directive, cython will embed signature information
 # in docstrings. Sphinx then knows how to extract and use those signatures:                
                 cython_directives = {"embedsignature": True},
+                )
+
+tools_module = Extension("tools",
+				sources = ['entropy/tools.pyx'],
+                include_dirs = INC_DIR,
+                libraries    = LIBS,
+                library_dirs = LIBS_DIR,
+                extra_link_args=LDFLAGS_PYTHON,
+                define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
                 )
 
 commons_module = Extension("commons",
@@ -130,19 +139,19 @@ others_module = Extension("others",
 #entropy_tools_module = Extension('tools')
           
 setup(name = 'entropy',
-      version = '4.0.1', 
-#      date ='2023-12-19',
+      version = '4.1.0', 
+#      date ='2024-09-25',
       description = "Information Theory tools and entropies for multi-scale analysis of continuous signals",
       author      = "Nicolas B. Garnier",
       author_email= "nicolas.garnier@ens-lyon.fr",
 #      zip_safe=False,  # 2022-11-25, to work with cimport for pxd files when using them from a dependent package
                         # 2023-02-14 : line above commented
 #	  cmdclass = {'build_ext': build_ext},
-	  ext_package='entropy',
+	  ext_package = 'entropy',
 #	  package_dir={'', 'entropy', 'tools'},
 #      py_modules  = ['tools.tools', 'tools.masks'],
-      py_modules  = ['entropy.tools', 'entropy.masks'],
-      ext_modules = cythonize([entropy_module], annotate=DO_ANNOTATE)#, compiler_directives={'embedsignature': True}), 
+      py_modules  = ['entropy.ptools', 'entropy.masks'], #['entropy.tools', 'entropy.masks'],
+      ext_modules = cythonize([entropy_module, tools_module], annotate=DO_ANNOTATE)#, compiler_directives={'embedsignature': True}), 
 #	  packages = ['entropy']
 	)
 

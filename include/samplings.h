@@ -69,7 +69,10 @@ void incr_avg_mask     (double *x, int npts, int mx, int px, int stride, size_t 
 gsl_permutation *create_unity_perm(size_t N);
 void shuffle_perm  (gsl_permutation *perm);
 void free_perm     (gsl_permutation *perm);
+// legacy embedding, used in the python module "tools"
+void time_embed(double *data, double *output, int nb_pts, int nb_pts_new, int nb_dim, int n_embed, int n_embed_max, int stride, int i_start, int n_window);
 // - usefull formulas:
+int Theiler_nb_pts_new         (int npts,        int stride, int n_embed_max);
 int compute_T_real                       (int p, int stride, int tau_Theiler, int N_eff);
 int compute_N_real_max         (int npts, int p, int stride, int tau_Theiler, int N_eff);
 // - dealing with sampling parameters:

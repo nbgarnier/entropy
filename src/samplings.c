@@ -377,6 +377,43 @@ void printf_sampling_parameters(samp_param sp, char *text)
 }
 
 
+
+
+/************************************************************************/
+/* time-embedding  (legacy version)                                     */
+/*                                                                      */
+/* data       : initial data of size (nb_pts, nb_dim)                   */
+/* output     : time-embedded datamust be allocated!                    */
+/* nb_pts     : nb of points in time in the initial data                */
+/* nb_pts_new : nb of points in time in the time-embedded data          */
+/*                should be computed outside                            */
+/* nb_dim     : nb of dimension of multivariate initial data            */
+/* n_embed    : embedding dimension to use                              */
+/* n_embed_max: max embedding dimension (for causal time reference)     */
+/* stride     : time scale for embedding                                */
+/* i_start    : (=i_window) select starting point:  0<=i_start<stride   */
+/* n_window   : shift between realizations (if Theiler, then =stride)   */
+/*                                                                      */
+/* 2021-02-01 : new function, fun but useless...                        */
+/* 2021-02-02 : tested OK, and much faster than pure python!            */
+/************************************************************************/
+void time_embed(double *data, double *output, int nb_pts, int nb_pts_new, int nb_dim, int n_embed, int n_embed_max, int stride, int i_start, int n_window)
+{   register int i, l, d;
+
+	for (i=0; i<nb_pts_new; i++)    // loop over points in the i_start=i_window window
+	for (l=0; l<nb_dim; l++)        // loop over existing dimensions in x
+    for (d=0; d<n_embed; d++)       // loop over embedding 
+        output[i + (d + l*n_embed)*nb_pts_new] = data[l*nb_pts + i_start + n_window*i + stride*(n_embed_max-1-d)];
+	
+    return;
+}
+
+// old formula, dating back to old samplings; still usefull for regular embedding
+int Theiler_nb_pts_new(int npts, int stride, int n_embed_max)
+{   return ( (npts-npts%stride)/stride - (n_embed_max-1)); // size of a single dataset
+}
+
+
 // XIII.209 & XIII.224, for fixed N_eff
 int compute_T_real(int p, int stride, int tau_Theiler, int N_eff)
 {   int T_embed = (p-1)*stride+1;
