@@ -55,3 +55,4 @@ test_over_scales.py
 bin/run.exe
 
 entropy.dev..code-workspace
+src/cython/entropy/tools.c
