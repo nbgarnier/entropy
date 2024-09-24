@@ -150,7 +150,7 @@ setup(name = 'entropy',
 	  ext_package = 'entropy',
 #	  package_dir={'', 'entropy', 'tools'},
 #      py_modules  = ['tools.tools', 'tools.masks'],
-      py_modules  = ['entropy.ptools', 'entropy.masks'], #['entropy.tools', 'entropy.masks'],
+      py_modules  = ['entropy.masks'], #['entropy.tools', 'entropy.masks'],
       ext_modules = cythonize([entropy_module, tools_module], annotate=DO_ANNOTATE)#, compiler_directives={'embedsignature': True}), 
 #	  packages = ['entropy']
 	)
