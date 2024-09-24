@@ -36,6 +36,7 @@ bin/python/test-images-2d-2020-07-20.ipynb
 bin/python/test-masks-2020-03-02.ipynb 
 bin/python/test-masks-2023-11-28.ipynb 
 bin/python/test-tmp-2022-04-20.ipynb 
+bin/python/test_embed.py
 config.h 
 config.h.in~ 
 configure~ 
@@ -48,6 +49,7 @@ src/cython/entropy/.DS_Store
 src/cython/entropy/__pycache__/ 
 src/cython/entropy/build/ 
 src/cython/entropy/entropy.c 
+src/cython/entropy/tools.c
 src/cython/entropy/entropy.pxd_old 
 src/cython/entropy/entropy_ann.pyx_old 
 src/matlab/.DS_Store 
@@ -55,4 +57,3 @@ test_over_scales.py
 bin/run.exe
 
 entropy.dev..code-workspace
-src/cython/entropy/tools.c
