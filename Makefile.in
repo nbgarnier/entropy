@@ -82,7 +82,8 @@ zip : clean
 		src/cython/entropy/commons.pyx src/cython/entropy/commons.pxd \
 		src/cython/entropy/computes.pyx src/cython/entropy/computes.pxd \
 		src/cython/entropy/others.pyx src/cython/entropy/others.pxd \
-		src/cython/entropy/tools.py src/cython/entropy/masks.py
+		src/cython/entropy/tools.pyx src/cython/entropy/tools.pxd src/cython/entropy/tools.c \
+		src/cython/entropy/masks.py
 	$(TAR) -rvf code.tar src/matlab/matlab_commons.c \
 		src/matlab/compute_entropy.c src/matlab/compute_entropy_inc.c \
 		src/matlab/compute_entropy_rate.c src/matlab/compute_regularity_index.c \
