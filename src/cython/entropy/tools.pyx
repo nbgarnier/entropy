@@ -63,13 +63,13 @@ def embed_python(x, m=1, stride=1, i_window=0):
     (time-)embeds an nd-array x (possibly multi-dimensional)
     
     note: this function is only here for test purposes; it is absolutely not optimized in any way.
+    you should use the function "embed" instead.
     
     :param x: signal (NumPy array with ndim=2, time along second dimension)
     :param  m: embedding dimension (default=1)
     :param stride: distance between successive points (default=1)
     :param i_window: returns the (i_window)th set (0<=i_window<stride)
     :returns: an nd-array with the requested (time-)embeded verion of input data x
-
     """
     
     x    = reorder(x)
