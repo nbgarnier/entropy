@@ -13,10 +13,6 @@ setup.py for package "entropy"
 from setuptools import Extension, setup
 from Cython.Build import cythonize
 
-# old distutils projec:
-#from distutils.core import setup, Extension 
-#from Cython.Distutils import build_ext 
-
 # to have an annotated html:
 import Cython.Compiler.Options
 Cython.Compiler.Options.annotate = False
@@ -25,7 +21,6 @@ DO_ANNOTATE = False
 # Third-party modules - we depend on numpy for everything
 import numpy
 import sys
-#import os.path
 import os
 
 # Obtain the numpy include directory:
