@@ -64,7 +64,7 @@ zip : clean
 	$(TAR) -rvf code.tar src/ann_1.1.2/*
 	$(TAR) -rvf code.tar src/ANN_wrapper.cpp src/ANN_wrapper_second_level.cpp \
 		src/math_tools.c src/nns_count.c src/library_commons.c \
-		src/mask.c src/samplings.c src/surrogates.c src/timings.c src/verbosity.c \
+		src/mask.c src/samplings.c src/samplings_basic.c src/surrogates.c src/timings.c src/verbosity.c \
 		src/entropy_ann_legacy.c \
 		src/entropy_ann.c src/entropy_ann_threads.c src/entropy_ann_mask.c \
 		src/entropy_ann_single_entropy.c src/entropy_ann_threads_entropy.c \
