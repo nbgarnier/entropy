@@ -69,7 +69,7 @@ def embed_python(x, m=1, stride=1, i_window=0):
     :param  m: embedding dimension (default=1)
     :param stride: distance between successive points (default=1)
     :param i_window: returns the (i_window)th set (0<=i_window<stride)
-    :returns: an nd-array with the requested (time-)embeded verion of input data x
+    :returns: an nd-array with the requested (time-)embeded version of input data x
     """
     
     x    = reorder(x)
@@ -106,7 +106,7 @@ def embed(double[:, ::1] x, int n_embed=1, int stride=1, int i_window=0, int n_e
     :param stride: distance between successive points (default=1)
     :param i_window: returns the (i_window)th set (0<=i_window<stride)
     :param n_embed_max: max embedding dimension (for causal time reference); if -1, then uses n_embed (default=-1)
-    :returns: an nd-array with the requested (time-)embeded verion of input data x
+    :returns: an nd-array with the requested (time-)embeded version of input data x
     """
 
     cdef int npts=x.shape[1], nx=x.shape[0]
@@ -119,6 +119,29 @@ def embed(double[:, ::1] x, int n_embed=1, int stride=1, int i_window=0, int n_e
     cdef CNP.ndarray[dtype=double, ndim=2] output = PNP.zeros((nx*n_embed,nb_pts_new), dtype=float) 
 
     entropy.tools.time_embed(&x[0,0], &output[0,0], npts, nb_pts_new, nx, n_embed, pp, stride, i_window, stride)
+    return PNP.asarray(output)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def crop(double[:, ::1] x, int npts_new, int i_window=0):
+    """ y = crop(x, npts_new, [i_window=0])
+    
+    crop an nd-array x (possibly multi-dimensional) in time (faster than Python)
+
+    :param x: signal (NumPy array with ndim=2, time along second dimension)
+    :param npts_new: new size in time
+    :param i_window: starting point in time (default=0)
+    :returns: an nd-array with the requested version of input data x
+    """
+
+    cdef int npts=x.shape[1], nx=x.shape[0]
+    if (npts<nx):  raise ValueError("please transpose x")
+    if (i_window+npts_new>npts): raise ValueError("i_window (%d) + npts_new (%d) is larger than npts (%d)" %(i_window, npts_new, npts))
+    
+    cdef CNP.ndarray[dtype=double, ndim=2] output = PNP.zeros((nx, npts_new), dtype=float) 
+
+    entropy.tools.crop_array(&x[0,0], &output[0,0], npts, nx, npts_new, i_window)
     return PNP.asarray(output)
 
 
