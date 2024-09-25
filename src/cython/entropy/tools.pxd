@@ -2,7 +2,7 @@
 #
 # this is a copy of functions/definitions that we want to see (and hence use) in Python
 #
-# 2024-09-24: new for tools.pyx
+# 2024-09-24: new for tools.pyx (replaces tools.py)
 
 # import definitions from C : 
 cdef extern from "entropy_ann.h": 
@@ -32,8 +32,8 @@ cdef extern from "samplings.h":
 	ctypedef sampling_parameters_extra_2d samp_param_2d
 	samp_param_2d samp_2d
 	int Theiler_nb_pts_new  (int npts, int stride, int n_embed_max)
-	void time_embed(double *data, double *output, int nb_pts, int nb_pts_new, int nb_dim, int n_embed, int n_embed_max, int stride, int i_start, int n_window)
-
+	void time_embed(double *data, double *output, int npts, int npts_new, int nb_dim, int n_embed, int n_embed_max, int stride, int i_start, int n_window)
+	void crop_array(double *data, double *output, int npts, int nb_dim, int npts_new, int i_window)
 
 cdef extern from "surrogates.h":
 	void surrogate_uFt		(double *x, int npts, int mx)

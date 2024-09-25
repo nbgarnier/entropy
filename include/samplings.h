@@ -70,8 +70,8 @@ gsl_permutation *create_unity_perm(size_t N);
 void shuffle_perm  (gsl_permutation *perm);
 void free_perm     (gsl_permutation *perm);
 // legacy embedding, used in the python module "tools" (in file "samplings_basic.c")
-void time_embed(double *data, double *output, int npts, int npts_new, int nb_dim, int n_embed, int n_embed_max, int stride, int i_start, int n_window);
-void crop_array(double *data, double *output, int npts, int n, int npts_new, int i_window);
+void time_embed(double *data, double *output, int npts, int npts_new, int nb_dim, int n_embed, int n_embed_max, int stride, int i_start, int i_window);
+void crop_array(double *data, double *output, int npts, int nb_dim, int npts_new, int i_window);
 // - usefull formulas:
 int Theiler_nb_pts_new         (int npts,        int stride, int n_embed_max);                  // in file "samplings_basic.c"
 int compute_T_real                       (int p, int stride, int tau_Theiler, int N_eff);

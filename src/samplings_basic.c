@@ -66,7 +66,7 @@ void time_embed(double *data, double *output, int npts, int npts_new, int nb_dim
 /*                                                                                      */
 /* 2024-09-25 : to allow AMI and entrpy rate estimation directly from Python            */
 /****************************************************************************************/
-void crop_array(double *data, double *output, int npts, int n, int npts_new, int i_window)
+void crop_array(double *data, double *output, int npts, int nb_dim, int npts_new, int i_window)
 {   register int i,l;
 
     if ((i_window + npts_new) > npts) 
@@ -75,7 +75,7 @@ void crop_array(double *data, double *output, int npts, int n, int npts_new, int
     }
 
     for (i=0; i<npts_new; i++)
-    for (l=0; l<n; l++)
+    for (l=0; l<nb_dim; l++)
     {   output[i + l*npts_new] = data[i_window+i + l*npts];
     }
 
