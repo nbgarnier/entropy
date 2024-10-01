@@ -70,7 +70,7 @@ void crop_array(double *data, double *output, int npts, int nb_dim, int npts_new
 {   register int i,l;
 
     if ((i_window + npts_new) > npts) 
-    {   printf("[crop_array] error, bad parameters\n");
+    {   print_error("[crop_array]","bad parameters");
         return;
     }
 

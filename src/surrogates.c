@@ -24,7 +24,7 @@
 #include <gsl/gsl_statistics_double.h>  // for mean
 #include <fftw3.h>
 
-#include "verbosity.h"
+// #include "verbosity.h"
 #include "math_tools.h"
 
 #include "surrogates.h"
@@ -353,7 +353,7 @@ void surrogate_improved(double *x, int npts, int mx, int N_steps)
     
     
 /****************************************************************************************/
-/* init the random number generator foor shuffling                                      */
+/* init the random number generator for shuffling                                       */
 /****************************************************************************************/
 void init_surrogates_rng(void)
 {   const gsl_rng_type *T;
