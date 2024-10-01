@@ -16,6 +16,8 @@ cimport entropy.tools
 from entropy.entropy import get_last_info
 from entropy.entropy import get_last_sampling
 
+
+
 # this usefull function insures that the time dimension is the first dimension
 # if we are dealing with a 1-d ndarray, it is cast into a 2-d array
 # 2023-10-26: now also insures that data is C-contiguous
@@ -37,6 +39,7 @@ def reorder(x):
     else:                       return x.copy()
     
 
+
 # this function is for (possibly multivariate) images
 # 2023-10-26: now also insures that data is C-contiguous
 def reorder_2d(x, nx=-1, ny=-1, d=-1):
@@ -54,6 +57,7 @@ def reorder_2d(x, nx=-1, ny=-1, d=-1):
         print("order>3 not supported")
     if x.flags['C_CONTIGUOUS']: return x
     else:                       return x.copy()
+
 
 
 ## 2020-02-22: compatible with new convention of cython code (ndim, npts)
@@ -94,6 +98,8 @@ def embed_python(x, m=1, stride=1, i_window=0):
                     
     return x_new
 
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def embed(double[:, ::1] x, int n_embed=1, int stride=1, int i_window=0, int n_embed_max=-1):
@@ -122,6 +128,7 @@ def embed(double[:, ::1] x, int n_embed=1, int stride=1, int i_window=0, int n_e
     return PNP.asarray(output)
 
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def crop(double[:, ::1] x, int npts_new, int i_window=0):
@@ -144,6 +151,39 @@ def crop(double[:, ::1] x, int npts_new, int i_window=0):
     entropy.tools.crop_array(&x[0,0], &output[0,0], npts, nx, npts_new, i_window)
     return PNP.asarray(output)
 
+
+
+#####################################################################################
+# 2023-02-08: following function may be faster than pure Python... 
+#             but it is not... (cf tests from today)
+#####################################################################################
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def FIR_LP( double[:, ::1] x, int tau=2, double fr=1):
+     """
+     low-pass filters a (multi-dimensional) signal x, using local averaging and cut-off time-scale tau.
+     
+     :param x: signal (NumPy array with ndim=2)
+     :param tau: time-scale for a local averaging (default tau=2)
+     :param fr: how many pts to keep from each tau-sized time interval (subsampling). Setting fr=tau keeps all points. (default fr=1 : keeps 1 pts every tau pts)
+     :returns: an nd-array containing the low-pass filtered version of x
+     
+     :meta private:
+     """
+     
+     cdef int npts=x.shape[1], nx=x.shape[0], ratou=1
+     cdef int npts_new = int(npts*fr//tau)
+     if (npts<nx):  raise ValueError("please transpose x")
+     if (tau<1):    raise ValueError("tau must be positive")
+       
+     # a python float is a C/cython double
+#     cdef CNP.ndarray[dtype=double, ndim=2] output = PNP.zeros((nx, npts_new), dtype=float) 
+     output = PNP.zeros((nx, npts_new), dtype=float)
+     cdef double[:, :] z = output
+    
+     ratou = entropy.tools.filter_FIR_LP(&x[0,0], npts, nx, tau, fr, &z[0,0], npts_new)
+#     print("[FIR_LP] proposed by C:", ratou, "from Python:", npts_new)
+     return output[:,0:ratou]
 
 
 
