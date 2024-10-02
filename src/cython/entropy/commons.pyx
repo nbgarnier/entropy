@@ -105,12 +105,11 @@ def set_verbosity(int level=1):
     :returns: no output
     
     verbosity can be:
-        
-       <0 : no messages, even if an error is encountered (not recommended!)
-        0 : messages only if an error is encountered
-        1 : messages for errors and important warnings only (default)
-        2 : more warnings and/or more details on the warnings
-        ...
+      | <0 : no messages, even if an error is encountered (not recommended!)
+      |  0 : messages only if an error is encountered
+      |  1 : messages for errors and important warnings only (default)
+      |  2 : more warnings and/or more details on the warnings
+      |  ...
         
     """
     commons.lib_verbosity=level
@@ -123,12 +122,11 @@ def get_verbosity():
     :returns:  no output values, but a message indicating the verbosity level is printed in the console.
     
     verbosity level explanation:
-        
-       <0 : no messages, even if an error is encountered (not recommended!)
-        0 : messages only if an error is encountered
-        1 : messages for errors and important warnings only (default)
-        2 : more warnings and/or more details on the warnings
-        ...
+      | <0 : no messages, even if an error is encountered (not recommended!)
+      |  0 : messages only if an error is encountered
+      |  1 : messages for errors and important warnings only (default)
+      |  2 : more warnings and/or more details on the warnings
+      |  ...
         
     """
     print("verbosity level", commons.lib_verbosity)
@@ -147,11 +145,10 @@ def set_Theiler(int Theiler=4):
     :returns: no output values, but a message is printed in the console.
         
     The parameter "Theiler" indicates the Theiler prescription to follow:
-        
-        * 1 or "legacy"  : tau_Theiler=tau(=stride) + uniform sampling (thus localized in the dataset) (legacy)
-        * 2 or "smart"   : tau_Theiler=max>=tau(=stride) + uniform sampling (covering the full dataset)
-        * 3 or "random"  : tau_Theiler=tau(=stride) + random sampling
-        * 4 or "adapted" : tau_Theiler>(or <)tau(=stride) 
+      | 1 or "legacy"  : tau_Theiler=tau(=stride) + uniform sampling (thus localized in the dataset) (legacy)
+      | 2 or "smart"   : tau_Theiler=max>=tau(=stride) + uniform sampling (covering the full dataset)
+      | 3 or "random"  : tau_Theiler=tau(=stride) + random sampling
+      | 4 or "adapted" : tau_Theiler>(or <)tau(=stride) 
         
     Depending on the Theiler prescription, the effective value of ''tau_Theiler'' can be smaller than tau(=stride) in order to satisfy the imposed N_eff. Use this with caution, for example by tracking the effectively selected ''tau_Theiler'' value with the function :any:`get_last_info`. 
     """
