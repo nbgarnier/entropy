@@ -272,7 +272,7 @@ def get_Theiler_2d():
      (see the function :any:`set_Theiler_2d` for details)
      
      :param none:
-     :returns: the value.
+     :returns: the default Theiler prescription currently used.
      """
      return(commons.samp_2d.type)
 
