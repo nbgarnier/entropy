@@ -393,14 +393,13 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
     :param N_steps: an integer to indicate how many steps to use for improved surrogates (method 4 only)
     :returns: an nd-array with the same dimmensionality as the input data x
     
-    The method parameter can be:
-        
-        0 : by shuffling points in time, while retaining the joint-coordinates
-        1 : randomize phase with unwindowed Fourier transform (uFt)
-        2 : randomize phase with windowed Fourier transform (wFT) (buggy!)
-        3 : randomize phase with Gaussian null hypothesis and Ft (aaFT)
-        4 : improved surrogate (same PDF and PSD), using N_steps
-        5 : creates a Gaussian version of x, with same PSD and dependences
+    The method parameter can be:  
+      |  0 : by shuffling points in time, while retaining the joint-coordinates
+      |  1 : randomize phase with unwindowed Fourier transform (uFt)
+      |  2 : randomize phase with windowed Fourier transform (wFT) (buggy!)
+      |  3 : randomize phase with Gaussian null hypothesis and Ft (aaFT)
+      |  4 : improved surrogate (same PDF and PSD), using N_steps
+      |  5 : creates a Gaussian version of x, with same PSD and dependences
 
     """
     cdef int npts=x.shape[1], nx=x.shape[0], m
