@@ -62,8 +62,9 @@ def get_extra_info(int verbosity=0):
      """
      returns extra information from the last computation
      
-     :param verbosity: an integer. If ==0 (default), then nothing is printed on the screen, but values are returned (useful for use in scripts).
+     :param verbosity: an integer. If ==0 (default), then nothing is printed on the screen, but values are returned (useful in scripts).
      :returns: statistics on the processed input data (e.g.: increments of the input):
+
        - the standard deviation of the last data used (i.e., the std of the input, not of the output!)
        - the standard deviation of this standard deviation
        
@@ -88,7 +89,7 @@ def choose_algorithm(int algo=1, int version=1):
      :param version: counting algorithm version, possible values are {1, 2} for (legacy, mixed ANN) (default=1)
      :returns: no output
      
-     about the "version" paramter:
+     about the "version" parameter:
        - 1 : legacy (NBG) : faster for small embedding dimensions (<=2)
        - 2 : mixed ANN    : faster for large embedding dimensions (>=4)
      """
@@ -105,11 +106,11 @@ def set_verbosity(int level=1):
     :returns: no output
     
     verbosity can be:
-      | <0 : no messages, even if an error is encountered (not recommended!)
-      |  0 : messages only if an error is encountered
-      |  1 : messages for errors and important warnings only (default)
-      |  2 : more warnings and/or more details on the warnings
-      |  ...
+      - <0 : no messages, even if an error is encountered (not recommended!)
+      -  0 : messages only if an error is encountered
+      -  1 : messages for errors and important warnings only (default)
+      -  2 : more warnings and/or more details on the warnings
+      -  ...
         
     """
     commons.lib_verbosity=level
@@ -119,14 +120,14 @@ def get_verbosity():
     gets the current verbosity level of the library
     
     :param none:
-    :returns:  no output values, but a message indicating the verbosity level is printed in the console.
+    :returns: no output values, but a message indicating the verbosity level is printed in the console.
     
     verbosity level explanation:
-      | <0 : no messages, even if an error is encountered (not recommended!)
-      |  0 : messages only if an error is encountered
-      |  1 : messages for errors and important warnings only (default)
-      |  2 : more warnings and/or more details on the warnings
-      |  ...
+      - <0 : no messages, even if an error is encountered (not recommended!)
+      -  0 : messages only if an error is encountered
+      -  1 : messages for errors and important warnings only (default)
+      -  2 : more warnings and/or more details on the warnings
+      -  ...
         
     """
     print("verbosity level", commons.lib_verbosity)
@@ -145,10 +146,10 @@ def set_Theiler(int Theiler=4):
     :returns: no output values, but a message is printed in the console.
         
     The parameter "Theiler" indicates the Theiler prescription to follow:
-      | 1 or "legacy"  : tau_Theiler=tau(=stride) + uniform sampling (thus localized in the dataset) (legacy)
-      | 2 or "smart"   : tau_Theiler=max>=tau(=stride) + uniform sampling (covering the full dataset)
-      | 3 or "random"  : tau_Theiler=tau(=stride) + random sampling
-      | 4 or "adapted" : tau_Theiler>(or <)tau(=stride) 
+      - 1 or "legacy"  : tau_Theiler=tau(=stride) + uniform sampling (thus localized in the dataset) (legacy)
+      - 2 or "smart"   : tau_Theiler=max>=tau(=stride) + uniform sampling (covering the full dataset)
+      - 3 or "random"  : tau_Theiler=tau(=stride) + random sampling
+      - 4 or "adapted" : tau_Theiler>(or <)tau(=stride) 
         
     Depending on the Theiler prescription, the effective value of ''tau_Theiler'' can be smaller than tau(=stride) in order to satisfy the imposed N_eff. Use this with caution, for example by tracking the effectively selected ''tau_Theiler'' value with the function :any:`get_last_info`. 
     """
@@ -249,10 +250,11 @@ def set_Theiler_2d(int Theiler=2):
     :param Theiler: Theiler prescription. Possible values: are {1, 2, 4} as explicited below.
     :returns: no output
     
-        1 or "minimal" : tau_Theiler is selected in each direction as in 1-d (troublesome if one of the stride is much smaller than the other one)
-        2 or "maximal" : tau_Theiler is selected as the max of (stride_x, stride_y) (possibly too small by a factor sqrt(2))
-        4 or "optimal" : tau_Theiler is selected as sqrt(stride_x^2 + stride_y^2) (rounded-up for max safety)
-        (default=2)
+    About possible values:
+      - 1 or "minimal" : tau_Theiler is selected in each direction as in 1-d (troublesome if one of the stride is much smaller than the other one)
+      - 2 or "maximal" : tau_Theiler is selected as the max of (stride_x, stride_y) (possibly too small by a factor sqrt(2))
+      - 4 or "optimal" : tau_Theiler is selected as sqrt(stride_x^2 + stride_y^2) (rounded-up for max safety)
+    (default=2)
     """
     if   ( (Theiler==1) or (Theiler=='minimal') ): commons.samp_2d.type=1
     elif ( (Theiler==2) or (Theiler=='maximal') ): commons.samp_2d.type=2
@@ -285,7 +287,6 @@ def multithreading(do_what="info", int nb_cores=0):
      :returns: no output.
      
      The parameter do_what can be chosen as follows:
-         
         - "info": nothing is done, but informations on the current multithreading state are displayed.
         - "auto": then the optimal (self-adapted to largest) number of threads will be used) (default).
         - "single": then the algorithms will run single-threaded (no multithreading) 
