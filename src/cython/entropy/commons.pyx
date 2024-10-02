@@ -207,6 +207,7 @@ def get_sampling(verbosity=1):
       - the default number of realizations used.
 
     see :any:`set_sampling` to change these values and :any:`input_parameters` for their meaning.
+    see :any:`get_last_sampling` to get the last values instead (they may be different than default values).
     """
     if (verbosity>0):
         print("Theiler prescription :", commons.samp_default.type, end="")
