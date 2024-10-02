@@ -224,10 +224,8 @@ def get_last_sampling(int verbosity=0):
     returns full set of information on the sampling used in the last computation and prints them in the console if verbosity>0
     (note that these values may differ from default values, as returned by :any:`get_sampling`)
     
-    :param verbosity: an integer in {0,1} (default=0)
-    :returns: 7 values described below. If verbosity>0, a human-readable message expliciting these 7 values is printed in the console.
-    
-    Returned are the following 7 values, in the following order: 
+    :param verbosity: an integer in {0,1} (default=0). If verbosity>0, a human-readable message expliciting the 7 returned values is printed in the console.
+    :returns: the following 7 values, in the following order: 
       - the type of Theiler prescription ( 1 integer)
       - the Theiler scale used, and its maximal value given the other parameters (2 integers)
       - the effective number of points used in a single realization, and its maximal value (2 integers)
