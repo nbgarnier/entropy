@@ -30,11 +30,11 @@ def get_last_info(int verbosity=0):
     :param verbosity: an integer. If ==0 (default), then nothing is printed on the screen, but values are returned (useful for use in scripts).
     :returns: the following 8 values, in the following order
     
-      - the standard deviations estimates of the last computed quantities
-      - the number of errors encountered 
-      - the effective number of points used, per realization, and total
-      - the number of independent realizations used
-      - the effective value of tau_Theiler (in x, and eventually in y)
+      - the standard deviations estimates of the last computed quantities (2 values)
+      - the number of errors encountered (1 value)
+      - the effective number of points used, per realization, and total (2 values)
+      - the number of independent realizations used (1 value)
+      - the effective value of tau_Theiler (in x, and eventually in y) (2 values)
       
     """
     cdef double std             = commons.last_std
@@ -195,10 +195,9 @@ def get_sampling(verbosity=1):
     """
     prints the default values of sampling parameters used in all functions.
     
-    :param verbosity: an integer in {0,1} (default=1)
-    :returns: 4 values described below. If verbosity>0, a human-readable message expliciting these 4 values is also printed in the console.
-    
-    Returned are the following 4 values, in the following order: 
+    :param verbosity: an integer in {0,1} (default=1). If verbosity>0, a human-readable message expliciting the 4 returned values is printed in the console.
+    :returns: the following 4 values, in the following order: 
+
       - the default type of Theiler prescription
       - the default Theiler scale
       - the default effective number of points used in a single realization
@@ -226,6 +225,7 @@ def get_last_sampling(int verbosity=0):
     
     :param verbosity: an integer in {0,1} (default=0). If verbosity>0, a human-readable message expliciting the 7 returned values is printed in the console.
     :returns: the following 7 values, in the following order: 
+
       - the type of Theiler prescription ( 1 integer)
       - the Theiler scale used, and its maximal value given the other parameters (2 integers)
       - the effective number of points used in a single realization, and its maximal value (2 integers)
@@ -252,6 +252,7 @@ def set_Theiler_2d(int Theiler=2):
       - 1 or "minimal" : tau_Theiler is selected in each direction as in 1-d (troublesome if one of the stride is much smaller than the other one)
       - 2 or "maximal" : tau_Theiler is selected as the max of (stride_x, stride_y) (possibly too small by a factor sqrt(2))
       - 4 or "optimal" : tau_Theiler is selected as sqrt(stride_x^2 + stride_y^2) (rounded-up for max safety)
+    
     (default=2)
     """
     if   ( (Theiler==1) or (Theiler=='minimal') ): commons.samp_2d.type=1
