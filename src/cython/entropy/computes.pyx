@@ -31,7 +31,7 @@ def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1,
     .. math::
         H = - \\int p(x^{(m,\\tau)}) \\ln p(x^{(m,\\tau)}) {\\rm d}^m x^{(m,\\tau)}
 
-    (time-)embedding of x into x^(n_embed, stride) is performed on the fly:
+    (time-)embedding of :math:`x` into :math:`x^{(n_embed, stride)}` is performed on the fly:
 
     .. math::
         x \\rightarrow x^{(m,\\tau)}=(x_t, x_{t-\\tau}, ..., x_{t-(m-1)\\tau})
