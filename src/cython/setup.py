@@ -95,6 +95,7 @@ tools_module = Extension("tools",
                 library_dirs = LIBS_DIR,
                 extra_link_args=LDFLAGS_PYTHON,
                 define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+                cython_directives = {"embedsignature": True},
                 )
 
 commons_module = Extension("commons",
@@ -135,7 +136,7 @@ others_module = Extension("others",
           
 setup(name = 'entropy',
       version = '4.1.0', 
-#      date ='2024-09-25',
+#      date ='2024-10-02',
       description = "Information Theory tools and entropies for multi-scale analysis of continuous signals",
       author      = "Nicolas B. Garnier",
       author_email= "nicolas.garnier@ens-lyon.fr",

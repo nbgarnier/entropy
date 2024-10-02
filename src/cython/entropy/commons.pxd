@@ -46,10 +46,6 @@ cdef extern from "entropy_ann.h":
 	const int k_default;
 	
 
-cdef extern from "math_tools.h":
-	int filter_FIR_LP(double *x, int N_pts, int m, int tau, double fr, double *out, int N_pts_new)	
-
-
 cdef extern from "samplings.h":
 	struct sampling_parameters:
 		int Theiler        

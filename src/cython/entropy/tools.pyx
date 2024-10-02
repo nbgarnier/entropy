@@ -105,7 +105,9 @@ def embed_python(x, m=1, stride=1, i_window=0):
 def embed(double[:, ::1] x, int n_embed=1, int stride=1, int i_window=0, int n_embed_max=-1):
     """ y = embed(x, [n_embed=1, stride=1, i_window=0])
     
-    causal (time-)embed an nd-array x (possibly multi-dimensional), (optimized function much faster then the _python version)
+    causal (time-)embed an nd-array x (possibly multi-dimensional)
+    
+    note : this functino is optimized, and much faster then the python version ("embed_python")
 
     :param x: signal (NumPy array with ndim=2, time along second dimension)
     :param n_embed: embedding dimension (default=1)
@@ -196,7 +198,7 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
     :param tau_set: 1-d numpy array containing the set of values for stride (time-scales)
     :param verbosity_timing: 0 for no output, or 1,2 or more for more and more detailed output
     :param get_samplings: 1 for extra returned array, with samplings parameters used for each stride
-    :param any parameter to pass to the function: is accepted, with the same syntax as usual (e.g.: x, y, k=5, ...)
+    :param args: any parameter to pass to the function: is accepted, with the same syntax as usual (e.g.: x, y, k=5, ...)
     
     :returns: 2 or 3 nd-arrays, each having their last dimension equal to tau_set.size (see below).
     

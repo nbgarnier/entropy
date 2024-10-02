@@ -332,40 +332,6 @@ def get_threads_number():
 
 
 #####################################################################################
-# 2023-02-08: following function may be faster than pure Python... 
-#             but it is not... (cf tests from today)
-#####################################################################################
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def FIR_LP( double[:, ::1] x, int tau=2, double fr=1):
-     """
-     low-pass filters a (multi-dimensional) signal x, using local averaging and cut-off time-scale tau.
-     
-     :param x: signal (NumPy array with ndim=2)
-     :param tau: time-scale for a local averaging (default tau=2)
-     :param fr: how many pts to keep from each tau-sized time interval (subsampling). Setting fr=tau keeps all points. (default fr=1 : keeps 1 pts every tau pts)
-     :returns: an nd-array containing the low-pass filtered version of x
-     
-     :meta private:
-     """
-     
-     cdef int npts=x.shape[1], nx=x.shape[0], ratou=1
-     cdef int npts_new = int(npts*fr//tau)
-     if (npts<nx):  raise ValueError("please transpose x")
-     if (tau<1):    raise ValueError("tau must be positive")
-       
-     # a python float is a C/cython double
-#     cdef CNP.ndarray[dtype=double, ndim=2] output = PNP.zeros((nx, npts_new), dtype=float) 
-     output = PNP.zeros((nx, npts_new), dtype=float)
-     cdef double[:, :] z = output
-    
-     ratou = commons.filter_FIR_LP(&x[0,0], npts, nx, tau, fr, &z[0,0], npts_new)
-#     print("[FIR_LP] proposed by C:", ratou, "from Python:", npts_new)
-     return output[:,0:ratou]
-
-
-
-#####################################################################################
 # 2023-02-03: following function may prove usefull one day
 #             in function 'surrogate()', another approach was taken.
 #             so I comment this out
@@ -467,6 +433,10 @@ def mask_finite_C(double[:, ::1] x):
     mask=mask_finite(x) : build a mask corresponding to non-NaN values in the data x
     
     C-version, experimental.
+
+    :param x: data (possibly multi-dimensional)
+    :returns: a mask corresponding only to finite points in data
+
     :meta private:
     """
   
