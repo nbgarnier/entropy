@@ -1,6 +1,8 @@
 # tools (optimized version)
 #
+# 2018-04-10: enhanced memory mapping from C to Python
 # 2024-09-24: new cython version, forked from python version tools.py
+
 #cython: language_level=3
 import  cython
 import  numpy as PNP # shoud be useless here
@@ -107,7 +109,7 @@ def embed(double[:, ::1] x, int n_embed=1, int stride=1, int i_window=0, int n_e
     
     causal (time-)embed an nd-array x (possibly multi-dimensional)
     
-    note : this functino is optimized, and much faster then the python version ("embed_python")
+    note : this function is optimized, and much faster then the python version ("embed_python").
 
     :param x: signal (NumPy array with ndim=2, time along second dimension)
     :param n_embed: embedding dimension (default=1)
