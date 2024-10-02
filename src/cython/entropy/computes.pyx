@@ -158,9 +158,9 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
      :returns: the entropy estimate
      
      The parameter method influences the computation as follows:       
-       * 0 for H^(m)/m
-       * 1 for H^(m+1)-H^(m)       
-       * 2 for H^(1)-MI(x,x^(m))    (default=2)
+      - 0 for :math:`H^{(m)}/m`
+      - 1 for :math:`H^{(m+1)}-H^{(m)}`  
+      - 2 for :math:`H^{(1)}-MI(x,x^{(m)})`    (default=2)
      
      see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
      """     
