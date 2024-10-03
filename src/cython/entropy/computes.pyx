@@ -95,8 +95,8 @@ def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, i
     
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param inc_type: increments type (regular or averaged):
-                  1 for regular increments (of given order)
-                  2 for averaged increments (of order 1 only)
+        - 1 for regular increments (of given order)
+        - 2 for averaged increments (of order 1 only)
      :param order: order of increments (between 0 and 5) (default=1)
      :param stride: stride for embedding (default=1) 
      :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
