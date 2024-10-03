@@ -87,16 +87,18 @@ def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, i
       .. math::
         H(\\delta_\\tau x) = - \\int p(\\delta_\\tau x) \\ln p(\\delta_\\tau x) {\\rm d} \\delta_\\tau x
 
-     (time-)increments :math:`\\delta_\\tau x` are computed from signal :math:`x` on the fly.
+     (time-)increments :math:`\\delta_\\tau x` are computed from signal :math:`x` on the fly:
      
      .. math::
-        x \\rightarrow \\delta_\\tau x &= x_t - x_{t-\\tau} {\\rm for regular increments of order 1} \\
-        &= x_t - \\sum_{k=1}^{\\tau} x_{t-k} {\\rm for averaged increments of order 1}
+        x \\rightarrow \\delta_\\tau x &= x_t - x_{t-\\tau} \\quad {\\rm (regular \, increments \, of \, order \, 1} \\\\
+        &= x_t - \\sum_{k=1}^{\\tau} x_{t-k} {\\rm (averaged \, increments \, of \, order \, 1}
     
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param inc_type: increments type (regular or averaged):
-        - 1 for regular increments (of given order)
-        - 2 for averaged increments (of order 1 only)
+
+      - 1 for regular increments (of given order)
+      - 2 for averaged increments (of order 1 only)
+
      :param order: order of increments (between 0 and 5) (default=1)
      :param stride: stride for embedding (default=1) 
      :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
