@@ -90,8 +90,8 @@ def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, i
      (time-)increments :math:`\\delta_\\tau x` are computed from signal :math:`x` on the fly:
      
      .. math::
-        x \\rightarrow \\delta_\\tau x &= x_t - x_{t-\\tau} \\quad {\\rm (regular \, increments \, of \, order \, 1} \\\\
-        &= x_t - \\sum_{k=1}^{\\tau} x_{t-k} {\\rm (averaged \, increments \, of \, order \, 1}
+        x \\rightarrow \\delta_\\tau x &= x_t - x_{t-\\tau} \\quad {\\rm (regular \, increments \, of \, order \, 1)} \\\\
+        &= x_t - \\sum_{k=1}^{\\tau} x_{t-k} \\quad {\\rm (averaged \, increments \, of \, order \, 1}
     
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param inc_type: increments type (regular or averaged):
