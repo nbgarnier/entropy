@@ -27,7 +27,7 @@ def compute_entropy_Renyi(double[:, ::1] x, double q, int inc_type=0, int n_embe
      .. math::
           H_q = \\frac{1}{1-q} \\ln \\int p(x^{(m,\\tau)})^q {\\rm d}^m x^{(m,\\tau)}
 
-     (time-)embedding of :math:`x` into :math:`x^{(n_embed, stride)}` is performed on the fly, see :any:`compute_entropy`          
+     (time-)embedding of :math:`x` into :math:`x^{(m, \\tau)}` (see equation :eq:`embedding`) is performed on the fly, see :any:`compute_entropy`          
 
      :param x: signal (NumPy array with ndim=2, time as second dimension)
      :param q: order of the Renyi entropy (should not be 1)
@@ -35,8 +35,8 @@ def compute_entropy_Renyi(double[:, ::1] x, double q, int inc_type=0, int n_embe
                 0 for entropy of the signal x itself,
                 1 for entropy of the increments of the signal x,
                 2 for entropy of the averaged increments of x.   
-     :param n_embed: embedding dimension (default=1)
-     :param stride: stride for embedding (default=1) 
+     :param n_embed: embedding dimension :math:`m` (default=1)
+     :param stride: stride (or :math`\\tau`) for embedding (default=1) 
      :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
      :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
      :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)

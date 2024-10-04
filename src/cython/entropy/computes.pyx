@@ -144,8 +144,9 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
             int Theiler=0, int N_eff=0, int N_real=0,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
      """
-     computes entropy rate of order m of a vector (possibly multi-dimensional) using nearest neighbors search with ANN library.
-     (time-)embedding (see equation :eq:`embedding`) is performed on the fly.           
+     computes entropy rate :math:`h^{(m,\\tau)}` of order :math:`m` of a signal :math:`x` (possibly multi-dimensional) using nearest neighbors search with ANN library.
+     (time-)embedding (see equation :eq:`embedding`) is performed on the fly.
+     
 
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param method: an integer. in {0,1,2} to indicate which method to use (default=2) (see below)
