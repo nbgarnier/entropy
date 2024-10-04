@@ -21,9 +21,14 @@ def compute_entropy_Renyi(double[:, ::1] x, double q, int inc_type=0, int n_embe
                     int Theiler=0, int N_eff=0, N_real=0,
                     int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
      """
-     computes Renyi entropy of order q of a signal x (possibly multi-dimensional) or of its increments, using nearest neighbors search with ANN library.
+     computes Renyi entropy :math:`H_q` of order :math:`q` of a signal :math:`x` (possibly multi-dimensional) or of its increments, using nearest neighbors search with ANN library.
      (time-)embedding is performed on the fly.
-    
+     
+     .. math::
+          H_q = \\frac{1}{1-q} \\ln \\int p(x^{(m,\\tau)})^q {\\rm d}^m x^{(m,\\tau)}
+
+     (time-)embedding of :math:`x` into :math:`x^{(n_embed, stride)}` is performed on the fly, see :any:`compute_entropy`          
+
      :param x: signal (NumPy array with ndim=2, time as second dimension)
      :param q: order of the Renyi entropy (should not be 1)
      :param inc_type: which pre-processing to operate, possible values are:
