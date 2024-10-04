@@ -149,7 +149,7 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
      .. math::
         h^{(m,\\tau)}(x) = H(x_t^{(m+1,\\tau)}) - H(x_{t-\\tau}^{(m,\\tau)})
 
-    (time-)embedding (see equation :eq:`embedding`) is performed on the fly.
+     (time-)embedding (see equation :eq:`embedding`) is performed on the fly.
 
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param method: an integer. in {0,1,2} to indicate which method to use (default=2) (see below)
