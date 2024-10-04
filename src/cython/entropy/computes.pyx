@@ -40,8 +40,8 @@ def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1,
     where :math:`m` is given by the parameter n_embed and :math:`\\tau` is given by the parameter stride.   
     
     :param x: signal (NumPy array with ndim=2, time along second dimension)
-    :param n_embed: embedding dimension (default=1)
-    :param stride: stride (e.g., time scale \\tau) for embedding (default=1) 
+    :param n_embed: embedding dimension :math:`m` (default=1)
+    :param stride: stride (or time scale :math:`\\tau`) for embedding (default=1) 
     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
@@ -250,7 +250,7 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
      computes mutual information MI(x,y) of two multi-dimensional vectors x and y using nearest neighbors search with ANN library.
      
      .. math::
-        MI(X,Y) = H(X) + H(Y) - H(X,Y)
+        MI(x,y) = H(x) + H(y) - H(x,y)
 
      :param x, y: signals (NumPy arrays with ndim=2, time along second dimension)
      :param n_embed_x: embedding dimension for x (default=1)
@@ -420,7 +420,7 @@ def compute_PTE(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
      computes partial transfer entropy (PTE) of three 2-d vectors x, y and z using nearest neighbors search with ANN library.
 
      .. math::
-         PTE(x,y,z) = TE(x->y|z)  
+         PTE(x,y,z) = TE(x\\rightarrow y|z)  
          
      (from x to y, with z a conditioning variable)
           
@@ -522,7 +522,8 @@ def compute_regularity_index( double[:, ::1] x, int stride=1,
      computes regularity index of a vector (possibly multi-dimensional) using nearest neighbors search with ANN library.
      (time-)embedding is performed on the fly.
      
-     Delta(x,tau) = H(\delta_tau x) - h^\tau(x) 
+     .. math::
+         \\Delta(x,\\tau) = H(\\delta_\\tau x) - h^\\{(\\tau)}(x) 
      
      :param x: signal (NumPy array with ndim=2, time as second dimension)
      :param stride: stride (Theiler correction will be used accordingly). 
