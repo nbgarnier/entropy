@@ -249,6 +249,9 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
      """ 
      computes mutual information MI(x,y) of two multi-dimensional vectors x and y using nearest neighbors search with ANN library.
      
+     .. math::
+        MI(X,Y) = H(X) + H(Y) - H(X,Y)
+
      :param x, y: signals (NumPy arrays with ndim=2, time along second dimension)
      :param n_embed_x: embedding dimension for x (default=1)
      :param n_embed_y: embedding dimension for y (default=1)
@@ -298,7 +301,8 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
      """           
      computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.
      
-     TE(x,y) = TE(x->y)  (from x to y)
+     .. math::
+         TE(x,y) = TE(x\\rightarrow y) 
           
      :param x: (y): signals (NumPy arrays with ndim=2, time along second dimension)
      :param n_embed_x: embedding dimension for x (default=1)
@@ -352,7 +356,10 @@ def compute_PMI(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
      """            
      computes partial mutual information (PMI) of three 2-d vectors x, y and z using nearest neighbors search with ANN library
      
-     PMI = MI(x,y|z)    (z is the conditioning variable)
+     .. math::
+        PMI = MI(x,y|z)    
+     
+     (z is the conditioning variable)
           
      :param x, y, z: signals (NumPy arrays with ndim=2, time along second dimension)
      :param n_embed_x: embedding dimension for x (default=1)
@@ -412,7 +419,10 @@ def compute_PTE(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
      """           
      computes partial transfer entropy (PTE) of three 2-d vectors x, y and z using nearest neighbors search with ANN library.
 
-     PTE(x,y,z) = TE(x->y|z)  (from x to y, with z a conditioning variable)
+     .. math::
+         PTE(x,y,z) = TE(x->y|z)  
+         
+     (from x to y, with z a conditioning variable)
           
      :param x, y, z: signals (NumPy arrays with ndim=2, time along second dimension)
      :param n_embed_x: embedding dimension for x (default=1)
