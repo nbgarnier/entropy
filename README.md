@@ -31,3 +31,7 @@ this library provides continuous entropies estimates using nearest neighbors. It
 # documentation
 
 See help on functions on the [documentation webpage](https://perso.ens-lyon.fr/nicolas.garnier/files/html/).
+
+# citing
+
+to cite this work, please use this DOI: [![DOI](https://zenodo.org/badge/635707956.svg)](https://doi.org/10.5281/zenodo.13218642)
