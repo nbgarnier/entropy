@@ -49,6 +49,7 @@
 /*                                                                                      */
 /* data is ordered like this :                                                          */
 /* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)               */
+/*                                                                                      */
 /* 2012-02-27, fork from "compute_entropy_ann"                                          */
 /****************************************************************************************/
 double compute_entropy_nd_ann(double *x, int npts, int n, int k)

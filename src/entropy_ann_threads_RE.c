@@ -105,7 +105,6 @@ void *threaded_relative_entropy_func(void *ptr)
  ***************************************************************************************/
 double compute_relative_entropy_2xnd_ann_threads(double *x, int nx, double *y, int ny, int n, int k, int nb_cores)
 {   register int core, npts_eff_min, n_total=0;
-//    double *x_central;
     double h=0.00;
 
     // eventually correct the number of threads requested:
@@ -118,7 +117,6 @@ double compute_relative_entropy_2xnd_ann_threads(double *x, int nx, double *y, i
     struct thread_args   my_arguments[nb_cores];
     struct thread_output *my_outputs[nb_cores];
   
-//    x_central = (double*)calloc(n, sizeof(double));    
     init_ANN(ny, n, k, get_cores_number(GET_CORES_SELECTED));
     create_kd_tree(y, ny, n);
     nb_errors_local=0; 
@@ -145,21 +143,17 @@ double compute_relative_entropy_2xnd_ann_threads(double *x, int nx, double *y, i
     // sanity check:
     if (n_total!=nx) printf("[compute_relative_entropy_2xnd_ann_threads] TROUBLE! npts altered!\n");
 
-    if (nb_errors_local<nx)
-    {   h = h/(double)(nx-nb_errors_local); /* normalisation de l'esperance */
+    if (nb_errors_local>=nx) h = my_NAN;   // big trouble
+    else
+    {   h /= (double)(nx-nb_errors_local); /* normalisation de l'esperance */
      
         /* ci-après, normalisation : */
-        h = h*(double)n;
-        h = h + gsl_sf_psi_int(ny-nb_errors_local) - gsl_sf_psi_int(k); // 2019-03-18: formula "à la Kraskov"
-//        h = h + log((double)ny-1.0) - gsl_sf_psi_int(k);          // 2020-02-19: formula from Leonenko et al (XIII.30)
-        h = h + (double)n*log((double)2.0);     /* notre epsilon est le rayon, et pas le diametre de la boule */
-    }
-    else
-    {   h = my_NAN;   // big trouble
+        h *= (double)n;
+        h += gsl_sf_psi_int(ny-nb_errors_local) - gsl_sf_psi_int(k); 
+        h += (double)n*log((double)2.0);     /* notre epsilon est le rayon, et pas le diametre de la boule */
     }
     
     /* free pointers : */
-//    free(x_central);
     free_ANN(nb_cores);
     last_npts_eff_local = nx-nb_errors_local; 
     return(h);

@@ -105,21 +105,8 @@ size_t load_dataset_d(char *filename, double **x1)
 	return i;
 }
 
-/************************************************************************/
-/* to save an array of doubles in a binary file				*/
-/* see comments of save_dataset_f for more information			*/
-/************************************************************************/
-size_t save_dataset_d(char *filename, double *x1, size_t N)
-{	FILE 	*data_file;
-	size_t	err;
-	
-	data_file=fopen(filename, "wb");
-	err=fwrite(x1,sizeof(double),(size_t)N,data_file);
-/*	if (verbosity>1) printf("save_data_set: file %s save with %d/%d floats.\n",filename,err,N); */
-	fclose(data_file);
 
-	return err;
-}
+
 
 int compare(double *x, double *y, int npts)
 {   register int i;

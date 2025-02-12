@@ -96,13 +96,12 @@ void *threaded_Shannon_entropy_func(void *ptr)
 /****************************************************************************************/
 double compute_entropy_nd_ann_threads(double *x, int npts, int n, int k, int nb_cores)
 {	register int core, npts_eff_min;
-//    double epsilon=0.0;
 	double h=0.00;
 	int n_total=0; // just for sanity check
 	int ret;
     
     if (nb_cores<1) set_cores_number(nb_cores); // auto-detect, if asked for
-    // 2022-12-13: all other threads number manipulation should be done outside of this engine funcion!
+    // 2022-12-13: all other threads number manipulation should be done outside of this engine function!
     nb_cores=get_cores_number(GET_CORES_SELECTED);            
 
 	init_ANN(npts, n, k, get_cores_number(GET_CORES_SELECTED)); 	

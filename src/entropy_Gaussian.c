@@ -101,14 +101,25 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
     perm_real = create_unity_perm(N_real_max);  if (sp.type>=3) shuffle_perm(perm_real);
     perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
 
+#ifdef DEBUGp   
+    save_dataset_d("debug_x", x, npts);
+#endif
+
     nb_errors=0; last_npts_eff=0;    
     for (j=0; j<sp.N_real; j++)   // loop over "independant" windows
     {   if (sp.type>=3) shuffle_perm(perm_pts);
-    
+
+#ifdef DEBUGp    
+        save_dataset_i("debug_perm_real", perm_real->data, perm_real->size);
+        save_dataset_i("debug_perm_pts",  perm_pts->data,  perm_pts->size);        
+#endif
         Theiler_embed(x+(tau*(p-1)+perm_real->data[j]), npts, m, p, tau, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 
         S_tmp = compute_entropy_nd_Gaussian(x_new, sp.N_eff, n);
-            
+#ifdef DEBUGp
+        printf(" %1.2f", S_tmp);
+        save_dataset_d("debug_xn", x_new, sp.N_eff);
+#endif
         avg  += S_tmp;
         var  += S_tmp*S_tmp;
         nb_errors += nb_errors_local; // each call to "compute_entropy_nd_Gaussian" gives a new value of nb_errors_local

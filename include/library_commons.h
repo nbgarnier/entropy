@@ -94,5 +94,8 @@ void set_last_stds(double std, double std2);    // to force the value of last_st
 int is_equal(double x, double y);               // to test if two doubles are equal, up to some precision
 int is_zero (double x);                         // to test if a double is zero, up to some precision
 
+size_t save_dataset_d(char *filename, double *x1, size_t N);    // for debug output
+size_t save_dataset_i(char *filename, size_t *x1, size_t N);    // for debug output
+
 #endif
 

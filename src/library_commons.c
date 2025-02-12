@@ -120,3 +120,34 @@ void set_last_stds(double std, double std2)
     last_std2 = std2;
 }
 
+
+/************************************************************************/
+/* to save an array of doubles in a binary file				            */
+/************************************************************************/
+size_t save_dataset_d(char *filename, double *x1, size_t N)
+{	FILE 	*data_file;
+	size_t	err;
+	
+	data_file=fopen(filename, "wb");
+	err=fwrite(x1,sizeof(double),(size_t)N,data_file);
+/*	if (verbosity>1) printf("save_data_set: file %s save with %d/%d floats.\n",filename,err,N); */
+	fclose(data_file);
+
+	return err;
+}
+
+/************************************************************************/
+/* to save an array of ints in a binary file				            */
+/************************************************************************/
+size_t save_dataset_i(char *filename, size_t *x1, size_t N)
+{	FILE 	*data_file;
+	size_t	err;
+	
+	data_file=fopen(filename, "wb");
+	err=fwrite(x1,sizeof(size_t),(size_t)N,data_file);
+/*	if (verbosity>1) printf("save_data_set: file %s save with %d/%d floats.\n",filename,err,N); */
+	fclose(data_file);
+
+	return err;
+}
+

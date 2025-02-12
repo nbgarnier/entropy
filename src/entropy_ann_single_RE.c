@@ -34,7 +34,6 @@
 
 
 
-double compute_relative_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int n, int k)
 /**************************************************************************************
  * computes relative Shannon entropy H(x||y), using nearest neighbor statistics
  * this is derived from: Leonenko et al, Annals of Statistics 36 (5) pp2153–2182 (2008)
@@ -57,6 +56,7 @@ double compute_relative_entropy_2xnd_ann(double *x, int nx, double *y, int ny, i
  *
  * 2017-11-29, fork from "compute_entropy_nd_ann"
  ***************************************************************************************/
+double compute_relative_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int n, int k)
 {   register int i, j;
     double *x_central;
     double epsilon;
@@ -68,23 +68,22 @@ double compute_relative_entropy_2xnd_ann(double *x, int nx, double *y, int ny, i
     nb_errors_local=0; 
     
     for (i=0; i<nx; i++)
-    {   for (j=0; j<n; j++)
-            x_central[j] = x[i + j*nx];
+    {   for (j=0; j<n; j++) x_central[j] = x[i + j*nx];
           
-     //     search_ANN_external(x_central, n, k, &l, epsilon_z);
-     //     epsilon = my_max(epsilon_z, n); // epsilon_z is a vector with n components
         epsilon = ANN_find_distance_ex(x_central, n, k, 0); // 2019-01-22 
                                             // 2021-12-01: thread index 0
         if (epsilon<=0) nb_errors_local++;
         else   h = h + log(epsilon);
     }
 
-    if (nb_errors_local<nx)
+    if (nb_errors_local>=nx) h=my_NAN;
+    else
     {   h = h/(double)(nx-nb_errors_local); /* normalisation de l'esperance */
      
-        /* ci-après, normalisation : */
+        // normalisation :
         h = h*(double)n;
-        h = h + gsl_sf_psi_int(ny-nb_errors_local) - gsl_sf_psi_int(k); // 2019-03-18: formula "à la Kraskov"
+        h = h + gsl_sf_psi_int(ny) - gsl_sf_psi_int(k);     // 2019-03-18: formula "à la Kraskov"
+                                                            // 2025-02-12: removed -nb_errors_local from the first psi function
 //        h = h + log((double)ny-1.0) - gsl_sf_psi_int(k);          // 2020-02-19: formula from Leonenko et al (XIII.30)
         h = h + (double)n*log((double)2.0);     /* notre epsilon est le rayon, et pas le diametre de la boule */
     }

@@ -37,13 +37,19 @@ case "${host_os}" in
     darwin*)
         PLATFORM=[MACOS]
         AC_MSG_RESULT([MACOS])
-        MAKELIB="libtool -arch_only $host_cpu -static -o"
         case "${host_cpu}" in
             x86_64*)
+                MAKELIB="libtool -arch_only $host_cpu -static -o"
                 MEX_LDEXTENSION=[.mexmaci64]
                 MEX_DIRNAME=[maci64]
                 ;;
+            arm64*)
+                MAKELIB="libtool -arch_only $host_cpu -static -o"
+                MEX_LDEXTENSION=[.mexmaca64]
+                MEX_DIRNAME=[maca64]
+                ;;
             aarch64*)
+                MAKELIB="libtool -arch_only arm64 -static -o"
                 MEX_LDEXTENSION=[.mexmaca64]
                 MEX_DIRNAME=[maca64]
                 ;;

@@ -46,10 +46,8 @@
 /****************************************************************************************/
 double compute_Renyi_nd_ann(double *x, int nx, int n, double q, int k)
 {   register int i;
-//    int    l;
     double epsilon, *epsilon_z;
     double h=0.00;
-    //	FILE *fe;
     
     epsilon_z = (double*)calloc(n, sizeof(double));
     init_ANN(nx, n, k, SINGLE_TH);
@@ -60,21 +58,20 @@ double compute_Renyi_nd_ann(double *x, int nx, int n, double q, int k)
     {   epsilon = ANN_find_distance_in(i, n, k, 0);  // 2021-12-01 pthread
         
         if (epsilon==0) nb_errors_local++;
-        else /* estimateur de l'integrale (XII.153) : esperance de la grandeur suivante : */
+        else    // estimateur de l'integrale (XII.153) : esperance de la grandeur suivante :
             h = h + exp((double)n*(1.0-q)*log(epsilon));
-        //            fprintf(fe,"%f\n",epsilon);
-        
     }
     
-    if (nb_errors_local<nx)
-    {   h = h/(double)(nx-nb_errors_local); /* normalisation de l'esperance */
+    if (nb_errors_local<nx)     
+    {   h = h/(double)(nx-nb_errors_local); // normalisation de l'esperance
     
-        /* ci-après, application de la formule (XII.153) : */
+        // ci-après, application de la formule (XII.153) ou (XIII.253) :
         h = log(h);
         h = h + log(gsl_sf_gamma((double)k)) - log(gsl_sf_gamma((double)(k+1.0-q)));
         h = h/((double)1.0-q);
         h = h + log((double)(nx-1-nb_errors_local)) // replaced nx by nx-1-nb_errors (2017-11-29)
                     + n*log((double)2.0);           // XII.153
+
     }
     else    // big trouble
     {   h = my_NAN;   
