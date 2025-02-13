@@ -12,6 +12,7 @@
 //
 // 2021-11-29: multithread adaptations started...
 // 2021-12-01: multithread entropy OK
+// 2025-02-13: added specific housekeeping for Relative Entropy engines
 //----------------------------------------------------------------------
 #define noDEBUG
 #define DEBUG_N 37
@@ -28,13 +29,6 @@
 // global variables for (internal, but lower level so "private") operations on the main tree:
 // note that for these variables, moved from other .cpp files, the names have been kept for
 // consistency accross the library
-
-// 2021-12-07: allocation of these modified (for pthread) variables here in ANN_wrapper.cpp
-// the following variables are declared in "ann_1.1.2/src/kd_search.h"
-// and they are defined "for real" in "ann_1.1.2/src/kd_search.cpp"  
-//extern int      *ANNkdDim;          // dimension of space 
-//extern ANNpoint *ANNkdQ;            // 2021-12-01, query point, adapted for pthread
-//extern ANNmin_k	**ANNkdPointMK;	    // 2021-12-01, set of k closest points, adapted for pthread
                                     
 // 2021-12-03: allocation of these modified (for pthread) variables here in ANN_wrapper.cpp
 // global variables for (internal, private or lower level) operations on the sub-trees:
@@ -58,27 +52,17 @@ ANNkd_tree*	    kdTree;         // search structure
 
 // global variables for the subtrees, internal to the C++ code, but exposed only in ANN_Wrapper.cpp:
 ANNpointArray   dataPts_1;      // data points, type (*(*double))
-// ANNidxArray    *nnIdx_1;        // near neighbor indices
-// ANNdistArray   *dists_1;        // near neighbor distances
 ANNkd_tree*     kdTree_1;       // search structure
  
 ANNpointArray   dataPts_2;      // data points, type (*(*double))
-// ANNidxArray    *nnIdx_2;        // near neighbor indices
-// ANNdistArray   *dists_2;        // near neighbor distances
 ANNkd_tree*     kdTree_2;       // search structure
  
 ANNpointArray   dataPts_3;      // data points, type (*(*double))
-// ANNidxArray    *nnIdx_3;        // near neighbor indices
-// ANNdistArray   *dists_3;        // near neighbor distances
 ANNkd_tree*     kdTree_3;       // search structure
 
 // allocate function (housekeeping) :
 int init_ANN(int maxPts, int dim, int max_k, int NCORES=1)
 {   if (NCORES<1) return(-1);
-
-//    ANNkdDim = new int[NCORES];                 // 2021-12-07
-//    ANNkdQ   = annAllocPts(NCORES, dim);        // 2021-12-01, OK
-//    ANNkdPointMK = new ANNmin_k*[NCORES];       // 2021-12-01, new for pthread
 
  	dataPts = annAllocPts(maxPts, dim);			// allocate data points
  	 	
@@ -93,6 +77,23 @@ int init_ANN(int maxPts, int dim, int max_k, int NCORES=1)
 }
 
 
+
+// allocate function (housekeeping) :
+// 2025-02-13, new specific function for relative entropy (completely replace "init_ANN")
+int init_ANN_RE(int maxPts_x, int maxPts_y, int dim, int max_k, int NCORES=1)
+{   // int maxPts = (maxPts_x>maxPts_y) ? maxPts_x : maxPts_y;
+
+    // the main tree is for y:
+    init_ANN(maxPts_y, dim, max_k, NCORES); // or 2*NCORES?
+
+    // a secondary tree is for x:
+    dataPts_1 = annAllocPts(maxPts_x, dim);   
+			
+    return(0);
+}
+
+
+
 // allocate function (housekeeping) :
 // 2019-01-30, version for MI, 2 arguments and 2 subspaces
 // 2021-12-03, version for multithreading
@@ -101,35 +102,14 @@ int init_ANN_MI(int maxPts, int dim_1, int dim_2, int max_k, int NCORES=1)
     // the main tree:
     init_ANN(maxPts, dim_1+dim_2, max_k, 2*NCORES);
     
-    // 2021-12-03, new for pthread: additional allocations for marginal counting 
-    // (variables defined for real in kd_fix_rad_search.cpp):
-    // note the factor 2 to account for the use by 2 algorithms simultaneously!
-//    ANNkdFRDim        = new int[2*NCORES];
-//  ANNkdFRQ          = annAllocPts(2*NCORES, dim_1+dim_2);  // 2021-12-03, check dim_1+dim_2 ?
-//    ANNkdFRSqRad      = new ANNdist[2*NCORES];
-//    ANNkdFRPointMK    = new ANNmin_k*[2*NCORES]; // next allocation step is done in the tree by annkFRSearch
-//    ANNkdFRPtsVisited = new int[2*NCORES];
-//    ANNkdFRPtsInRange = new int[2*NCORES];
-//    pthread_mutex_init(&mutex_annkFRSearch, 0);     // 2021-12-07, NBG: experimentation
-//    pthread_mutex_init(&mutex_strong, 0);           // 2021-12-07, NBG: experimentation
-    
     // the subtrees:
-// 2021-12-03 note: I think these variables are unused!!!     
-// 2021-12-07 note: checked, they are indeed unused.   
     dataPts_1 = annAllocPts(maxPts, dim_1);     // allocate data points
-//    nnIdx_1 = new ANNidx*[NCORES];              // allocate nearest neighbors indices 
-//	  for (int i=0; i<NCORES; i++) nnIdx_1[i] = new ANNidx[max_k+1];
-//    dists_1 = new ANNdist*[NCORES];             // allocate nearest neighbors distances
-//	  for (int i=0; i<NCORES; i++) dists_1[i] = new ANNdist[max_k+1];
-	
     dataPts_2 = annAllocPts(maxPts, dim_2);     // allocate data points
-//     nnIdx_2 = new ANNidx*[NCORES];				// allocate nearest neighbors indices 
-// 	  for (int i=0; i<NCORES; i++) nnIdx_2[i] = new ANNidx[max_k+1];
-// 	dists_2 = new ANNdist*[NCORES];             // allocate nearest neighbors distances
-// 	  for (int i=0; i<NCORES; i++) dists_2[i] = new ANNdist[max_k+1];
 	
     return(0);
 }
+
+
 
 // allocate function (housekeeping) :
 // 2019-01-30, version for PMI et al, 3 arguments and 3 subspaces
@@ -140,25 +120,12 @@ int init_ANN_PMI(int maxPts, int dim_1, int dim_2, int dim_3, int max_k, int NCO
     
     // the subtrees:
     dataPts_1 = annAllocPts(maxPts, dim_1+dim_3);  // allocate data points
-//     nnIdx_1 = new ANNidx*[NCORES];              // allocate nearest neighbors indices 
-// 	  for (int i=0; i<NCORES; i++) nnIdx_1[i] = new ANNidx[max_k+1];
-//     dists_1 = new ANNdist*[NCORES];             // allocate nearest neighbors distances
-// 	  for (int i=0; i<NCORES; i++) dists_1[i] = new ANNdist[max_k+1];
-	
 	dataPts_2 = annAllocPts(maxPts, dim_3);        // allocate data points
-//     nnIdx_2 = new ANNidx*[NCORES];				// allocate nearest neighbors indices 
-// 	  for (int i=0; i<NCORES; i++) nnIdx_2[i] = new ANNidx[max_k+1];
-// 	dists_2 = new ANNdist*[NCORES];             // allocate nearest neighbors distances
-// 	  for (int i=0; i<NCORES; i++) dists_2[i] = new ANNdist[max_k+1];
-
     dataPts_3 = annAllocPts(maxPts, dim_2+dim_3);  // allocate data points
-//    nnIdx_3 = new ANNidx*[NCORES];				// allocate nearest neighbors indices 
-//	  for (int i=0; i<NCORES; i++) nnIdx_3[i] = new ANNidx[max_k+1];
-//	dists_3 = new ANNdist*[NCORES];             // allocate nearest neighbors distances
-//	  for (int i=0; i<NCORES; i++) dists_3[i] = new ANNdist[max_k+1];
 
     return(0);
 }
+
 
 
 // following two functions are new, to set the ANN_ALLOW_SELF_MATCH variable/singleton
@@ -321,6 +288,24 @@ double ANN_find_distance_in(int i, int n, int k, int core) // 2021-12-01: core=0
 
 
 
+/****************************************************************************************/
+/* same as above, but using tree1                                                       */
+/****************************************************************************************/
+double ANN_find_distance_in_tree1(int i, int n, int k, int core) // 2021-12-01: core=0 if not multithread!
+{   UNUSED(n);
+    kdTree_1->annkSearch(            // search
+                       dataPts_1[i], //queryPt,            // query point
+                       k+ANN_ALLOW_SELF_MATCH,  // number of near neighbors (including or excluding central point)
+                       nnIdx[core],                // nearest neighbors (returned)
+                       dists[core],                // distance (returned)
+                       ANN_eps,
+                       core);
+
+    return( (double)dists[core][k-1+ANN_ALLOW_SELF_MATCH]); // distance from central point
+} /* end of function "ANN_find_distance_in_tree1" **************************************/
+
+
+
 /***************************************************************************************/
 /* below : piece of code to search for nearest neighbors of a point                    */
 /*         using a previously computed kd-tree (with ANN library)                      */
@@ -397,7 +382,9 @@ int ANN_count_nearest_neighbors_nd_tree3(double *x0, double epsilon, int core)
 }
 
 
-// free_function (housekeeping) :
+
+/***********************************************************************************************/
+// free_functions (housekeeping) :
 void free_ANN(int NCORES)
 {   
 //    delete [] ANNkdDim;
@@ -406,27 +393,26 @@ void free_ANN(int NCORES)
     
     for (int i=0; i<NCORES; i++) { delete nnIdx[i]; }   delete [] nnIdx;
     for (int i=0; i<NCORES; i++) { delete dists[i]; }   delete [] dists;
-    annDeallocPts(dataPts);
-    delete kdTree;             // clean main tree
+    
+    annDeallocPts(dataPts);    delete kdTree;             // clean main tree
     
     annClose();                // done with ANN
+}
+
+// 2025-02-13, RE version with 2 subspaces
+void free_ANN_RE(int NCORES)
+{
+    annDeallocPts(dataPts_1);    delete kdTree_1;
+ 
+    free_ANN(NCORES); // or 2*NCORES if used, see above in "init_ANN_RE"
 }
 
 // free_function (housekeeping) :
 // 2019-01-30, version with 2 subspaces
 void free_ANN_MI(int NCORES)
 {
-    // deallocate variables used over tree 1:
-//    for (int i=0; i<NCORES; i++) delete nnIdx_1[i];        delete [] nnIdx_1;             
-//    for (int i=0; i<NCORES; i++) delete dists_1[i];        delete [] dists_1;
-    annDeallocPts(dataPts_1);
-    delete kdTree_1;
-
-    // deallocate variables used over tree 2:
-//    for (int i=0; i<NCORES; i++) delete nnIdx_2[i];        delete [] nnIdx_2;  
-//    for (int i=0; i<NCORES; i++) delete dists_2[i];        delete [] dists_2;
-    annDeallocPts(dataPts_2);
-    delete kdTree_2;
+    annDeallocPts(dataPts_1);    delete kdTree_1;
+    annDeallocPts(dataPts_2);    delete kdTree_2;
     
     // clean main tree and other global stuff, and then close ANN
     free_ANN(2*NCORES);        // 2021-12-06 corrected  
@@ -437,14 +423,9 @@ void free_ANN_MI(int NCORES)
 // 2022-02-07, possible memory leak corrected
 void free_ANN_PMI(int NCORES)
 {
-    annDeallocPts(dataPts_3);
-    delete kdTree_3;
-
-    annDeallocPts(dataPts_2);
-    delete kdTree_2;
-
-    annDeallocPts(dataPts_1);
-    delete kdTree_1;
+    annDeallocPts(dataPts_3);    delete kdTree_3;
+    annDeallocPts(dataPts_2);    delete kdTree_2;
+    annDeallocPts(dataPts_1);    delete kdTree_1;
 
     free_ANN(3*NCORES);   // cleaning main tree and other global stuff, and closing ANN
 }

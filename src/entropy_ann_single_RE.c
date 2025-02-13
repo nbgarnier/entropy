@@ -40,8 +40,8 @@
  * this is derived from: Leonenko et al, Annals of Statistics 36 (5) pp2153–2182 (2008)
  * page 2163, formula (3.13)
  * 
- * this function returns the cross-entropy part of the relative entropy 
- * see "compute_relative_entropy_2xnd_ann" for the "complete" relative entropy
+ * this function returns the cross-entropy part of the relative entropy,
+ * see "compute_relative_entropy_2xnd_ann" for the "complete" relative entropy,
  * see https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
  * 
  * this version is for n-dimentional systems, and uses ANN library with kd-tree
@@ -110,7 +110,7 @@ double compute_cross_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int 
  * this is derived from: Leonenko et al, Annals of Statistics 36 (5) pp2153–2182 (2008)
  * page 2163, formula (3.12)
  * 
- * this function returns the "complete" relative entropy (Kullbach-Leibler divergence)
+ * this function returns the "complete" relative entropy (Kullbach-Leibler divergence),
  * see https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
  *
  * this version is for n-dimentional systems, and uses ANN library with kd-tree
@@ -134,38 +134,38 @@ double compute_cross_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int 
 double compute_relative_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int n, int k)
 {   register int i, j;
     double *x_central;
-    double epsilon;
+    double epsilon_x, epsilon_y;
     double h=0.00;
 
     x_central = (double*)calloc(n, sizeof(double));
-    init_ANN(ny, n, k, SINGLE_TH);
-    create_kd_tree(y, ny, n);
+    init_ANN_RE(nx, ny, n, k, SINGLE_TH);
+    create_kd_tree  (y, ny, n); // main tree for y (cross entropy H(x||y))
+    create_kd_tree_1(x, nx, n); // secondary tree for x (regular entropy of x)
     nb_errors_local=0; 
     
     for (i=0; i<nx; i++)
     {   for (j=0; j<n; j++) x_central[j] = x[i + j*nx];
           
-        epsilon = ANN_find_distance_ex(x_central, n, k, 0); // 2019-01-22 
-                                            // 2021-12-01: thread index 0
-        if (epsilon<=0) nb_errors_local++;
-        else   h = h + log(epsilon);
+        epsilon_y = ANN_find_distance_ex(x_central, n, k, 0);   // 2021-12-01: thread index 0
+        epsilon_x = ANN_find_distance_in_tree1(i,   n, k, 0);   // 2025-02-13: new function
+
+        if ( (epsilon_y<=0) || (epsilon_x<=0) ) nb_errors_local++;    // this test may be simplified / reduced
+        else   h += log(epsilon_y) - log(epsilon_x);
     }
 
     if (nb_errors_local>=nx) h=my_NAN;
     else
-    {   h = h/(double)(nx-nb_errors_local); /* normalisation de l'esperance */
+    {   h /= (double)(nx-nb_errors_local); /* normalisation de l'esperance */
      
         // normalisation :
-        h = h*(double)n;
-        h = h + gsl_sf_psi_int(ny) - gsl_sf_psi_int(k);     // 2019-03-18: formula "à la Kraskov"
-                                                            // 2025-02-12: removed -nb_errors_local from the first psi function
-//        h = h + log((double)ny-1.0) - gsl_sf_psi_int(k);          // 2020-02-19: formula from Leonenko et al (XIII.30)
-        h = h + (double)n*log((double)2.0);     /* notre epsilon est le rayon, et pas le diametre de la boule */
+        h *= (double)n;
+        h += gsl_sf_psi_int(ny) - gsl_sf_psi_int(nx);   // 2025-02-12: formula "à la Kraskov"
+//        h += log((double)ny/(double)(nx-1));          // 2025-02-12: formula from Leonenko et al (XIII.30)
     }
     
     /* free pointers : */
     free(x_central);
-    free_ANN(SINGLE_TH);
+    free_ANN_RE(SINGLE_TH);
     last_npts_eff_local = nx-nb_errors_local; 
     return(h);
 } /* end of function "compute_relative_entropy_2xnd_ann" *************************************/

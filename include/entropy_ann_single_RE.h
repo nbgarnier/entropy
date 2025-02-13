@@ -11,4 +11,5 @@
  */
 
 /* low-level function to compute relative entropy */
+double compute_cross_entropy_2xnd_ann   (double *x, int nx, double *y, int ny, int n, int k);
 double compute_relative_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int n, int k);
