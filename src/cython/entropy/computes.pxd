@@ -12,7 +12,7 @@ cdef extern from "entropy_ann.h":
 	int compute_entropy_ann            (double *x, int nx, int m, int p, 
 								int tau, int tau_Theiler, int N_eff, int N_realizations, int k, double *S)
 	int compute_relative_entropy_ann   (double *x, int nx, double *y, int ny, int mx, int my, int px, int py, 
-								int tau, int tau_Theiler, int N_eff, int N_realizations, int k, double *H)
+								int tau, int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *H)
 	int compute_mutual_information_ann(double *x, double *y, int nx, int mx, int my, int px, int py,
 								int tau, int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
 	int compute_partial_MI_ann         (double *x, double *y, double *z, int nx, int *dim, 

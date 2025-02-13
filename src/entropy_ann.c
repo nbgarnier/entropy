@@ -194,7 +194,7 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
 
 
 /****************************************************************************************
- * computes relative Shannon entropy H(x||y), using nearest neighbor statistics         *
+ * computes cross entropy H(x||y) or relative entropy, using ns statistics              *
  * this is derived from: Leonenko et al, Annals of Statistics 36 (5) pp2153–2182 (2008) *
  *                                                                                      *
  * this version computes information redundency of 2 variables x and y                  *
@@ -209,7 +209,8 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
  * my   is the nb of dimension of y before embedding                                    *
  * px   indicates how many points to take in the past of x (embedding)                  *
  * py   indicates how many points to take in the past of y (embedding)                  *
- * stride is the time lag between 2 consecutive points in time when embedding           *
+ * tau  is the time lag between 2 consecutive points in time when embedding             *
+ * method is an integer to choose between cross entropy (0) or relative entropy (1)     *
  *                                                                                      *
  * this function is a wrapper to the functions :                                        *
  *     - compute_relative_entropy_2xnd_ann                                              *
@@ -223,7 +224,7 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
  * 2023-11-28 : renamed from "compute_relative_entropy_ann_N" without the "_N" now      *
 *****************************************************************************************/
 int compute_relative_entropy_ann(double *x, int nx, double *y, int ny, int mx, int my, int px, int py, int tau, 
-                            int tau_Theiler, int N_eff, int N_realizations, int k, double *H)
+                            int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *H)
 {   double  *x_new, *y_new;
     double  avg=0.0, var=0.0, tmp;
     int     N_real_tot=0;
@@ -271,11 +272,15 @@ int compute_relative_entropy_ann(double *x, int nx, double *y, int ny, int mx, i
         Theiler_embed(y+(tau*(py-1)+perm_real_y->data[j]), ny, my, py, tau, sp_y.Theiler, perm_pts_y->data, y_new, sp_y.N_eff);        
 
         if (USE_PTHREAD>0) // if we want multithreading
-            tmp = compute_relative_entropy_2xnd_ann_threads(x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k,
-                                get_cores_number(GET_CORES_SELECTED));            
+        {   if (method==0)  tmp = compute_cross_entropy_2xnd_ann_threads   (x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k,
+                                    get_cores_number(GET_CORES_SELECTED));            
+            else            tmp = compute_relative_entropy_2xnd_ann_threads(x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k,
+                                    get_cores_number(GET_CORES_SELECTED));
+        }
         else
-            tmp = compute_relative_entropy_2xnd_ann        (x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k);     
-            
+        {   if (method==0)  tmp = compute_cross_entropy_2xnd_ann           (x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k);     
+            else            tmp = compute_relative_entropy_2xnd_ann        (x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k);  
+        }   
         avg += tmp;
         var += tmp*tmp;
         nb_errors += nb_errors_local;

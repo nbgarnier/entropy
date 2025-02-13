@@ -25,11 +25,11 @@ extern const int k_default;     // defined for real in entropy_ann.c, used in cy
 /********************************************************************************************************************/
 /* function to compute Shannon entropy */
 int compute_entropy_ann 	        (double *x, int nx, int m, int p, int tau, int tau_Theiler, 
-                                    int N_eff, int N_realizations, int k, double *S); /* wrapper, to be used */
+                                    int N_eff, int N_realizations, int k, double *S);
 
 /* functions to compute relative entropy */
 int compute_relative_entropy_ann    (double *x, int nx, double *y, int ny, int mx, int my, int px, int py, int tau, int tau_Theiler, 
-                                    int N_eff, int N_realizations, int k, double *H); /* wrapper, to be used */
+                                    int N_eff, int N_realizations, int k, int method, double *H);
 
 
 // for the functions below, 2 parameters are 2 returned values : I1 and I2, corresponding to algorithm 1 and 2

@@ -202,7 +202,7 @@ def compute_relative_entropy(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1
                 int Theiler=0, int N_eff=0, int N_real=0,
                 int k=commons.k_default, int method=1):
      """      
-     computes relative entropy of two processes (possibly multi-dimensional) using nearest neighbors search with ANN library.
+     computes cross or relative entropy of two processes (possibly multi-dimensional) using nearest neighbors search with ANN library.
      (time-)embedding is performed on the fly.
           
      :param x: signal (NumPy array with ndim=2, time along second dimension)
@@ -215,9 +215,9 @@ def compute_relative_entropy(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1
      :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
      :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
      :param mask: masks are not supported yet.
-     :param method: 0 for relative entropy (1 value [Hr] is returned) or 1 for Kullbach-Leibler divergence (2 values [Hr, KLdiv] are returned) (default=1)
+     :param method: 0 for cross entropy or 1 for Kullbach-Leibler divergence (relative entropy) (default=1)
   
-     :returns: 1 or 2 values are returned, depending on the value of the parameter method: the relative entropy (Hr) and the KL divergence (Hr-H) estimates.
+     :returns: 1 value is returned, depending on the value of the parameter method: the cross entropy (Hr) or the relative entropy (KL divergence (Hr-H)).
      
      see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
      """
@@ -232,16 +232,9 @@ def compute_relative_entropy(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
      
-     ratou = computes.compute_relative_entropy_ann(&x[0,0], npts, &y[0,0], npty, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, &Hr)
-     if (method==0): return Hr
-     
-     cdef double std_Hr=0., std_H=0., tmp=0.
-     commons.get_last_stds(&std_Hr, &tmp)
-     ratou = computes.compute_entropy_ann(&x[0,0], npts, nx, n_embed_x, stride, Theiler, N_eff, N_real, k, &H)
-     commons.get_last_stds(&std_H, &tmp)
-     
-     commons.set_last_stds(std_Hr, std_H)  # if not, returned std is the one for H, not Hr anymore!
-     return [Hr, Hr-H]
+     ratou = computes.compute_relative_entropy_ann(&x[0,0], npts, &y[0,0], npty, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, method, &Hr)
+
+     return Hr
 
 
 
