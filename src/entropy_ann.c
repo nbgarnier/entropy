@@ -284,7 +284,7 @@ int compute_relative_entropy_ann(double *x, int nx, double *y, int ny, int mx, i
         avg += tmp;
         var += tmp*tmp;
         nb_errors += nb_errors_local;
-        last_npts_eff += last_npts_eff_local; // each call to "compute_entropy_nd_ann" uses an effective nb of points
+        last_npts_eff += last_npts_eff_local; // each call to "compute_xxx_entropy_2xnd_ann" uses an effective nb of points
      }
      avg /=N_real_tot;
      var /=N_real_tot;  var -= avg*avg;
