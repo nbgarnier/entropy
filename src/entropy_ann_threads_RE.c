@@ -182,10 +182,11 @@ void *threaded_relative_entropy_func(void *ptr)
         k        = args->k,
         n_eff    = i_end-i_start, // how many points in this thread
         l_errors = 0;
-    double *x, *x_central;
+    double *x;
+    double x_central[n];
 
     x         = args->x;               // pointer to the data (read only, so thread-safe)
-    x_central = (double *)calloc(n, sizeof(double));
+//    x_central = (double *)calloc(n, sizeof(double));
     
     for (i=i_start; i<i_end; i++)
     {   for (j=0; j<n; j++) x_central[j] = x[i + j*nx];
@@ -193,7 +194,8 @@ void *threaded_relative_entropy_func(void *ptr)
         epsilon_y = ANN_find_distance_ex(x_central, n, k, core);   // 2021-12-01: thread index 0
         epsilon_x = ANN_find_distance_in_tree1(i,   n, k, core);   // 2025-02-13: new function
 
-        if ( is_zero(epsilon_y) || is_zero(epsilon_x) ) l_errors++;    // this test may be simplified / reduced
+//        if ( is_zero(epsilon_y) || is_zero(epsilon_x) ) l_errors++;    // this test may be simplified / reduced
+        if (is_zero(epsilon_x))  l_errors++;                            // this is simplified, but maybe dangerous
         else l_hs += log(epsilon_y) - log(epsilon_x);
 
     }
@@ -202,7 +204,7 @@ void *threaded_relative_entropy_func(void *ptr)
     out->n_errors = l_errors;
     out->h_sum    = l_hs;
 
-    free(x_central);
+//    free(x_central);
     pthread_exit(out);
 }
 
