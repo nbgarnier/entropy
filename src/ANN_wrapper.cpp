@@ -84,7 +84,7 @@ int init_ANN_RE(int maxPts_x, int maxPts_y, int dim, int max_k, int NCORES=1)
 {   // int maxPts = (maxPts_x>maxPts_y) ? maxPts_x : maxPts_y;
 
     // the main tree is for y:
-    init_ANN(maxPts_y, dim, max_k, NCORES); // or 2*NCORES?
+    init_ANN(maxPts_y, dim, max_k, 2*NCORES); // NCORES or 2*NCORES?
 
     // a secondary tree is for x:
     dataPts_1 = annAllocPts(maxPts_x, dim);   
@@ -404,7 +404,7 @@ void free_ANN_RE(int NCORES)
 {
     annDeallocPts(dataPts_1);    delete kdTree_1;
  
-    free_ANN(NCORES); // or 2*NCORES if used, see above in "init_ANN_RE"
+    free_ANN(2*NCORES); // or 2*NCORES if used, see above in "init_ANN_RE"
 }
 
 // free_function (housekeeping) :

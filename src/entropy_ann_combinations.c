@@ -99,22 +99,23 @@ int compute_entropy_increments_ann(double *x, int npts, int m, int px, int strid
 	samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
 	
-#ifdef DEBUGp
-    debug_trace("[compute_entropy_increments_ann] signal x", x, npts, m, p, stride, k);
+#ifdef DEBUG
+    // debug_trace("[compute_entropy_increments_ann] signal x", x, npts, m, p, stride, k);
+    save_dataset_d("debug_x.dat", x, npts*m);
 #endif
 
     *S = my_NAN; // default returned value
 
-    if ((m<1))          return(printf("[compute_entropy_increments_ann] : m must be at least 1 !\n"));
-    if ((px<0))         return(printf("[compute_entropy_increments_ann] : p must be at least 0 !\n"));
-    if ((stride<1))     return(printf("[compute_entropy_increments_ann] : stride must be at least 1 !\n"));
-    if ((k<1))          return(printf("[compute_entropy_increments_ann] : k must be at least 1 !\n"));
+    if ((m<1))          return(my_NAN*printf("[compute_entropy_increments_ann] : m must be at least 1 !\n"));
+    if ((px<0))         return(my_NAN*printf("[compute_entropy_increments_ann] : p must be at least 0 !\n"));
+    if ((stride<1))     return(my_NAN*printf("[compute_entropy_increments_ann] : stride must be at least 1 !\n"));
+    if ((k<1))          return(my_NAN*printf("[compute_entropy_increments_ann] : k must be at least 1 !\n"));
 
     // additional checks and auto-adjustments of parameters:
     N_real_max = set_sampling_parameters(npts, p, stride, &sp, "compute_entropy_increments_ann");
-    if (N_real_max<1)   return(printf("[compute_entropy_increments_ann] : aborting ! (Theiler %d, N_eff %d, N_real %d)\n", 
+    if (N_real_max<1)   return(my_NAN*printf("[compute_entropy_increments_ann] : aborting ! (Theiler %d, N_eff %d, N_real %d)\n", 
                                 sp.Theiler, sp.N_eff, sp.N_real));
-    if (sp.N_eff < 2*k) return(printf("[compute_entropy_increments_ann] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
+    if (sp.N_eff < 2*k) return(my_NAN*printf("[compute_entropy_increments_ann] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
     
     x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
 
@@ -130,6 +131,11 @@ int compute_entropy_increments_ann(double *x, int npts, int m, int px, int strid
         if (incr_type==1) increments(x+(stride*(p-1)+perm_real->data[j]), npts, m, p, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
         else              incr_avg  (x+(stride*(p-1)+perm_real->data[j]), npts, m, p, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 
+#ifdef DEBUG
+        save_dataset_i("debug_perm_real", perm_real->data, perm_real->size);
+        save_dataset_i("debug_perm_pts",  perm_pts->data,  perm_pts->size);  
+        save_dataset_d("debug_x_inc.dat", x, sp.N_eff*m);
+#endif
         // 2022-03-11: std of the increments: // 2024-03-05: works only if m=1! (uni-dimensional signal)
         x_new_std     = gsl_stats_sd(x_new, 1, sp.N_eff);
         data_std     += x_new_std;

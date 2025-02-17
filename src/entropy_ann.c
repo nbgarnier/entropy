@@ -281,6 +281,7 @@ int compute_relative_entropy_ann(double *x, int nx, double *y, int ny, int mx, i
         {   if (method==0)  tmp = compute_cross_entropy_2xnd_ann           (x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k);     
             else            tmp = compute_relative_entropy_2xnd_ann        (x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k);  
         }   
+        printf("\n %f , %d\n", tmp, nb_errors_local);
         avg += tmp;
         var += tmp*tmp;
         nb_errors += nb_errors_local;

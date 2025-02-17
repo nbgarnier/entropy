@@ -21,6 +21,7 @@
 #include "verbosity.h"
 #include "samplings.h"
 
+// int binomial_0[1] = {1};
 int binomial_1[2] = {1, -1};
 int binomial_2[3] = {1, -2,  1};
 int binomial_3[4] = {1, -3,  3,  -1};
@@ -30,6 +31,7 @@ int binomial_6[7] = {1, -6, 15, -20, 15, -6, 1};
 
 int *get_binomial(int order)
 {   if      (order==2) return binomial_1; // a trick
+//    else if (order==1) return binomial_0; // after order 2, because less often used (speed optimization)
     else if (order==3) return binomial_2;
     else if (order==4) return binomial_3;
     else if (order==5) return binomial_4;
@@ -130,7 +132,7 @@ void increments(double *x, int npts, int mx, int px, int tau, int Theiler, size_
                  s;                 // center
     register int *binome=get_binomial(px);
        
-    if (binome==NULL) return;
+    if ( (binome==NULL) && (px>1) ) return;
           
     for (i=0; i<npts_new; i++)      // loop on time in 1 window
     {   s = Theiler*ind[i];
@@ -158,7 +160,7 @@ void incr_avg(double *x, int npts, int mx, int px, int tau, int Theiler, size_t 
 {   register int i, d, l, s, t;
     register int *binome=get_binomial(px);
        
-    if (binome==NULL) return;
+    if ( (binome==NULL) && (px>1) ) return;
     
     for (i=0; i<npts_new; i++)      // loop on time in 1 window
     {   for (d=0; d<mx; d++)        // loop on existing dimensions in x
@@ -192,7 +194,8 @@ void increments_2d(double *x, int npts_x, int npts_y, int m, int p, int stride_x
     printf("m=%d, p=%d\n", m,p);
       fflush(stdout);
 */      
-    if (binome==NULL) return;
+    if ( (binome==NULL) && (p>1) ) return;
+
     for (ix=0; ix<npts_x_new; ix++)     // loop over new points in x
     for (iy=0; iy<npts_y_new; iy++)     // loop over new points in y
     {   s = Theiler_x*ind_x[ix]*npts_y + Theiler_y*ind_y[iy];
@@ -227,7 +230,8 @@ void incr_avg_2d(double *x, int npts_x, int npts_y, int m, int p, int stride_x, 
     register int npts_new = npts_x_new*npts_y_new;
     register int *binome=get_binomial(p);
        
-    if (binome==NULL) return;
+    if ( (binome==NULL) && (p>1) ) return;
+
     t_norm = ((stride_x>0)? stride_x:1) * ((stride_y>0)? stride_y:1);
 
     for (ix=0; ix<npts_x_new; ix++)     // loop over new points in x
@@ -264,7 +268,7 @@ void increments_mask(double *x, int npts, int mx, int px, int stride, size_t *in
                  s;                 // center
     register int *binome=get_binomial(px);
        
-    if (binome==NULL) return;    
+    if ( (binome==NULL) && (px>1) ) return;  
     for (i=0; i<npts_new; i++)      // loop on time over acceptable points for the current window
     {   s = ind_epoch[i];
         for (d=0; d<mx; d++)        // loop on existing dimensions in x
@@ -285,7 +289,7 @@ void incr_avg_mask(double *x, int npts, int mx, int px, int stride, size_t *ind_
                  s, t;              // center, and indice for stride
     register int *binome=get_binomial(px);
        
-    if (binome==NULL) return;    
+    if ( (binome==NULL) && (px>1) ) return;
     for (i=0; i<npts_new; i++)      // loop on time over acceptable points for the current window
     {   s = ind_epoch[i];
         for (d=0; d<mx; d++)        // loop on existing dimensions in x
