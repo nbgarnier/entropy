@@ -57,3 +57,4 @@ test_over_scales.py
 bin/run.exe
 
 entropy.dev..code-workspace
+.vscode/settings.json
