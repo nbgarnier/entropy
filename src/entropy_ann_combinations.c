@@ -71,9 +71,11 @@
 /* x      contains all the data, which is of size nx in time					    	*/
 /* nx     is the number of points in time											    */
 /* m	  indicates the (initial) dimensionality of x								    */
-/* px     indicates the order of increments (usually 1)                                 */
+/* px     indicates the order of increments (usually 1) (0 means no increments)         */
+/*          the nb of points used is (px+1)                                             */
 /* stride is the time lag between 2 consecutive points to be considered in time		    */
 /* k      nb of neighbors to be considered										        */
+/* incr_type 1 for regular increments, or 2 for averaged increments                     */
 /*																			            */
 /* data is ordered like this :													        */
 /* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)				*/

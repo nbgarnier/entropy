@@ -89,18 +89,18 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
 	
     *S = my_NAN;
         
-	if ((m<1) || (p<1)) return(printf("[compute_entropy_ann_mask] : m and p must be at least 1 !\n"));
+	// adapt embedding dimension according to method (2025-02-17, moved before tests (on p))
+	if (method==0)  p_new = p;  // time-embedding (not increments)
+	else {          p_new = 1;  // increments (regular or averaged)
+	                p    += 1;  // convention: increments of order 1 (p) require 2 (p+1) points in order to be computed
+	     }
+    
+    if ((m<1) || (p<1)) return(printf("[compute_entropy_ann_mask] : m and p must be at least 1 !\n"));
     if (k<1)            return(printf("[compute_entropy_ann_mask] : k must be at least 1 !\n"));
     if (stride<1)       return(printf("[compute_entropy_ann_mask] : stride must be at least 1 !\n"));
     if ((method<0) || (method>2))
                         return(printf("[compute_entropy_ann_mask] : method must be 0, 1 or 2 !\n"));
 	
-	// adapt embedding dimension according to method:
-	if (method==0)  p_new = p;  // time-embedding (not increments)
-	else {          p_new = 1;  // increments (regular or averaged)
-	                p    += 1;  // convention: increments of order 1 (p) require 2 (p+1) points in order to be computed
-	     }
-
     n = m*p_new; // total dimensionality
  
     N_real_max = set_sampling_parameters_mask(mask, npts, p, stride, 0, &sp, "compute_entropy_ann_mask");
