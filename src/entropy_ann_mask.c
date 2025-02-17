@@ -78,7 +78,7 @@
 int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
 {	register int i, j, p_new;
-	int     n, npts_good, N_real_max, n_sets_total=0;
+	int     npts_good, N_real_max, n_sets_total=0;
 	double *x_new, avg=0.0, var=0.0, S_tmp=0.0;
 	double x_new_std=0.;    // 2022-06-06: for the std of the pre-processed signal
     int     *ind_epoch=NULL;
@@ -100,8 +100,6 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
     if (stride<1)       return(printf("[compute_entropy_ann_mask] : stride must be at least 1 !\n"));
     if ((method<0) || (method>2))
                         return(printf("[compute_entropy_ann_mask] : method must be 0, 1 or 2 !\n"));
-	
-    n = m*p_new; // total dimensionality
  
     N_real_max = set_sampling_parameters_mask(mask, npts, p, stride, 0, &sp, "compute_entropy_ann_mask");
     if (N_real_max<1)   return(printf("[compute_entropy_ann_mask] : aborting\n"));
@@ -144,9 +142,9 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
         data_std     += x_new_std;
         data_std_std += x_new_std*x_new_std;
     
-        if (USE_PTHREAD>0) S_tmp = compute_entropy_nd_ann_threads(x_new, sp.N_eff, n, k,
+        if (USE_PTHREAD>0) S_tmp = compute_entropy_nd_ann_threads(x_new, sp.N_eff, m*p_new, k,
                                     get_cores_number(GET_CORES_SELECTED));
-        else               S_tmp = compute_entropy_nd_ann        (x_new, sp.N_eff, n, k);
+        else               S_tmp = compute_entropy_nd_ann        (x_new, sp.N_eff, m*p_new, k);
 
         avg  += S_tmp;
         var  += S_tmp*S_tmp;
@@ -202,7 +200,7 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
 int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int stride, double q, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
 {   register int i,j, p_new;
-    int    n, npts_good, N_real_max, n_sets_total=0;
+    int    npts_good, N_real_max, n_sets_total=0;
     double *x_new, avg=0.0, var=0.0, S_tmp=0.0;
     double x_new_std=0.;    // 2022-06-08: for the std of the pre-processed signal
     int     *ind_epoch=NULL;
@@ -212,20 +210,18 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
 
     *S = my_NAN;
 
+    // adapt embedding dimension according to method:
+	if (method==0)  p_new = p;  // time-embedding (not increments)
+	else {          p_new = 1;  // increments (regular or averaged)
+	                p    += 1;  // convention: increments of order 1 (p) require 2 (p+1) points in order to be computed
+	     }
+         
     if ((m<1) || (p<1))     return(printf("[compute_Renyi_ann_mask] : m and p must be at least 1 !\n"));
     if (k<1)                return(printf("[compute_Renyi_ann_mask] : k must be at least 1 !\n"));
     if (stride<1)           return(printf("[compute_Renyi_ann_mask] : stride must be at least 1 !\n"));
     if (q==1)               return(printf("[compute_Renyi_ann_mask] : Renyi entropy of order q=1?...\n"));
     if ((method<0) || (method>2))
                         return(printf("[compute_entropy_ann_mask] : method must be 0, 1 or 2 !\n"));
-	
-    // adapt embedding dimension according to method:
-	if (method==0)  p_new = p;  // time-embedding (not increments)
-	else {          p_new = 1;  // increments (regular or averaged)
-	                p    += 1;  // convention: increments of order 1 (p) require 2 (p+1) points in order to be computed
-	     }
-
-    n = m*p_new; // total dimensionality
     
     N_real_max = set_sampling_parameters_mask(mask, npts, p, stride, 0, &sp, "compute_entropy_ann_mask");
     if (N_real_max<1)   return(printf("[compute_entropy_ann_mask] : aborting\n"));
@@ -260,9 +256,9 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
         data_std     += x_new_std;
         data_std_std += x_new_std*x_new_std;
     
-        if (USE_PTHREAD>0) S_tmp = compute_Renyi_nd_ann_threads(x_new, sp.N_eff, n, q, k,
+        if (USE_PTHREAD>0) S_tmp = compute_Renyi_nd_ann_threads(x_new, sp.N_eff, m*p_new, q, k,
                                     get_cores_number(GET_CORES_SELECTED));
-        else               S_tmp = compute_Renyi_nd_ann        (x_new, sp.N_eff, n, q, k);
+        else               S_tmp = compute_Renyi_nd_ann        (x_new, sp.N_eff, m*p_new, q, k);
         
         avg  += S_tmp;
         var  += S_tmp*S_tmp;
