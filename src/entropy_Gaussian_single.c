@@ -71,6 +71,66 @@ double compute_entropy_nd_Gaussian(double *x, int npts, int n)
 
 
 /****************************************************************************************/
+/* computes relative entropy, using Gaussian statistics assumption                      */
+/*                                                                                      */
+/* this version is for n-dimentional systems                                            */
+/*                                                                                      */
+/* this version does not support embedding per se, but can be used by a wrapper which   */
+/* embedds the data (the function "compute_entropy_Gaussian()" being exactly this)      */
+/*                                                                                      */
+/* x,y    contain all the data, which is of size n*nx                                   */
+/* nx,ny  are the number of points in time                                              */
+/* n      is the dimensionality                                                         */
+/* method is an integer to choose between cross entropy (0) or relative entropy (1)     */
+/*                                                                                      */
+/* data is ordered like this :                                                          */
+/* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)               */
+/*                                                                                      */
+/* 2025-02-17, new function, working for n=1 only                                       */
+/****************************************************************************************/
+double compute_relative_entropy_nd_Gaussian(double *x, int npts_x, double *y, int npts_y, int n, int method)
+{	register int i,j;
+	double KLdiv=my_NAN, H=my_NAN;
+	double *M_x, det_x, det_y, m_x, m_y;
+    
+    if (n!=1) 
+    {   printf("[compute_relative_entropy_nd_Gaussian] only coded for dimensionality 1\n");
+        return(my_NAN);
+    }
+
+    M_x=(double*)calloc(n*n, sizeof(double));
+    // M_y=(double*)calloc(n*n, sizeof(double));
+    nb_errors_local=0;
+    
+    for (i=0; i<n; i++)
+    {   M_x[i+n*i] = gsl_stats_variance(x+i*npts_x, 1, npts_x);
+        for (j=i+1; j<n; j++)
+        {   M_x[i+n*j] = gsl_stats_covariance(x+i*npts_x, 1, x+j*npts_x, 1, npts_x);
+            M_x[j+n*i] = M_x[i+n*j];   // symetrical matrix
+        }
+    }  
+    det_x = determinant(M_x, n);
+    det_y = gsl_stats_variance(y, 1, npts_y);
+    m_x   = gsl_stats_mean(x, 1, npts_x);
+    m_y   = gsl_stats_mean(y, 1, npts_y);
+
+    if ( is_zero(det_x) || is_zero(det_y) )
+    {   printf("[compute_relative_entropy_nd_Gaussian] negative determinant : %f %f\n", det_x, det_y);
+        return(my_NAN);
+    }
+    // https://en.wikipedia.org/wiki/Multivariate_normal_distribution
+    KLdiv = (double)1/2.*( det_x/det_y + (m_x-m_y)*(m_x-m_y)/det_y - n + log(fabs(det_y/det_x)) );
+    if (method==1) return(KLdiv);
+    
+    H     =  (double)n/2.*(1. + log(2.*M_PI)) + 1./2.*log(det_x);
+    last_npts_eff_local = npts_x;
+	free(M_x);
+	return(KLdiv-H);
+} /* end of function "compute_relative_entropy_nd_ann" **********************************/
+
+
+
+/****************************************************************************************/
 /* computes mutual information, for Gaussian statistics data						    */
 /*                                                                                      */
 /* this version is for (m+p)-dimentional systems							    		*/

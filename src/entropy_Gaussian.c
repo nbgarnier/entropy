@@ -10,6 +10,7 @@
  *
  *  2022-10-10 : fork from "entropy_ann_N.c"
  *  2022-10-11 : entropy and MI tested OK
+ *  2025-02-17 : added relative entropy
  */
 
 #include <math.h>                   // for fabs and others
@@ -157,16 +158,17 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
  * my   is the nb of dimension of y before embedding                                    *
  * px   indicates how many points to take in the past of x (embedding)                  *
  * py   indicates how many points to take in the past of y (embedding)                  *
- * stride is the time lag between 2 consecutive points in time when embedding           *
+ * tau  is the time lag between 2 consecutive points in time when embedding             *
+ * method is an integer to choose between cross entropy (0) or relative entropy (1)     *
  *                                                                                      *
- * this function is a wrapper to the functions :                                        *
- *     - compute_relative_entropy_2xnd_ann                                              *
- *     - compute_relative_entropy_2xnd_ann_threads                                      *
+ * this function is a wrapper to the function:                                          *
+ *	- compute_relative_entropy_nd_Gaussian                                              *
  *                                                                                      *
- * 2022-10-10 : unfinished     *
+ * 2022-10-10 : unfinished                                                              *
+ * 2025-02-17 : first version                                                           *
 *****************************************************************************************/
 int compute_relative_entropy_Gaussian(double *x, int nx, double *y, int ny, int mx, int my, int px, int py, int tau, 
-                            int tau_Theiler, int N_eff, int N_realizations, double *H)
+                            int tau_Theiler, int N_eff, int N_realizations, int method, double *H)
 {   double  *x_new, *y_new;
     double  avg=0.0, var=0.0, tmp;
     int     N_real_tot=0;
@@ -211,13 +213,7 @@ int compute_relative_entropy_Gaussian(double *x, int nx, double *y, int ny, int 
         Theiler_embed(x+(tau*(px-1)+perm_real_x->data[j]), nx, mx, px, tau, sp_x.Theiler, perm_pts_x->data, x_new, sp_x.N_eff);
         Theiler_embed(y+(tau*(py-1)+perm_real_y->data[j]), ny, my, py, tau, sp_y.Theiler, perm_pts_y->data, y_new, sp_y.N_eff);        
 
-/*        if (USE_PTHREAD>0) // if we want multithreading
-            tmp = compute_relative_entropy_2xnd_ann_threads(x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k,
-                                get_cores_number(GET_CORES_SELECTED));            
-        else
-            tmp = compute_relative_entropy_2xnd_ann        (x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, k);     
-*/            
-        tmp=0;
+        tmp = compute_relative_entropy_nd_Gaussian(x_new, sp_x.N_eff, y_new, sp_y.N_eff, n_new, method);
         
         avg += tmp;
         var += tmp*tmp;

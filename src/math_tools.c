@@ -384,7 +384,7 @@ int filter_FIR_LP(double *x, int N_pts, int m, int tau, double fr, double *out, 
 
 
 /* determinant of a square matrix M of size n x n:		*/
-// my cnvention is: M[i+n*j] = M[i][j]
+// my convention is: M[i+n*j] = M[i][j]
 // to do: (check if C-major or not)
 double determinant(double *M, int n)
 {	register int i,j,k;

@@ -9,8 +9,11 @@
  *
  */
 
-/* low-level function to compute relative entropy */
+/* low-level function to compute entropy */
 double compute_entropy_nd_Gaussian	               (double *x, int nx, int n);	/* internal function */
+
+/* low-level function to compute relative entropy */
+double compute_relative_entropy_nd_Gaussian(double *x, int npts_x, double *y, int npts_y, int n, int method);
 
 /* low-level function to compute mutual information	*/
 double compute_mutual_information_direct_Gaussian  (double *x, int nx, int m, int p);

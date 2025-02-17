@@ -18,8 +18,8 @@ int compute_entropy_Gaussian  	        (double *x, int nx, int m, int p, int tau
                                     int N_eff, int N_realizations, double *S); /* wrapper, to be used */
                                     
 /* function to compute relative entropy */
-//int compute_relative_entropy_Gaussian   (double *x, int nx, double *y, int ny, int mx, int my, int px, int py, int tau, int tau_Theiler, 
-//                                    int N_eff, int N_realizations, double *H); /* wrapper, to be used */
+int compute_relative_entropy_Gaussian   (double *x, int nx, double *y, int ny, int mx, int my, int px, int py, int tau, int tau_Theiler, 
+                                    int N_eff, int N_realizations, int method, double *H); /* wrapper, to be used */
 
 // for the functions below, 2 parameters are 2 returned values : I1 and I2, corresponding to algorithm 1 and 2
 
