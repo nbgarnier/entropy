@@ -215,7 +215,7 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
 	else {          p_new = 1;  // increments (regular or averaged)
 	                p    += 1;  // convention: increments of order 1 (p) require 2 (p+1) points in order to be computed
 	     }
-         
+
     if ((m<1) || (p<1))     return(printf("[compute_Renyi_ann_mask] : m and p must be at least 1 !\n"));
     if (k<1)                return(printf("[compute_Renyi_ann_mask] : k must be at least 1 !\n"));
     if (stride<1)           return(printf("[compute_Renyi_ann_mask] : stride must be at least 1 !\n"));
@@ -363,10 +363,10 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
         combine_masks(mask+stride, mask, npts-stride, new_mask); 
         // 2020-02-23: check how embedding is performed in MI function below!!!
         
-        compute_mutual_information_ann_mask(x+stride, x, new_mask, npts-stride, m, m, 1, p, stride, tau_Theiler, N_eff, N_realizations, k, &I1, &I2);
+//        compute_mutual_information_ann_mask(x+stride, x, new_mask, npts-stride, m, m, 1, p, stride, tau_Theiler, N_eff, N_realizations, k, &I1, &I2);
 //      my_nb_errors += nb_errors; my_npts_eff += last_npts_eff;
 
-        compute_entropy_ann_mask           (x_now, new_mask, npts-stride, m, 1, stride, tau_Theiler, N_eff, N_realizations, k, 0, &H);
+        compute_entropy_ann_mask           (x_now,         new_mask, npts-stride, m,    1,    stride, tau_Theiler, N_eff, N_realizations, k, 0,   &H);
         compute_mutual_information_ann_mask(x_now, x_past, new_mask, npts-stride, m, m, 1, p, stride, tau_Theiler, N_eff, N_realizations, k, &I1, &I2); 
         my_nb_errors += nb_errors; my_npts_eff += last_npts_eff;
         

@@ -254,6 +254,7 @@ int compute_entropy_rate_ann(double *x, int npts, int m, int p, int stride,
 /* npts is the number of points in time											    */
 /* mx   is the nb of dimension of x before embedding                                */
 /* px   indicates how many points to take in the past of x	(embedding)				*/
+/*      this should be 1 for now!!!                                                 */
 /* stride is the time lag between 2 consecutive points in time when embedding		*/
 /*																			        */
 /* this function is a wrapper to the function :				     					*/

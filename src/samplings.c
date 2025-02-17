@@ -135,7 +135,7 @@ void increments(double *x, int npts, int mx, int px, int tau, int Theiler, size_
     for (i=0; i<npts_new; i++)      // loop on time in 1 window
     {   s = Theiler*ind[i];
         for (d=0; d<mx; d++)        // loop on existing dimensions in x
-        {//   s = Theiler*ind[i] + d*npts; // 2022-05-17: optimzed for speed in 2 other lines
+        {//   s = Theiler*ind[i] + d*npts; // 2022-05-17: optimized for speed in 2 other lines
             x_new[i + npts_new*d] = x[s];
             for (l=1; l<px; l++)    // loop on embedding (here, increment order)
                 x_new[i + npts_new*d] += binome[l]*x[s - l*tau];
