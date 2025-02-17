@@ -222,7 +222,7 @@ def compute_relative_entropy(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1
      see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
      """
 
-     cdef double Hr=0., H=0.
+     cdef double Hr=0.
      cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0], ratou
      
      if (npts<nx):    raise ValueError("please transpose x")
@@ -232,7 +232,10 @@ def compute_relative_entropy(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
      
-     ratou = computes.compute_relative_entropy_ann(&x[0,0], npts, &y[0,0], npty, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, do_KLdiv, &Hr)
+     if (k==-1): 
+        ratou = computes.compute_relative_entropy_Gaussian(&x[0,0], npts, &y[0,0], npty, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, do_KLdiv, &Hr)
+     else:
+        ratou = computes.compute_relative_entropy_ann     (&x[0,0], npts, &y[0,0], npty, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, do_KLdiv, &Hr)
 
      return Hr
 

@@ -37,6 +37,8 @@ cdef extern from "entropy_ann_combinations.h":
 cdef extern from "entropy_Gaussian.h":
 	int compute_entropy_Gaussian(double *x, int nx, int m, int p, 
 								int tau, int tau_Theiler, int N_eff, int N_realizations, double *S)
+	int compute_relative_entropy_Gaussian   (double *x, int nx, double *y, int ny, int mx, int my, int px, int py, 
+								int tau, int tau_Theiler, int N_eff, int N_realizations, int method, double *H)
 	int compute_mutual_information_Gaussian(double *x, double *y, int nx, int mx, int my, int px, int py,
 								int tau, int tau_Theiler, int N_eff, int N_realizations, double *I1)
 	int compute_partial_MI_Gaussian(double *x, double *y, double *z, int nx, int *dim, 
