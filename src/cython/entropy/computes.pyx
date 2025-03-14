@@ -296,8 +296,8 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
-            int Theiler=0, int N_eff=0, int N_real=0,
-            int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
+            int Theiler=0, int N_eff=0, int N_real=0, 
+            int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1'), int do_sub_Gaussian=0):
      """           
      computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.
      
@@ -314,6 +314,8 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
      :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
      :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
      :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+     :param do_sub_Gaussian: 0 for TE, or 1 for the difference TE-TE(Gaussian). In that case, 6 values are returned, in the following order: ``
+               TE, TE(Gaussian), TE-TE(Gaussian), std(TE), std(TE(Gaussian)), std(TE-TE(Gaussian))
                  
      :returns: two values (one per algorithm)
      
@@ -322,7 +324,8 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
      cdef double I1=0, I2=0
      cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
      cdef int npts_mask=mask.size, ratou
-      
+     cdef CNP.ndarray[dtype=double, ndim=1] TE1_all = PNP.zeros(6, dtype='float')
+
      if (npts<nx):    raise ValueError("please transpose x")
      if (npty<ny):    raise ValueError("please transpose y")
      if (npty!=npts): raise ValueError("x and y do not have the same number of pts in time")
@@ -330,19 +333,27 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
  
+     if do_sub_Gaussian:
+         if (mask.size>1): raise ValueError("cannot use mask if do_sub_Gaussian")
+         if (k==-1):       raise ValueError("cannot use Gaussian estimate if do_sub_Gaussian")
+
      if (k==-1):
             ratou = computes.compute_transfer_entropy_Gaussian(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, &I1)
             return [I1, PNP.nan]
-         
-#     get_sampling()
+
      if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")
             ratou = computes.compute_transfer_entropy_ann_mask(&x[0,0], &y[0,0], &mask[0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2)
      else:
-            ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2)
+            if do_sub_Gaussian:
+               ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1_all[0], &I2, do_sub_Gaussian)
+               return(TE1_all)
+            else:
+               ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2, do_sub_Gaussian)
      return [I1,I2]
 
 

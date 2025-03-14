@@ -29,7 +29,7 @@ cdef extern from "entropy_ann_combinations.h":
 				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
 	
 	int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
-				int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2)
+				int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, int do_sub_Gaussian)
 
 	int compute_directed_information_ann(double *x, double *y, int nx, int mx, int my, int N, int stride, 
 				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)

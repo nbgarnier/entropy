@@ -40,6 +40,7 @@
 #include "entropy_ann.h"
 #include "entropy_ann_threads.h"
 #include "entropy_ann_combinations.h"
+#include "entropy_Gaussian_single.h"     // 2025-03-14: for TE - TE(Gaussian)
 #include "entropy_ann_single_entropy.h"  // for the engine function to compute Shannon entropy
 #include "entropy_ann_single_RE.h"       // for the engine function to compute RE
 #include "entropy_ann_single_MI.h"       // for the engine function to compute MI with either NG or ANN counting
@@ -359,14 +360,16 @@ int compute_regularity_index_ann(double *x, int npts, int mx, int px, int stride
  * 2021-12-14 : now using unified function for PMI (handling both NBG or ANN counting)
  * 2022-05-10 : now with new samplings (Theiler based on stride, not lag)
  * 2023-02-23 : now TE(X->Y) (1st -> 2nd argument) instead of the opposite 
+ * 2025-03-14 : parameter "do_sub_Gaussian" to substract Gaussian TE from TE estimates
  ****************************************************************************************/
 int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
-                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2)
+                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, int do_sub_Gaussian)
 {	register int j, shift;
     register int nn	= my*(py+1)+mx*px;   // dimension of the new variable
     register int pp = (px>py) ? px : py; // who has the largest past ?
 	double *x_new;
-	double te1=0.0, te2=0.0, avg1=0.0, avg2=0.0, var1=0.0, var2=0.0;
+	double te1=0.0, te2=0.0, teG=0.0, avg1=0.0, avg2=0.0, var1=0.0, var2=0.0;
+    double avgG=0.0, avg_diff=0.0, varG=0.0, var_diff=0.0;
     int     N_real_max=0;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
@@ -378,6 +381,7 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
     if ((mx<1)||(my<1)) return(printf("[compute_transfer_entropy_ann] : mx and my must be larger than 1 !\n"));
     if ((px<1)||(py<1)) return(printf("[compute_transfer_entropy_ann] : px and py must be larger than 1 !\n"));
     if (k<1)            return(printf("[compute_transfer_entropy_ann] : k has to be equal or larger than 1.\n"));
+    if ((do_sub_Gaussian>0) && (MI_algo&MI_ALGO_2)) return(printf("[compute_transfer_entropy_ann] : cannot use algo 2 together with do_sub_Gaussian (WIP)"));
 
 	// additional checks and auto-adjustments of parameters:
     N_real_max = set_sampling_parameters(nx-lag, pp, stride, &sp, "compute_transfer_entropy_ann");
@@ -408,15 +412,33 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
         avg1 += te1;    var1 += te1*te1;
 		avg2 += te2;	var2 += te2*te2;
 		last_npts_eff += last_npts_eff_local;
+
+        if (do_sub_Gaussian>0) // 2025-03-14: substract Gaussian TE from TE estimate
+        {   teG = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, my, mx*px, my*py);
+            avgG += teG;    varG += teG*teG;
+
+            te1 -= teG;
+//            te2 -= teG;
+            avg_diff += te1;    var_diff += te1*te1;
+        }
 	}
     if (nb_errors!=0) return(printf("[compute_transfer_entropy_nd_ann] error, %d points were problematic\n", nb_errors));
 
-    avg1 /= sp.N_real;  var1 /= sp.N_real;
-	avg2 /= sp.N_real;	var2 /= sp.N_real;
-	var1 -= avg1*avg1;
-	var2 -= avg2*avg2;
-	*T1 = avg1;         last_std  = sqrt(var1);
-	*T2 = avg2;         last_std2 = sqrt(var2);
+    avg1 /= sp.N_real;  var1 /= sp.N_real;  var1 -= avg1*avg1;
+	avg2 /= sp.N_real;	var2 /= sp.N_real;  var2 -= avg2*avg2;
+	avgG /= sp.N_real;	varG /= sp.N_real;  varG -= avgG*avgG;
+	avg_diff /= sp.N_real;	var_diff /= sp.N_real;  var_diff -= avg_diff*avg_diff;
+
+    if (do_sub_Gaussian) // 2025-03-14 in that case, T1 is a pointer of length 6 (dangerous!)
+    {   T1[0] = avg1;       T1[3] = sqrt(var1);
+        T1[1] = avgG;       T1[4] = sqrt(varG);
+        T1[2] = avg_diff;   T1[5] = sqrt(var_diff);
+    }
+    else
+    {   *T1 = avg1;         
+	    *T2 = avg2;         
+    }
+    last_std  = sqrt(var1); last_std2 = sqrt(var2);
 	
     nb_errors_total += nb_errors;
     last_samp=sp;
