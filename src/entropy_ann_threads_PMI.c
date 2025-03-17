@@ -436,7 +436,7 @@ int compute_partial_MI_direct_ann_threads(double *x, int npts, int mx, int my, i
     indices_y = (int*)calloc(npts, sizeof(int));  /* only to count neighbors    */
     ind_inv_y = (int*)calloc(npts, sizeof(int));  /* only to count neighbors    */
     y         = (double*)calloc(npts*(mz+my), sizeof(double));
-    toto      = (double*)calloc(npts, sizeof(double));
+    toto      = (double*)calloc(npts, sizeof(double));      // tmp for swapping
     
     if ( (toto==NULL) || (ind_inv_y==NULL) ) return(printf("[compute_partial_MI_direct_ann_new] : alloc error\n"));
 	
@@ -575,10 +575,11 @@ int compute_partial_MI_direct_ann_threads(double *x, int npts, int mx, int my, i
     }
     
 	/* then we restore initial pointers (as they were before being ordered by QuickSort) */
+    // 2025-03-17: bug correction, thanks Ewen Frogé!
 	for (d=0; d<n; d++)
 	{	y_tmp = x+(d*npts);
-		for (i=0; i<npts; i++) y_tmp[i] = y[ind_inv_x[i]];
-		for (i=0; i<npts; i++) y[i]     = y_tmp[i];	
+		for (i=0; i<npts; i++) toto[i]  = y_tmp[ind_inv_x[i]];
+		for (i=0; i<npts; i++) y_tmp[i] = toto[i];	
 	}	
 
 	free(indices_x); free(ind_inv_x);

@@ -242,10 +242,11 @@ int compute_partial_MI_engine_ann(double *x, int nx, int m, int p, int q, int k,
     }
     
 	/* then we restore initial pointers (as they were before being ordered by QuickSort) */
-	for (d=0; d<n; d++) // 2021-12-14: code below looks wrong!!! to check!!!
+    // 2025-03-17: bug (found by Ewen Frogé) corrected
+	for (d=0; d<n; d++) // 2021-12-14: code below looks wrong!!! to check!!! 2025-03-17: indeed!
 	{	y_tmp = x+(d*nx);
-		for (i=0; i<nx; i++) y_tmp[i] = y[ind_inv_x[i]];
-		for (i=0; i<nx; i++) y[i]     = y_tmp[i];	
+		for (i=0; i<nx; i++) toto[i]  = y_tmp[ind_inv_x[i]];
+		for (i=0; i<nx; i++) y_tmp[i] = toto[i];	
 	}	
 
 	free(indices_x); free(ind_inv_x);
