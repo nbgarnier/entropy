@@ -112,7 +112,8 @@ def compute_complexities_old(double[:, ::1] x, int n_embed=1, int stride=1, doub
 @cython.wraparound(False)
 def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r=0.2,
                             int Theiler=0, int N_eff=0, N_real=0,
-                            char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
+                            char[::1] mask=PNP.zeros(shape=(1),dtype='i1'),
+                            int do_correlation_integrals = False):
      """
      computes ApEn and SampEn complexities (kernel estimates).
  
@@ -124,6 +125,7 @@ def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r
      :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
      :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
      :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+     :param do_correlation_integrals: returns correlations integrals (and their log version) instead of ApEn and SampEn.
      :returns: two nd-arrays of size (n_embed+1). The first array contains ApEn and the second SampEn, each estimate being a function of the embedding dimension, up to the provided value n_embed.
      
      see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
@@ -142,6 +144,8 @@ def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r
     
      cdef CNP.ndarray[dtype=double, ndim=1] ApEn   = PNP.zeros(n_embed+1, dtype='float')
      cdef CNP.ndarray[dtype=double, ndim=1] SampEn = PNP.zeros(n_embed+1, dtype='float')
+     cdef CNP.ndarray[dtype=double, ndim=1] Cd     = PNP.zeros(n_embed+1, dtype='float')
+     cdef CNP.ndarray[dtype=double, ndim=1] logCd  = PNP.zeros(n_embed+1, dtype='float')
      
      if (npts_mask>1): # then this is a real mask, not just the default value
           if (npts_mask!=npts): raise ValueError("mask does not have the same number of points in time as the data")
@@ -150,7 +154,16 @@ def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r
           mask = PNP.ones(npts, dtype='i1')           # simpler arbitrary convention 
 
      ratou = others.compute_complexity_mask(&x[0,0], &mask[0], npts, n_embed, stride, Theiler, N_eff, N_real, r, 0, &ApEn[0], &SampEn[0])
-#     print("ApEn   = ", ApEn)
-#     print("SampEn = ", SampEn)
+
+     if do_correlation_integrals:  # option added 2025-03-27
+          print("ApEn   = ", ApEn)
+          print("SampEn = ", SampEn)
+          Cd[0]    = CNP.exp(-SampEn[0])
+          logCd[0] = -ApEn[0]
+          for m in np.arange(n_embed):
+               Cd[m+1]    = Cd[m] * CNP.exp(SampEn[m+1])
+               logCd[m+1] = logCd[m] - ApEn[m+1]
+          return Cd, logCd
+
      return ApEn, SampEn
 
