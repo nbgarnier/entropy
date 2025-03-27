@@ -145,12 +145,13 @@ double compute_SampEn_old(double* data, int m, double r, int npts)
 /*         ApEn and SampEn will be of order (m-1) : H_(m)-H_(m-1)                     */
 /* stride  is the time lag between 2 consecutive points to be considered along time	  */
 /* r       is the radius of the balls for counting (= the resolution)                 */
+/*          r is in "absolute" units (not in fraction of the std)                     */
 /*																			          */
 /* returns an array with A_i and B_i                                                  */
 /*                                                                                    */
 /* 2014-03-30 : first version, no stride                                              */
 /* 2020-03-04 : now with stride, but no Theiler correction!!!                         */
-/* 2023-12-06 : renamed with "_embed" suffix                                         */
+/* 2023-12-06 : renamed with "_embed" suffix                                          */
 /**************************************************************************************/
 double prepare_kernel_brickwall_embed(double* data, int npts, int m, int stride, double r)
 {   register int i,j,k;
