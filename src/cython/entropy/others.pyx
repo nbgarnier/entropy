@@ -156,12 +156,12 @@ def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r
      ratou = others.compute_complexity_mask(&x[0,0], &mask[0], npts, n_embed, stride, Theiler, N_eff, N_real, r, 0, &ApEn[0], &SampEn[0])
 
      if do_correlation_integrals:  # option added 2025-03-27
-          print("ApEn   = ", ApEn)
-          print("SampEn = ", SampEn)
-          Cd[0]    = CNP.exp(-SampEn[0])
+#          print("ApEn   = ", ApEn)
+#          print("SampEn = ", SampEn)
+          Cd[0]    = PNP.exp(-SampEn[0])
           logCd[0] = -ApEn[0]
-          for m in np.arange(n_embed):
-               Cd[m+1]    = Cd[m] * CNP.exp(SampEn[m+1])
+          for m in PNP.arange(n_embed):
+               Cd[m+1]    = Cd[m] * PNP.exp(-SampEn[m+1])
                logCd[m+1] = logCd[m] - ApEn[m+1]
           return Cd, logCd
 

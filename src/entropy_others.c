@@ -463,6 +463,7 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
 
         Theiler_embed_mask(data+j, npts, 1, m+1, stride, ind_shuffled, x_new, sp.N_eff);
         
+        if (j>0) reset_array_d(Complexity_Kernel, sp.N_eff*(m+1));
         // now real math:        
         if (kernel_type==KERNEL_BRICKWALL)      norm=apply_kernel_brickwall_nd(x_new, sp.N_eff, m+1, r);
         else if (kernel_type==KERNEL_GAUSSIAN)  norm=apply_kernel_Gaussian_nd (x_new, sp.N_eff, m+1, r);
