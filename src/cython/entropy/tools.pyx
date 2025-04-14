@@ -192,17 +192,18 @@ def FIR_LP( double[:, ::1] x, int tau=2, double fr=1):
 
 
 #%% 2023-10-26, added to the library after thoughful testing
-def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=0, **kwargs):
+def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=0, get_extra_info=0, **kwargs):
     """
     runs iteratively an estimation over a range of time-scales/stride values
     
     :param func: (full) name of the function to run
     :param tau_set: 1-d numpy array containing the set of values for stride (time-scales)
     :param verbosity_timing: 0 for no output, or 1,2 or more for more and more detailed output
-    :param get_samplings: 1 for extra returned array, with samplings parameters used for each stride
+    :param get_samplings: 1 for an extra returned array, with samplings parameters used for each stride
+    :param get_extra_info: 1 for an extra returned array, with std of data used in the estimation
     :param args: any parameter to pass to the function: is accepted, with the same syntax as usual (e.g.: x, y, k=5, ...)
     
-    :returns: 2 or 3 nd-arrays, each having their last dimension equal to tau_set.size (see below).
+    :returns: 2, 3 or 4 nd-arrays, each having their last dimension equal to tau_set.size (see below).
     
     example::
         
@@ -216,7 +217,8 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
     About returned values:
       - the first returned array contains result(s) as a function of stride. If the function func returns more than one value, then this first nd-array will have more than one dimension.
       - the second returned array contains an estimator of the std, as a function of stride.
-      - the third returned array (returned only if the parameter get_samplings is set to 1) contains all sampling parameters used for each estimation. This is usefull to track the value of N_eff or tau-Theiler used in the estimation as a function of the (time-)scale. See :any:`get_sampling` for a list of returned values, and how they are ordered.
+      - (optional) a third returned array (returned only if the parameter get_samplings is set to 1) contains all sampling parameters used for each estimation. This is usefull to track the value of N_eff or tau-Theiler used in the estimation as a function of the (time-)scale. See :any:`get_sampling` for a list of returned values, and how they are ordered.
+      - (optional) a fourth returned array with std of the input data sampled or the estimation (and its std) (returned only if the parameter get_extra_info is set to 1)%.  See :any:`get_extra_info`. 
     """
     
     test = func(*args, stride=tau_set[0], **kwargs)
@@ -233,7 +235,8 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
         res = PNP.zeros(tau_set.size, dtype=float)   # quantity
     
     res_std = PNP.zeros(tau_set.shape, dtype=float) # estimated errorbars
-    if get_samplings: samplings = PNP.zeros((7, tau_set.size), dtype=float) # sampling parameters
+    if get_samplings:  samplings = PNP.zeros((7, tau_set.size), dtype=float) # sampling parameters
+    if get_extra_info: input_std = PNP.zeros((2, tau_set.size), dtype=float) # std of the input (and its std)
         
     for i_tau in enumerate(tau_set):
         i = i_tau[0]
@@ -243,12 +246,19 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
         time1=time()
         res[...,i] = PNP.atleast_2d( func(*args, stride=i_tau[1], **kwargs) )
         res_std[i] = get_last_info()[0]
-        if get_samplings: samplings[...,i] = get_last_sampling()
+        if get_samplings: samplings[...,i]  = get_last_sampling()
+        if get_extra_info: input_std[...,i] = get_extra_info()
         time2=time()
         if (verbosity_timing>2): print(" ->", res[...,i], "\t elapsed time: %f" %(time2-time1))
         if (verbosity_timing>1): print()
     if (verbosity_timing==1): print()
     
-    if get_samplings: return res, res_std, samplings
-    else:             return res, res_std
+    if get_extra_info:  
+        if get_samplings: return res, res_std, samplings, input_std
+        else:             return res, res_std, input_std
+    else:               
+        if get_samplings: return res, res_std, samplings
+        else:             return res, res_std
+
+
 
