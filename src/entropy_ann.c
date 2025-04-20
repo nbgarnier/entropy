@@ -30,6 +30,7 @@
 
 #include <math.h>                   // for fabs and others
 #include <string.h>
+#include <gsl/gsl_statistics_double.h>  // for std of intermediate (pre-sampled) data
 
 #include "library_commons.h"        // for definitions of nb_errors, and stds
 #include "library_matlab.h"         // compilation for Matlab
@@ -125,6 +126,7 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
 #endif
 	int    n=m*p; // total dimensionality
 	double *x_new, S_tmp, avg=0.0, var=0.0;
+	double x_new_std=0.;    // 2025-04-20: for the std of the pre-processed signal
 	int    N_real_max=0;
 	samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
 	gsl_permutation *perm_real, *perm_pts;
@@ -167,6 +169,11 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
         // this may require the "real" std, ie, the one over all the signal, not just over the present realization
 #endif
 
+        // 2025-04-20: std of the signal: works only if m=1! (uni-dimensional signal)
+        x_new_std     = gsl_stats_sd(x_new, 1, sp.N_eff);
+        data_std     += x_new_std;
+        data_std_std += x_new_std*x_new_std;
+
         if (USE_PTHREAD>0) S_tmp = compute_entropy_nd_ann_threads(x_new, sp.N_eff, n, k, get_cores_number(GET_CORES_SELECTED));
         else               S_tmp = compute_entropy_nd_ann        (x_new, sp.N_eff, n, k);
 #ifdef DEBUG
@@ -179,6 +186,8 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
     }
     avg /= sp.N_real;
     var /= sp.N_real;  var -= avg*avg;
+    data_std     /= sp.N_real; 
+    data_std_std /= sp.N_real;  data_std_std -= data_std*data_std;
     
     *S = avg;
     last_std = sqrt(var);
