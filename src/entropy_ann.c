@@ -152,6 +152,7 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
     perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
 
     nb_errors=0; last_npts_eff=0;    
+    data_std=0;  data_std_std=0;        // 2025-04-20, for std of the sampled signal
     for (j=0; j<sp.N_real; j++)   // loop over "independant" windows
     {   if (sp.type>=3) shuffle_perm(perm_pts);
     

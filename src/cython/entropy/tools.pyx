@@ -219,7 +219,7 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
       - the first returned array contains result(s) as a function of stride. If the function func returns more than one value, then this first nd-array will have more than one dimension.
       - the second returned array contains an estimator of the std, as a function of stride.
       - (optional) a third returned array (returned only if the parameter get_samplings is set to 1) contains all sampling parameters used for each estimation. This is usefull to track the value of N_eff or tau-Theiler used in the estimation as a function of the (time-)scale. See :any:`get_sampling` for a list of returned values, and how they are ordered.
-      - (optional) a fourth returned array with std of the input data sampled or the estimation (and its std) (returned only if the parameter get_extra_info is set to 1)%.  See :any:`get_extra_info`. 
+      - (optional) a fourth returned array with std of the input data sampled or the estimation (and its std) (returned only if the parameter get_extra is set to 1)%.  See :any:`get_extra_info`. 
     """
     
     test = func(*args, stride=tau_set[0], **kwargs)
