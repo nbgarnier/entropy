@@ -43,7 +43,7 @@ struct thread_output
 /* function to be used by "compute_cross_entropy_2xnd_ann_threads"                      */
 /*                                                                                      */
 /* 2021-11-26  first multi-threads version                                              */
-/* 2025-02-13  renaed from "relative" to "cross"                                        */
+/* 2025-02-13  renamed from "relative" to "cross"                                       */
 /****************************************************************************************/
 void *threaded_cross_entropy_func(void *ptr)
 {   struct thread_args  *args = (struct thread_args *)ptr; // cast arguments to the usable struct

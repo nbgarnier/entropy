@@ -1,9 +1,9 @@
 # -*- Autoconf script for entropy -*-
-# N.B.Garnier, 2023-09-22
+# N.B.Garnier, 2025-05-14
 #################################################################
 
 AC_PREREQ([2.71])
-AC_INIT([entropy], [4.1.0], [nicolas.garnier@ens-lyon.fr])
+AC_INIT([entropy], [4.2.0], [nicolas.garnier@ens-lyon.fr])
 AC_CONFIG_SRCDIR([src/entropy_ann.c])
 AC_CONFIG_HEADERS([config.h])
 
@@ -48,20 +48,31 @@ case "${host_os}" in
                 MEX_LDEXTENSION=[.mexmaca64]
                 MEX_DIRNAME=[maca64]
                 ;;
-            aarch64*)
-                MAKELIB="libtool -arch_only arm64 -static -o"
-                MEX_LDEXTENSION=[.mexmaca64]
-                MEX_DIRNAME=[maca64]
-                ;;
+#            aarch64*)
+#                MAKELIB="libtool -arch_only arm64 -static -o"
+#                MEX_LDEXTENSION=[.mexmaca64]
+#                MEX_DIRNAME=[maca64]
+#                ;;
             *)
                 AC_MSG_ERROR(["MacOS CPU $host_cpu is not supported"])
                 ;;
             esac
+        # homebrew specifics on silicon, added 2025-05-14:
+        AC_PATH_PROG(HOMEBREW, brew, none)
+        AS_IF([test "$HOMEBREW" = none], [
+            AC_MSG_NOTICE([homebrew not found, using standard paths])
+            ], [   
+            BREWPREFIX=`brew --prefix`
+            AC_MSG_NOTICE([homebrew found with prefix $BREWPREFIX])
+            CFLAGS="$CFLAGS -I$BREWPREFIX/include"
+            LIBS+="-I$BREWPREFIX/lib"
+            ])
         ;;
     *)
         AC_MSG_ERROR(["OS $host_os is not supported"])
         ;;
 esac
+
 
 #################################################################
 # compiler flags
@@ -69,6 +80,7 @@ esac
 : ${CXXFLAGS="-O3 -fPIC -pthread"}
 : ${CFLAGS="-O3 -fPIC -std=c99 -pthread"}
 my_CPPFLAGS="-pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code"
+
 
 #################################################################
 # Checks for programs.
@@ -95,9 +107,11 @@ AS_IF([test "$MATLAB" = none],
 #################################################################
 # Checks for libraries:
 #################################################################
-AC_CHECK_LIB(m, log)
+#AC_CHECK_LIB(m, log)
+AC_SEARCH_LIBS([log], [m])
 AC_CHECK_LIB(gsl, gsl_sf_psi, [], [AC_MSG_ERROR([please install libgsl-dev on your system (sudo apt install libgsl-dev)])])
 AC_CHECK_LIB(fftw3, fftw_malloc, [], [AC_MSG_ERROR([please install libfftw3-dev on your system (sudo apt install libfftw"-dev)])])
+#AC_SEARCH_LIBS([fftw_malloc], [fftw3], [], [AC_MSG_ERROR([please install libfftw3-dev on your system (sudo apt install libfftw"-dev)])])
 
 # Checks for header files:
 AC_CHECK_HEADERS([stdint.h unistd.h])

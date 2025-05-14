@@ -64,8 +64,8 @@ else:
 		
 print(LIBS)
 
-INC_DIR  = ['.', '../include', '../../include', './entropy', '/opt/local/include', numpy_include]
-LIBS_DIR = ['../../lib', '/usr/lib', '/usr/local/lib', '/opt/local/lib']
+INC_DIR  = ['.', '../include', '../../include', './entropy', '/opt/local/include', '/opt/homebrew/include', numpy_include]
+LIBS_DIR = ['../../lib', '/usr/lib', '/usr/local/lib', '/opt/local/lib', '/opt/homebrew/lib']
 LIBS     = ['entropy', 'ANN', 'gsl', 'gslcblas', 'fftw3', 'pthread'] + LIBS #'m', # 2020-07-22: moved LIBS at the end (for stdc++ on linux)
 
 if (platform.system()=='Linux'):
