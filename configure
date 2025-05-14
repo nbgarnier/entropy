@@ -2972,11 +2972,11 @@ printf "%s\n" "MACOS" >&6; }
                 MEX_LDEXTENSION=.mexmaca64
                 MEX_DIRNAME=maca64
                 ;;
-#            aarch64*)
-#                MAKELIB="libtool -arch_only arm64 -static -o"
-#                MEX_LDEXTENSION=[.mexmaca64]
-#                MEX_DIRNAME=[maca64]
-#                ;;
+            aarch64*)
+                MAKELIB="libtool -arch_only arm64 -static -o"
+                MEX_LDEXTENSION=.mexmaca64
+                MEX_DIRNAME=maca64
+                ;;
             *)
                 as_fn_error $? "\"MacOS CPU $host_cpu is not supported\"" "$LINENO" 5
                 ;;
@@ -4670,14 +4670,14 @@ else case e in #(
 esac
 fi
 
-#AC_CHECK_LIB(fftw3, fftw_malloc, [], [AC_MSG_ERROR([please install libfftw3-dev on your system (sudo apt install libfftw"-dev)])])
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing fftw_malloc" >&5
-printf %s "checking for library containing fftw_malloc... " >&6; }
-if test ${ac_cv_search_fftw_malloc+y}
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for fftw_malloc in -lfftw3" >&5
+printf %s "checking for fftw_malloc in -lfftw3... " >&6; }
+if test ${ac_cv_lib_fftw3_fftw_malloc+y}
 then :
   printf %s "(cached) " >&6
 else case e in #(
-  e) ac_func_search_save_LIBS=$LIBS
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-lfftw3  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4699,48 +4699,32 @@ return fftw_malloc ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' fftw3
-do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"
+if ac_fn_c_try_link "$LINENO"
 then :
-  ac_cv_search_fftw_malloc=$ac_res
+  ac_cv_lib_fftw3_fftw_malloc=yes
+else case e in #(
+  e) ac_cv_lib_fftw3_fftw_malloc=no ;;
+esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext
-  if test ${ac_cv_search_fftw_malloc+y}
-then :
-  break
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
 fi
-done
-if test ${ac_cv_search_fftw_malloc+y}
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_fftw3_fftw_malloc" >&5
+printf "%s\n" "$ac_cv_lib_fftw3_fftw_malloc" >&6; }
+if test "x$ac_cv_lib_fftw3_fftw_malloc" = xyes
 then :
+  printf "%s\n" "#define HAVE_LIBFFTW3 1" >>confdefs.h
 
-else case e in #(
-  e) ac_cv_search_fftw_malloc=no ;;
-esac
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_fftw_malloc" >&5
-printf "%s\n" "$ac_cv_search_fftw_malloc" >&6; }
-ac_res=$ac_cv_search_fftw_malloc
-if test "$ac_res" != no
-then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  LIBS="-lfftw3 $LIBS"
 
 else case e in #(
   e) as_fn_error $? "please install libfftw3-dev on your system (sudo apt install libfftw\"-dev)" "$LINENO" 5 ;;
 esac
 fi
 
+#AC_SEARCH_LIBS([fftw_malloc], [fftw3], [], [AC_MSG_ERROR([please install libfftw3-dev on your system (sudo apt install libfftw"-dev)])])
 
 # Checks for header files:
 ac_header= ac_cache=

@@ -48,11 +48,11 @@ case "${host_os}" in
                 MEX_LDEXTENSION=[.mexmaca64]
                 MEX_DIRNAME=[maca64]
                 ;;
-#            aarch64*)
-#                MAKELIB="libtool -arch_only arm64 -static -o"
-#                MEX_LDEXTENSION=[.mexmaca64]
-#                MEX_DIRNAME=[maca64]
-#                ;;
+            aarch64*)
+                MAKELIB="libtool -arch_only arm64 -static -o"
+                MEX_LDEXTENSION=[.mexmaca64]
+                MEX_DIRNAME=[maca64]
+                ;;
             *)
                 AC_MSG_ERROR(["MacOS CPU $host_cpu is not supported"])
                 ;;
