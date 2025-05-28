@@ -3,6 +3,11 @@ an efficient C/C++ library integrated with Python and Matlab to estimate various
 
 # compilation and installation
 - run ./configure and eventuallly solve the issues by installing missing programs and libraries (e.g.: "apt install libtool-bin fftw3-dev" on Linux if asked to do so)
+   - on macos, if you are using brew, you just need to install gsl and fftw: "brew install gsl fftw"
+   - on macos with ARM/Apple processors, if you are using brew, you now need to explicitly indicate the locations of libraries; this is done by invoking configure with:
+<pre><code>
+./configure CFLAGS=-I/opt/homebrew/include LDFLAGS=-L/opt/homebrew/lib
+</code></pre>
 - then run either "make matlab" or "make python" (or both) to produce the library.
   
 # Matlab version
