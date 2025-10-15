@@ -14,6 +14,7 @@
 ## -------------------- ##
 ## M4sh Initialization. ##
 ## -------------------- ##
+# test
 
 # Be more Bourne compatible
 DUALCASE=1; export DUALCASE # for MKS sh
