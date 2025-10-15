@@ -14,7 +14,6 @@
 ## -------------------- ##
 ## M4sh Initialization. ##
 ## -------------------- ##
-# test
 
 # Be more Bourne compatible
 DUALCASE=1; export DUALCASE # for MKS sh
@@ -3042,7 +3041,7 @@ else case e in #(
             { printf "%s\n" "$as_me:${as_lineno-$LINENO}: homebrew found with prefix $BREWPREFIX" >&5
 printf "%s\n" "$as_me: homebrew found with prefix $BREWPREFIX" >&6;}
             CFLAGS="$CFLAGS -I$BREWPREFIX/include"
-            LIBS+="-I$BREWPREFIX/lib"
+            LDFLAGS="$LDFLAGS -L$BREWPREFIX/lib"
              ;;
 esac
 fi
@@ -4544,6 +4543,7 @@ printf "%s\n" "$as_me: using \"MATLAB\" from $MATLAB" >&6;}
 esac
 fi
 #AC_MSG_NOTICE(["MATLAB" variable contains $MATLAB])
+
 
 #################################################################
 # Checks for libraries:

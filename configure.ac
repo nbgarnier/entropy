@@ -1,5 +1,5 @@
 # -*- Autoconf script for entropy -*-
-# N.B.Garnier, 2025-05-14
+# N.B.Garnier, 2025-10-15
 #################################################################
 
 AC_PREREQ([2.71])
@@ -65,7 +65,7 @@ case "${host_os}" in
             BREWPREFIX=`brew --prefix`
             AC_MSG_NOTICE([homebrew found with prefix $BREWPREFIX])
             CFLAGS="$CFLAGS -I$BREWPREFIX/include"
-            LIBS+="-I$BREWPREFIX/lib"
+            LDFLAGS="$LDFLAGS -L$BREWPREFIX/lib"
             ])
         ;;
     *)
@@ -103,6 +103,7 @@ AS_IF([test "$MATLAB" = none],
     AC_MSG_NOTICE([using "MATLAB" from $MATLAB])
     ])
 #AC_MSG_NOTICE(["MATLAB" variable contains $MATLAB])
+
 
 #################################################################
 # Checks for libraries:
