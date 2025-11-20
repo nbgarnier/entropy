@@ -37,7 +37,7 @@ CFLAGS = @CFLAGS@
 CXXFLAGS = @CXXFLAGS@
 CPPFLAGS = @my_CPPFLAGS@
 CPPFLAGS += -I$(BASE_DIR)/include
-PYTHON = @PYTHON@
+PYTHON ?= python # ? allows to use the python from the "uv run" command 
 LDLIBS = @LIBS@ -lANN
 
 ifeq ($(PLATFORM),LINUX)
@@ -120,16 +120,16 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 # see https://docs.python.org/3/tutorial/venv.html					#
 #####################################################################
 python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
-#	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
-	cd cython; CC=$(CC) pip install .; cd ..
+	@echo "Installation in editable mode from your uv .venv" $(PYTHON)
+	cd cython; CC=$(CC) $(PYTHON) -m pip install --no-deps --break-system-packages -e .
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
-	echo "building from" $(BUILD_DIR)
+	@echo "building from" $(BUILD_DIR)
 	rm -f cython/entropy/entropy.c
-	cd cython; CC=$(CC); BUILD_DIR=$(BUILD_DIR); pip install .; cd ..
 	
 uninstall :
-	CC=$(CC) pip uninstall entropy
+	# to uninstall with the right python again
+	CC=$(CC) $(PYTHON) -m pip uninstall -y entropy
 
 #####################################################################
 # Matlab stuff                                                      #
@@ -155,4 +155,10 @@ clean :
 	cd ann_1.1.2/src ; make clean ; cd ../..
 	cd cython ; $(PYTHON) setup.py clean --a ; cd ..
 #	rm -f cython/entropy/entropy.c
+# probably loosing in readability and generality but the setup.py clean --a didn't work for me with "uv run" 
+# 	rm -rf cython/build
+#	rm -rf cython/*.egg-info
+#	find cython -name "*.so" -type f -delete
+#	rm -f cython/entropy/entropy.c
+#	find cython -name "__pycache__" -type d -exec rm -rf {} +
 
