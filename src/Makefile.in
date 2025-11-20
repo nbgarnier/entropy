@@ -3,7 +3,7 @@
 #####################################################################
 # file located in directory src/                                    #
 #####################################################################
-# last revision 2023-10-02                                          #
+# last revision 2025-11-20                                          #
 #####################################################################
 # usages :                                                          #
 #                                                                   #
@@ -38,10 +38,18 @@ CXXFLAGS = @CXXFLAGS@
 CPPFLAGS = @my_CPPFLAGS@
 CPPFLAGS += -I$(BASE_DIR)/include
 PYTHON ?= python # ? allows to use the python from the "uv run" command 
+PYTHON = @PYTHON@
+UV = @UV@
 LDLIBS = @LIBS@ -lANN
 
 ifeq ($(PLATFORM),LINUX)
 	LDLIBS += -pthread
+endif
+
+ifeq ($(UV),none)
+	MY_PIP = CC=$(CC) $(PYTHON) -m pip
+else
+	MY_PIP = uv pip
 endif
 
 # common C objects:
@@ -122,6 +130,8 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 	@echo "Installation in editable mode from your uv .venv" $(PYTHON)
 	cd cython; CC=$(CC) $(PYTHON) -m pip install --no-deps --break-system-packages -e .
+#	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
+	cd cython; $(MY_PIP) install .; cd ..
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
 	@echo "building from" $(BUILD_DIR)
@@ -130,6 +140,11 @@ cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx 
 uninstall :
 	# to uninstall with the right python again
 	CC=$(CC) $(PYTHON) -m pip uninstall -y entropy
+	cd cython; BUILD_DIR=$(BUILD_DIR); $(MY_PIP) install .; cd ..
+	
+uninstall :
+	$(MY_PIP) uninstall entropy
+
 
 #####################################################################
 # Matlab stuff                                                      #
@@ -161,4 +176,8 @@ clean :
 #	find cython -name "*.so" -type f -delete
 #	rm -f cython/entropy/entropy.c
 #	find cython -name "__pycache__" -type d -exec rm -rf {} +
+	$(PYTHON) -m pip uninstall entropy
+# 2025-11-20, above: new version, below: old version
+#	cd cython ; $(PYTHON) setup.py clean --a ; cd ..
+
 

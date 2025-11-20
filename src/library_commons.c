@@ -13,35 +13,35 @@
 #include "library_commons.h" // for definitions of nb_errors, and stds
 
 // global variables that changes the behavior of the library
-int lib_verbosity=1;    // <0 : no messages, even if an error is encountered (not recommended!)
-                        // 0  : messages only if an error is encountered (default)
-                        // 1  : important warnings only
-                        // 2 or more: more and more warnings
-int lib_warning_level=1; // 0 : no physical checks, code trusts user / user is responsible
-                        // 1  : physical checks raises warnings 
-                        // 2  : physical checks raises errors 
-                        //      (1 or 2 helps the user, but limits advanced use of the library)
+int lib_verbosity=1;        // <0 : no messages, even if an error is encountered (not recommended!)
+                            // 0  : messages only if an error is encountered (default)
+                            // 1  : important warnings only
+                            // 2 or more: more and more warnings
+int lib_warning_level=1;    // 0 : no physical checks, code trusts user / user is responsible
+                            // 1  : physical checks raises warnings 
+                            // 2  : physical checks raises errors 
+                            //      (1 or 2 helps the user, but limits advanced use of the library)
 
 // global variables to count errors encountered in functions
-int nb_errors_local;    // errors encountered in an "engine" function 
-                        // (to be used inside "wrapper" functions)
-int nb_errors;          // errors encountered in a "wrapper" function (usually returned)
-int nb_errors_total;    // total nb of errors encountered since the library has been loaded
-                        // (Cython only ?) (unused)
+int nb_errors_local=0;      // errors encountered in an "engine" function 
+                            // (to be used inside "wrapper" functions)
+int nb_errors=0;            // errors encountered in a "wrapper" function (usually returned)
+int nb_errors_total=0;      // total nb of errors encountered since the library has been loaded
+                            // (Cython only ?) (unused)
 
 // global variables to count effective number of points used in functions
-int last_npts_eff;      // effective nb of points used in the last "wrapper" function call
-int last_npts_eff_local;// effective nb of points used in the last "engine" function call
+int last_npts_eff=0;        // effective nb of points used in the last "wrapper" function call
+int last_npts_eff_local=0;  // effective nb of points used in the last "engine" function call
 
 // global variable to keep track of the standard deviation of the last estimate
-double last_std;        // main variable
-double last_std2;       // additional variable (for functions returning a second value)
+double last_std=my_NAN;     // main variable
+double last_std2=my_NAN;    // additional variable (for functions returning a second value)
 
 // global variables to record the std (and its std) of the pre-processed data
 // (added 2022-03-11, to keep track of basic stats of the input data)
 // (useful for increments)
-double data_std;        // std of the data (e.g., increments, which can be intermediate)
-double data_std_std;    // std of the std of the data
+double data_std=my_NAN;     // std of the data (e.g., increments, which can be intermediate)
+double data_std_std=my_NAN; // std of the std of the data
 
 
 

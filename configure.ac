@@ -103,6 +103,12 @@ AS_IF([test "$MATLAB" = none],
     AC_MSG_NOTICE([using "MATLAB" from $MATLAB])
     ])
 #AC_MSG_NOTICE(["MATLAB" variable contains $MATLAB])
+AC_PATH_PROG(UV, uv, none)
+AS_IF([test "$UV" = none], 
+    [AC_MSG_NOTICE([python uv installer not found, will default to pip])
+    ],
+    [AC_MSG_NOTICE([using uv installer (from $UV) for python instead of pip])
+    ])
 
 
 #################################################################
@@ -144,6 +150,8 @@ AC_SUBST(libtool)
 AC_SUBST(MEX_LDEXTENSION)
 AC_SUBST(MEX_DIRNAME)
 AC_ARG_VAR(PYTHON, [python interpreter])  # set variable as precious
+#AC_ARG_VAR(UV, [uv python package installer]) # set variable as precious
+AC_SUBST(UV)
 AC_ARG_VAR(MATLAB, [matlab installation (e.g.: MATLAB=/Applications/MATLAB_R2023a.app/)]) # set variable as precious
 AC_SUBST(TAR)
 AC_CONFIG_FILES([Makefile

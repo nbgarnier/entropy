@@ -23,7 +23,7 @@ dependencies = ['importlib-metadata', 'numpy']
 
 [project.urls]
 #Homepage = "https://example.com"
-#Documentation = "https://readthedocs.org"
+Documentation = "https://perso.ens-lyon.fr/nicolas.garnier/files/html"
 Repository = "https://github.com/nbgarnier/entropy"
 #Changelog = "https://github.com/nbgarnier/entropy/blob/master/CHANGELOG.md"
 

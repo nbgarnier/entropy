@@ -186,7 +186,7 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
 
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts):
-            raise ValueError("mask does not have the same number of points in time as the data")
+            raise ValueError("mask does not have the same number of points in time (%d) as the data (%d)" %(npts_mask,npts))
         ratou = computes.compute_entropy_rate_ann_mask(&x[0,0], &mask[0], npts, nx, m, stride, 
                                     Theiler, N_eff, N_real, k, method, &S)
      else:
