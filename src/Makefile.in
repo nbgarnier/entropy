@@ -38,6 +38,7 @@ CXXFLAGS = @CXXFLAGS@
 CPPFLAGS = @my_CPPFLAGS@
 CPPFLAGS += -I$(BASE_DIR)/include
 PYTHON = @PYTHON@
+PYTHON ?= python # ? allows to use the python from the "uv run" command 
 UV = @UV@
 LDLIBS = @LIBS@ -lANN
 
@@ -126,17 +127,27 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 # Warning : the library will automatically be installed 			#
 # see https://docs.python.org/3/tutorial/venv.html					#
 #####################################################################
-python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
-#	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
-	cd cython; $(MY_PIP) install .; cd ..
+ifeq ($(UV),none)
+	python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
+		@echo "Installation in editable mode from your uv .venv" $(PYTHON)
+		cd cython; CC=$(CC) $(PYTHON) -m pip install --no-deps --break-system-packages -e .
+else
+	python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
+#	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..	
+		cd cython; $(MY_PIP) install .; cd ..
+endif
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
 	@echo "building from" $(BUILD_DIR)
 	rm -f cython/entropy/entropy.c
+	
+uninstall :
+	# to uninstall with the right python again
+	CC=$(CC) $(PYTHON) -m pip uninstall -y entropy
 	cd cython; BUILD_DIR=$(BUILD_DIR); $(MY_PIP) install .; cd ..
 	
 uninstall :
-	$(MY_PIP) uninstall entropy
+	cd cython; $(MY_PIP) uninstall -y entropy;  cd ..
 
 
 #####################################################################
@@ -152,7 +163,7 @@ matlab : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 #####################################################################
 # rules to clean all intermediate and output files                  #
 #####################################################################
-clean :
+clean : uninstall
 	rm -f *.o *.a *.exe *.mo ../code.tar.gz
 	cd $(BASE_DIR) ; rm -f -R ._* .DS_Store ; cd src/
 # 2015-10-06, NG, added line above for MacOs garbage
@@ -161,8 +172,7 @@ clean :
 	rm -f $(OUTPUT_DIR)/run.exe
 	rm -f ../lib/libANN.a ../lib/libentropy.a ../include/ANN/ANN.h
 	cd ann_1.1.2/src ; make clean ; cd ../..
-	$(PYTHON) -m pip uninstall entropy
-# 2025-11-20, above: new version, below: old version
-#	cd cython ; $(PYTHON) setup.py clean --a ; cd ..
-
-
+ 	rm -rf cython/build
+	rm -rf cython/*.egg-info
+	find cython -name "*.so" -type f -delete
+	find cython -name "__pycache__" -type d -exec rm -rf {} +
