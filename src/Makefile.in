@@ -3,7 +3,7 @@
 #####################################################################
 # file located in directory src/                                    #
 #####################################################################
-# last revision 2023-10-02                                          #
+# last revision 2025-11-20                                          #
 #####################################################################
 # usages :                                                          #
 #                                                                   #
@@ -38,10 +38,17 @@ CXXFLAGS = @CXXFLAGS@
 CPPFLAGS = @my_CPPFLAGS@
 CPPFLAGS += -I$(BASE_DIR)/include
 PYTHON = @PYTHON@
+UV = @UV@
 LDLIBS = @LIBS@ -lANN
 
 ifeq ($(PLATFORM),LINUX)
 	LDLIBS += -pthread
+endif
+
+ifeq ($(UV),none)
+	MY_PIP = CC=$(CC) $(PYTHON) -m pip
+else
+	MY_PIP = uv pip
 endif
 
 # common C objects:
@@ -121,15 +128,16 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 #####################################################################
 python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 #	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..
-	cd cython; CC=$(CC) pip install .; cd ..
+	cd cython; $(MY_PIP) install .; cd ..
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
-	echo "building from" $(BUILD_DIR)
+	@echo "building from" $(BUILD_DIR)
 	rm -f cython/entropy/entropy.c
-	cd cython; CC=$(CC); BUILD_DIR=$(BUILD_DIR); pip install .; cd ..
+	cd cython; BUILD_DIR=$(BUILD_DIR); $(MY_PIP) install .; cd ..
 	
 uninstall :
-	CC=$(CC) pip uninstall entropy
+	$(MY_PIP) uninstall entropy
+
 
 #####################################################################
 # Matlab stuff                                                      #
@@ -154,7 +162,7 @@ clean :
 	rm -f ../lib/libANN.a ../lib/libentropy.a ../include/ANN/ANN.h
 	cd ann_1.1.2/src ; make clean ; cd ../..
 	$(PYTHON) -m pip uninstall entropy
-	# 2025-11-20, above: new version, below: old version
+# 2025-11-20, above: new version, below: old version
 #	cd cython ; $(PYTHON) setup.py clean --a ; cd ..
 
 
