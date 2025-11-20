@@ -142,11 +142,7 @@ cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx 
 	rm -f cython/entropy/entropy.c
 	
 uninstall :
-	# to uninstall with the right python again
-	CC=$(CC) $(PYTHON) -m pip uninstall -y entropy
-	cd cython; BUILD_DIR=$(BUILD_DIR); $(MY_PIP) install .; cd ..
-	
-uninstall :
+	# to uninstall with the right python
 	cd cython; $(MY_PIP) uninstall -y entropy;  cd ..
 
 
