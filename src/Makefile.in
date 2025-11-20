@@ -153,6 +153,8 @@ clean :
 	rm -f $(OUTPUT_DIR)/run.exe
 	rm -f ../lib/libANN.a ../lib/libentropy.a ../include/ANN/ANN.h
 	cd ann_1.1.2/src ; make clean ; cd ../..
-	cd cython ; $(PYTHON) setup.py clean --a ; cd ..
-#	rm -f cython/entropy/entropy.c
+	$(PYTHON) -m pip uninstall entropy
+	# 2025-11-20, above: new version, below: old version
+#	cd cython ; $(PYTHON) setup.py clean --a ; cd ..
+
 
