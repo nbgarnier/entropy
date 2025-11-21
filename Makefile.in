@@ -1,13 +1,14 @@
 #####################################################################
 # Makefile for information theory functions                	    	#
 #####################################################################
-# 2023-10-02                                                        #
+# 2025-11-20                                                        #
 #####################################################################
 # usages :                                                          #
 #                                                                   #
-# make C             : to produce C library                         #
-# make python        : to produce python library                    #
-# make matlab        : to produce matlab mex-files                  #
+# make C             : to produce the C library                     #
+# make python        : to produce and install the python library    #
+# make matlab        : to produce the matlab mex-files              #
+# make uninstall     : to uninstall the python library				#
 # make clean         : to remove all non-source files and clean     #
 # make zip           : to produce an archive with source files only #
 #####################################################################
@@ -23,7 +24,8 @@ default:
 	@echo "  make clean        for cleaning"
 	@echo "  make zip          to produce code.tar.gz"
 	@echo ""
-	@echo "Note that the output/library will be stored under the bin/ directory,"
+	@echo "The Python library will be installed in your current venv while 
+	@echo "the C and Matlab libraries will be stored under the bin/ directory,"
 	@echo "in the relevant subdirectory. Please go there to use/copy the code !"
 
 

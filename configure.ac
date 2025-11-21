@@ -77,9 +77,10 @@ esac
 #################################################################
 # compiler flags
 #################################################################
-: ${CXXFLAGS="-O3 -fPIC -pthread"}
-: ${CFLAGS="-O3 -fPIC -std=c99 -pthread"}
-my_CPPFLAGS="-pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code"
+#: ${CXXFLAGS="-O3 -fPIC -pthread"}
+#: ${CFLAGS="-O3 -fPIC -std=c99 -pthread"}
+CFLAGS += -std=c99
+my_CPPFLAGS="-pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code -O3 -fPIC -pthread"
 
 
 #################################################################
@@ -89,7 +90,8 @@ AC_PROG_CXX([g++ cc++ clang++])
 AC_PROG_CC([gcc cc clang])
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
-AC_CHECK_PROGS(libtool, [libtool glibtool])   # libtool for Macos (clang) and linux, glibtool for homebrew on Macos
+# next line commented out 2025-11-21 (replaced by MAKELIB)
+# AC_CHECK_PROGS(libtool, [libtool glibtool])   # libtool for Macos (clang) and linux, glibtool for homebrew on Macos
 AC_CHECK_PROGS(PYTHON, [python python3], none)
 AC_CHECK_PROGS(CYTHON, [cython cython3], none)
 AC_CHECK_PROGS(TAR, tar)
@@ -146,11 +148,11 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CXXFLAGS)
 AC_SUBST(my_CPPFLAGS)
 AC_SUBST(LIBS)
-AC_SUBST(libtool)
+# AC_SUBST(libtool)
 AC_SUBST(MEX_LDEXTENSION)
 AC_SUBST(MEX_DIRNAME)
 AC_ARG_VAR(PYTHON, [python interpreter])  # set variable as precious
-#AC_ARG_VAR(UV, [uv python package installer]) # set variable as precious
+# AC_ARG_VAR(UV, [uv python package installer]) # set variable as precious
 AC_SUBST(UV)
 AC_ARG_VAR(MATLAB, [matlab installation (e.g.: MATLAB=/Applications/MATLAB_R2023a.app/)]) # set variable as precious
 AC_SUBST(TAR)

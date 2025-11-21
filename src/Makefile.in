@@ -7,9 +7,9 @@
 #####################################################################
 # usages :                                                          #
 #                                                                   #
-# make               : to produce executable from C                 #
-# make python        : to produce python library                    #
-# make matlab        : to produce matlab mex-files                  #
+# make               : to produce executable and library from C     #
+# make python        : to produce the python library                #
+# make matlab        : to produce the matlab mex-files              #
 # make uninstall     : to uninstall the python library				#
 # make clean         : to remove all non-source files and clean     #
 # make zip           : to produce an archive with source files only #
@@ -47,7 +47,7 @@ ifeq ($(PLATFORM),LINUX)
 endif
 
 ifeq ($(UV),none)
-	MY_PIP = CC=$(CC) $(PYTHON) -m pip
+	MY_PIP = $(PYTHON) -m pip
 else
 	MY_PIP = uv pip
 endif
@@ -68,7 +68,7 @@ OBJS = ANN_wrapper.o ANN_wrapper_second_level.o \
 LDFLAGS += -L$(LIB_DIR)
 MEX_LDFLAGS += -L$(LIB_DIR)
 
-.PHONY : all C python cython matlab clean zip
+.PHONY : all C python cython matlab uninstall clean zip
 
 C : $(LIB_DIR)/libentropy.a $(OUTPUT_DIR)/run.exe 
 
@@ -84,7 +84,6 @@ C : $(LIB_DIR)/libentropy.a $(OUTPUT_DIR)/run.exe
 #####################################################################
 $(LIB_DIR)/libentropy.a: $(OBJS)
 	@MAKELIB@ libentropy.a $(OBJS)
-#	$(RANLIB) libentropy.a
 	mv libentropy.a $(LIB_DIR)
 
 $(OUTPUT_DIR)/run.exe : $(OBJS) main.o 
@@ -107,6 +106,9 @@ $(BASE_DIR)/include/ANN/ANN.h :
 
 ANN_wrapper.o : $(BASE_DIR)/include/ANN/ANN.h $(BASE_DIR)/lib/libANN.a ANN_wrapper.cpp $(BASE_DIR)/include/ANN_wrapper.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c ANN_wrapper.cpp
+	@echo CPPFLAGS: $(CPPFLAGS)
+	@echo CFLAGS: $(CFLAGS)
+	@echo CXXLAGS: $(CXXFLAGS)
 
 ANN_wrapper_second_level.o : $(BASE_DIR)/include/ANN/ANN.h $(BASE_DIR)/lib/libANN.a ANN_wrapper_second_level.cpp $(BASE_DIR)/include/ANN_wrapper.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ -c ANN_wrapper_second_level.cpp
@@ -127,19 +129,19 @@ entropy_ann.o : entropy_ann.c entropy_ann_threads.c $(BASE_DIR)/include/entropy_
 # Warning : the library will automatically be installed 			#
 # see https://docs.python.org/3/tutorial/venv.html					#
 #####################################################################
+python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 ifeq ($(UV),none)
-	python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
-		@echo "Installation in editable mode from your uv .venv" $(PYTHON)
-		cd cython; CC=$(CC) $(PYTHON) -m pip install --no-deps --break-system-packages -e .
+	@echo "Installation in editable mode from your uv .venv" $(PYTHON)
+	cd cython; CC=$(CC) $(PYTHON) -m pip install --no-deps --break-system-packages -e .
 else
-	python : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a
 #	cd cython; CC=$(CC) $(PYTHON) setup.py install --user; cd ..	
-		cd cython; $(MY_PIP) install .; cd ..
+	cd cython; $(MY_PIP) install .; cd ..
 endif
 
 cython : $(LIB_DIR)/libANN.a $(LIB_DIR)/libentropy.a cython/entropy/entropy.pyx cython/setup.py
 	@echo "building from" $(BUILD_DIR)
 	rm -f cython/entropy/entropy.c
+	cd cython; CC=$(CC); BUILD_DIR=$(BUILD_DIR); pip install .; cd ..
 	
 uninstall :
 	# to uninstall with the right python
@@ -168,7 +170,7 @@ clean : uninstall
 	rm -f $(OUTPUT_DIR)/run.exe
 	rm -f ../lib/libANN.a ../lib/libentropy.a ../include/ANN/ANN.h
 	cd ann_1.1.2/src ; make clean ; cd ../..
- 	rm -rf cython/build
+	rm -rf cython/build
 	rm -rf cython/*.egg-info
 	find cython -name "*.so" -type f -delete
 	find cython -name "__pycache__" -type d -exec rm -rf {} +
