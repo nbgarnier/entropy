@@ -3057,7 +3057,7 @@ esac
 #################################################################
 #: ${CXXFLAGS="-O3 -fPIC -pthread"}
 #: ${CFLAGS="-O3 -fPIC -std=c99 -pthread"}
-CFLAGS += -std=c99
+${CFLAGS+=" -std=c99"}
 my_CPPFLAGS="-pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code -O3 -fPIC -pthread"
 
 
@@ -5119,6 +5119,7 @@ fi
 #################################################################
 # export variables
 #################################################################
+
 
 
 

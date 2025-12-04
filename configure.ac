@@ -79,7 +79,7 @@ esac
 #################################################################
 #: ${CXXFLAGS="-O3 -fPIC -pthread"}
 #: ${CFLAGS="-O3 -fPIC -std=c99 -pthread"}
-CFLAGS += -std=c99
+${CFLAGS+=" -std=c99"}
 my_CPPFLAGS="-pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code -O3 -fPIC -pthread"
 
 
@@ -148,6 +148,7 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CXXFLAGS)
 AC_SUBST(my_CPPFLAGS)
 AC_SUBST(LIBS)
+AC_SUBST(LDFLAGS)
 # AC_SUBST(libtool)
 AC_SUBST(MEX_LDEXTENSION)
 AC_SUBST(MEX_DIRNAME)

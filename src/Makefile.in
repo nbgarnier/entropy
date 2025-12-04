@@ -41,6 +41,7 @@ PYTHON = @PYTHON@
 PYTHON ?= python # ? allows to use the python from the "uv run" command 
 UV = @UV@
 LDLIBS = @LIBS@ -lANN
+LDFLAGS = @LDFLAGS@
 
 ifeq ($(PLATFORM),LINUX)
 	LDLIBS += -pthread
@@ -87,7 +88,7 @@ $(LIB_DIR)/libentropy.a: $(OBJS)
 	mv libentropy.a $(LIB_DIR)
 
 $(OUTPUT_DIR)/run.exe : $(OBJS) main.o 
-	$(CXX) $(OBJS) main.o $(LDLIBS) -o $(OUTPUT_DIR)/run.exe -L$(LIB_DIR)
+	$(CXX) $(OBJS) main.o $(LDLIBS) -o $(OUTPUT_DIR)/run.exe $(LDFLAGS)
 
 main.o : main.c $(INCS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c main.c

@@ -135,8 +135,8 @@ others_module = Extension("others",
 #entropy_tools_module = Extension('tools')
           
 setup(name = 'entropy',
-      version = '4.2.0', 
-#      date ='2025-11-21',
+      version = '4.3.0', 
+#      date ='2025-12-04',
       description = "Information Theory tools and entropies for multi-scale analysis of continuous signals",
       author      = "Nicolas B. Garnier",
       author_email= "nicolas.garnier@ens-lyon.fr",

@@ -32,7 +32,7 @@ default:
 #####################################################################
 # main make entry point                                             #
 #####################################################################
-C python cython clean :
+C python cython uninstall clean :
 	cd src ; $(MAKE) $@ ; cd ..
 	
 MATLAB = @MATLAB@
@@ -60,7 +60,7 @@ ifeq ($(PLATFORM),MACOS)
 endif
 
 zip : clean
-	$(TAR) -cvf code.tar configure Makefile.in src/Makefile.in src/matlab/Makefile.in
+	$(TAR) -cvf code.tar configure configure.ac Makefile.in src/Makefile.in src/matlab/Makefile.in
 	$(TAR) -rvf code.tar install-sh config.guess config.sub config.h.in
 	$(TAR) -rvf code.tar include/
 	$(TAR) -rvf code.tar src/ann_1.1.2/*

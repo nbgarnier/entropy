@@ -404,7 +404,7 @@ int compute_mutual_information_ann(double *x, double *y, int nx, int mx, int my,
 	free(x_new);
     free_perm(perm_real);    free_perm(perm_pts);
 	return(nb_errors);
-} /* end of function "compute_mutual_information_ann_N" **********************************/
+} /* end of function "compute_mutual_information_ann" ************************************/
 
 
 
