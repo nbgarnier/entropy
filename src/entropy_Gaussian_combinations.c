@@ -149,8 +149,8 @@ int compute_entropy_increments_Gaussian(double *x, int npts, int m, int px, int 
 /* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)               */
 /*                                                                                      */
 /* this function is a wrapper over existing functions:                                  */
-/*    - compute_entropy_Gaussian                                                             */
-/*    - compute_mutual_information_Gaussian                                                  */
+/*    - compute_entropy_Gaussian                                                        */
+/*    - compute_mutual_information_Gaussian                                             */
 /* which are already managing threads by thermselves                                    */
 /*                                                                                      */
 /* 2019-01-26 : 3 methods                                                               */
@@ -159,57 +159,72 @@ int compute_entropy_increments_Gaussian(double *x, int npts, int m, int px, int 
 /* 2021-12-15 : now using copies of data to be OK for non-stationary signals            */
 /* 2022-05-14 : new samplings, tested OK on Modane data on 2022-06-01                   */
 /* 2022-10-11 : fork from the _ann function                                             */
+/* 2025-12-05 : fully rewrittend function                                               */
 /****************************************************************************************/
 int compute_entropy_rate_Gaussian(double *x, int npts, int m, int p, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int method, double *S)
-{   register int i, d;
-    double H_past=0.0, H=0.0, I1=0.0;
-    double *x_past, *x_now;
+{   register int j;
+    double H_past=0.0, H=0.0, MI=0.0, h, avg=0.0, var=0.0;
+    double *x_new;
+    int     N_real_max=0;
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
+	gsl_permutation *perm_real, *perm_pts;
         
     *S = my_NAN; // default returned value
     
     if ((method!=ENTROPY_RATE_FRACTION) && (method!=ENTROPY_RATE_DIFFERENCE) && (method!=ENTROPY_RATE_MI))
-    {                   return(printf("[compute_entropy_rate_Gaussian] : invalid method (should be 0,1 or 2)!\n")); }
-    if ((m<1) || (p<1)) return(printf("[compute_entropy_rate_Gaussian] : m and p must be at least 1 !\n"));
-    if ((stride<1))     return(printf("[compute_entropy_rate_Gaussian] : stride must be at least 1 !\n"));
-        
-    if (method==ENTROPY_RATE_FRACTION)
-    {   nb_errors = compute_entropy_Gaussian(x, npts, m, p, stride, tau_Theiler, N_eff, N_realizations, &H);
-        *S = H/p;
-    }
-    else if (method==ENTROPY_RATE_DIFFERENCE)
-    {   x_past = calloc( (npts-stride)*m , sizeof(double));
-        x_now  = x;
-        
-        for (d=0; d<m; d++)
-        for (i=0; i<npts-stride; i++)
-        {   x_past[i + d*(npts-stride)] = x[i+d*npts];
-        }
-        nb_errors = compute_entropy_Gaussian(x_past, npts-stride, m, p,   stride, tau_Theiler, N_eff, N_realizations, &H_past); 
-        nb_errors = compute_entropy_Gaussian(x_now,  npts,        m, p+1, stride, tau_Theiler, N_eff, N_realizations, &H);
-        *S = H-H_past;
-        
-        free(x_past);
-    }
-    else if (method==ENTROPY_RATE_MI)  // 2020-02-23: causal embedding is performed in MI function below, OK
-    {   x_past = calloc( (npts-stride)*m , sizeof(double));
-        x_now  = calloc( (npts-stride)*m , sizeof(double));
-        
-        for (d=0; d<m; d++)
-        for (i=0; i<npts-stride; i++)
-        {   x_past[i + d*(npts-stride)] = x[i        + d*npts];
-            x_now [i + d*(npts-stride)] = x[i+stride + d*npts];
-        }
-        nb_errors = compute_entropy_Gaussian           (x_now,         npts-stride, m,    1,    stride, tau_Theiler, N_eff, N_realizations, &H);
-        nb_errors = compute_mutual_information_Gaussian(x_now, x_past, npts-stride, m, m, 1, p, stride, tau_Theiler, N_eff, N_realizations, &I1); 
-        *S = H-I1;
-        
-        free(x_past); free(x_now);
-    }
+    {                   return(my_NAN*printf("[compute_entropy_rate_Gaussian] : invalid method (should be 0,1 or 2)!\n")); }
+    if ((m<1) || (p<1)) return(my_NAN*printf("[compute_entropy_rate_Gaussian] : m and p must be at least 1 !\n"));
+    if ((stride<1))     return(my_NAN*printf("[compute_entropy_rate_Gaussian] : stride must be at least 1 !\n"));
     
-    // 2021-12-15: by default, std and nb_errors are obtained from the last function call, 
-    // which is the most "multi-dimensional". As a cosnequence, both quantities are over-estimates
-    // (especially the std which is supposed to be much smaller due to compensations)
+    // additional checks and auto-adjustments of parameters:
+    N_real_max = set_sampling_parameters(npts, p+1, stride, &sp, "compute_entropy_rate_ann");
+    if (N_real_max<1)   return(my_NAN*printf("[compute_entropy_rate_Gaussian] : aborting ! (Theiler %d, N_eff %d, N_real %d)\n", 
+                                sp.Theiler, sp.N_eff, sp.N_real));
+
+    x_new  = (double*)calloc(m*(p+1)*sp.N_eff, sizeof(double));
+
+    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
+    perm_pts  = create_unity_perm(sp.N_eff_max);            // for random sampling
+
+    nb_errors=0; last_npts_eff=0;
+	for (j=0; j<sp.N_real; j++)  // loop over independant windows
+	{	if (sp.type>=3) shuffle_perm(perm_pts);
+	
+        Theiler_embed(x+(stride*(p+1-1)+perm_real->data[j]), npts, m, p+1, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
+
+        if (method==ENTROPY_RATE_FRACTION)
+        {   H = compute_entropy_nd_Gaussian         (x_new, sp.N_eff, m*p);
+            nb_errors += nb_errors_local;
+            h = H/p;  
+        }
+        if (method==ENTROPY_RATE_DIFFERENCE)
+        {   H_past = compute_entropy_nd_Gaussian         (x_new, sp.N_eff, m*p    );
+            H      = compute_entropy_nd_Gaussian         (x_new, sp.N_eff, m*(p+1));
+            nb_errors += nb_errors_local;   // each call to an engine function gives a new value of nb_errors_local
+                                            // we use only the last one, which corresponds to the largest embedding p+1
+            h = H-H_past;
+        }
+        else if (method==ENTROPY_RATE_MI) 
+        {   H  = compute_entropy_nd_Gaussian               (x_new, sp.N_eff, m);
+            MI = compute_mutual_information_direct_Gaussian(x_new, sp.N_eff, m, m*p);
+            
+            h = H-MI;
+        }
+
+        avg += h;     var += h*h;
+	    last_npts_eff += last_npts_eff_local;
+        
+    } // loop on N_real
+    avg /= sp.N_real;  var /= sp.N_real;  var -= avg*avg;
+    
+	*S  = avg;        last_std  = sqrt(var);
+    last_samp=sp;
+
+    free(x_new);
+    free_perm(perm_real);    free_perm(perm_pts);
+	return(nb_errors);  
+    
     return(nb_errors);
 } /* end of function "compute_entropy_rate_Gaussian" *************************************/
 

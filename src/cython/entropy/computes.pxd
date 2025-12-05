@@ -22,8 +22,10 @@ cdef extern from "entropy_ann_combinations.h":
 	int compute_entropy_increments_ann(double *x, int nx, 
 				int n, int p, int stride, int tau_Theiler, int N_eff, int N_realizations, int k, int incr_type, double *S)
 		
-	int compute_entropy_rate_ann(double *x, int nx, int m, int p, int stride, 
+	int compute_entropy_rate_ann_old(double *x, int nx, int m, int p, int stride, 
 				int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *H)
+	int compute_entropy_rate_ann(double *x, int nx, int m, int p, int stride, 
+				int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *H)				
 
 	int compute_regularity_index_ann(double *x, int npts, int mx, int px, int stride, 
 				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)

@@ -142,7 +142,8 @@ def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, i
 @cython.wraparound(False)
 def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
             int Theiler=0, int N_eff=0, int N_real=0,
-            int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
+            int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1'),
+            int do_old=0): # tmp parameter for testing only
      """
      computes entropy rate :math:`h^{(m,\\tau)}` of order :math:`m` of a signal :math:`x` (possibly multi-dimensional) using nearest neighbors search with ANN library.
 
@@ -190,7 +191,11 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
         ratou = computes.compute_entropy_rate_ann_mask(&x[0,0], &mask[0], npts, nx, m, stride, 
                                     Theiler, N_eff, N_real, k, method, &S)
      else:
-        ratou = computes.compute_entropy_rate_ann     (&x[0,0],           npts, nx, m, stride, 
+        if (do_old==1):
+            ratou = computes.compute_entropy_rate_ann_old (&x[0,0],           npts, nx, m, stride, 
+                                    Theiler, N_eff, N_real, k, method, &S)
+        else: 
+            ratou = computes.compute_entropy_rate_ann     (&x[0,0],           npts, nx, m, stride, 
                                     Theiler, N_eff, N_real, k, method, &S)
      return S
 

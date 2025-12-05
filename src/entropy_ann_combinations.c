@@ -25,6 +25,7 @@
  *  2021-12-21 : new file "entropy_ann_combinations.c" split from "entropy_ann.c"
  *  2022-05-10 : new samplings propagated in all functions
  *  2023-02-23 : TE(X->Y) is now correctly ordered (was: TE(Y->X)); same with DI
+ *  2025-12-03 : rewritten compute_entropy_rate_ann function, renamed old function _old to keep it
  */
 
 #include <math.h>                   // for fabs and others
@@ -334,7 +335,7 @@ int compute_entropy_rate_ann(double *x, int npts, int m, int p, int stride,
                 H      = compute_entropy_nd_ann         (x_new, sp.N_eff, m*(p+1), k);
             }
             nb_errors += nb_errors_local;   // each call to an engine function gives a new value of nb_errors_local
-                                            // we use only the last one, which corresponds to the largest embedding
+                                            // we use only the last one, which corresponds to the largest embedding p+1
             h = H-H_past;
         }
         else if (method==ENTROPY_RATE_MI) 

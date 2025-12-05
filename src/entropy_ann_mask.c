@@ -287,6 +287,7 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
 
 
 
+
 /****************************************************************************************/
 /* computes Shannon entropy rate, using nearest neighbor statistics                     */
 /*                                                                                      */
@@ -310,8 +311,9 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
 /* 2019-01-26: 3 methods                                                                */
 /* 2020-02-23: bug corrected in method=2                                                */
 /* 2020-02-24: forked from "compute_entropy_rate_ann"                                   */
+/* 2025-12-05: deprecated, renamed _old                                                 */
 /****************************************************************************************/
-int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p, int stride, 
+int compute_entropy_rate_ann_mask_old(double *x, char *mask, int npts, int m, int p, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
 {   register int i, d;
     double   H_past=0.0, H=0.0, I1=0.0, I2=0.0;
@@ -378,6 +380,130 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
     nb_errors     = my_nb_errors;
     last_npts_eff = my_npts_eff;
     return(nb_errors);
+} /* end of function "compute_entropy_rate_ann_mask_old" ********************************/
+
+
+
+/****************************************************************************************/
+/* computes Shannon entropy rate, using nearest neighbor statistics                     */
+/*                                                                                      */
+/* this version is for m-dimentional systems, with eventually some stride/embedding     */
+/*                                                                                      */
+/* x      contains all the data, which is of size nx in time                            */
+/* nx     is the number of points in time                                               */
+/* m      indicates the (initial) dimensionality of x                                   */
+/* p      indicates how many points to take in time (in the past) (embedding)           */
+/* stride is the time lag between 2 consecutive points to be considered in time         */
+/* k      nb of neighbors to be considered                                              */
+/* method is the method to use : 0 for fraction, 1 for difference and 2 for H-MI        */
+/*                                                                                      */
+/* data is ordered like this :                                                          */
+/* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)               */
+/*                                                                                      */
+/* this function uses the functions :                                                   */
+/*    - compute_entropy_ann                                                             */
+/*    - compute_mutual_information_ann                                                  */
+/*                                                                                      */
+/* 2019-01-26: 3 methods                                                                */
+/* 2020-02-23: bug corrected in method=2                                                */
+/* 2020-02-24: forked from "compute_entropy_rate_ann"                                   */
+/* 2025-12-05: fully rewritten function                                                 */
+/****************************************************************************************/
+int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p, int stride, 
+                            int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
+{   register int i, j;
+    double  H_past=0.0, H=0.0, I1=0.0, I2=0.0;
+    double  h, avg=0.0, var=0.0;
+    double *x_new;
+    int     N_real_max=0, npts_good;
+    int     *ind_epoch=NULL;
+    size_t  *ind_shuffled=NULL;
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
+	gsl_permutation *perm_pts;
+    
+    *S = my_NAN;    // default returned value
+    
+    if ((method!=ENTROPY_RATE_FRACTION) && (method!=ENTROPY_RATE_DIFFERENCE) && (method!=ENTROPY_RATE_MI))
+                        return(my_NAN*printf("[compute_entropy_rate_ann_mask] : invalid method (should be 0,1 or 2)!\n"));
+    if ((m<1) || (p<1)) return(my_NAN*printf("[compute_entropy_rate_ann_mask] : m and p must be at least 1 !\n"));
+    if ((stride<1))     return(my_NAN*printf("[compute_entropy_rate_ann_mask] : stride must be at least 1 !\n"));
+    if ((k<1))          return(my_NAN*printf("[compute_entropy_rate_ann_mask] : k must be at least 1 !\n"));
+    
+    // additional checks and auto-adjustments of parameters:
+    N_real_max = set_sampling_parameters_mask(mask, npts, p+1, stride, 0, &sp, "compute_entropy_ann_mask");
+    if (N_real_max<1)   return(my_NAN*printf("[compute_entropy_rate_ann_mask] : aborting! (Theiler %d, N_eff %d, N_real %d)\n", 
+                                sp.Theiler, sp.N_eff, sp.N_real));
+    if (sp.N_eff < 2*k) return(my_NAN*printf("[compute_entropy_rate_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
+   
+    x_new  = (double*)calloc(m*(p+1)*sp.N_eff, sizeof(double));
+
+    nb_errors=0; last_npts_eff=0;   // global variables
+    for (j=0; j<sp.N_real; j++)     // loop over independant windows
+    {   npts_good = analyze_mask_for_sampling(mask+j, npts-j, p+1, stride, 0, sp.Theiler, 1, &ind_epoch); 
+        
+        if (npts_good<sp.N_eff) 
+        {   printf("[compute_entropy_rate_ann_mask] : npts_good = %d < N_eff =%d (real %d/%d)!!!\n", npts_good, sp.N_eff, j, sp.N_real);
+            return(-1);
+        }
+        
+        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
+        
+        for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
+        
+        // note: in the call below, the shift must not include (p-1)*stride, because it is already
+        // accounted for in the indices in 'ind_shuffled'
+        Theiler_embed_mask(x+j, npts, m, p+1, stride, ind_shuffled, x_new, sp.N_eff);
+
+        if (method==ENTROPY_RATE_FRACTION)
+        {   if (USE_PTHREAD>0) 
+                H      = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*p,     k,           get_cores_number(GET_CORES_SELECTED));
+            else
+                H      = compute_entropy_nd_ann         (x_new, sp.N_eff, m*p,     k);
+            nb_errors += nb_errors_local;
+
+            h = H/p;  
+        }
+        if (method==ENTROPY_RATE_DIFFERENCE)
+        {   if (USE_PTHREAD>0) 
+            {   H_past = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*p,     k,           get_cores_number(GET_CORES_SELECTED));
+                H      = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*(p+1), k,           get_cores_number(GET_CORES_SELECTED));
+            }
+            else
+            {   H_past = compute_entropy_nd_ann         (x_new, sp.N_eff, m*p,     k);
+                H      = compute_entropy_nd_ann         (x_new, sp.N_eff, m*(p+1), k);
+            }
+            nb_errors += nb_errors_local;   // each call to an engine function gives a new value of nb_errors_local
+                                            // we use only the last one, which corresponds to the largest embedding p+1
+            h = H-H_past;
+        }
+        else if (method==ENTROPY_RATE_MI) 
+        {   if (USE_PTHREAD>0) 
+            {   H          = compute_entropy_nd_ann_threads             (x_new, sp.N_eff, m,      k,           get_cores_number(GET_CORES_SELECTED));
+                nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, m, m*p, k, &I1, &I2, get_cores_number(GET_CORES_SELECTED));
+            }
+            else
+            {   H          = compute_entropy_nd_ann                     (x_new, sp.N_eff, m,      k);
+                nb_errors += compute_mutual_information_direct_ann      (x_new, sp.N_eff, m, m*p, k, &I1, &I2);
+            }
+
+            h = (MI_algo&MI_ALGO_1) ? H-I1 : H-I2;
+        }
+
+        avg += h;     var += h*h;
+	    last_npts_eff += last_npts_eff_local;
+
+        free(ind_epoch);
+        free(ind_shuffled);
+        free_perm(perm_pts);
+    } // loop on N_real
+
+	avg /= sp.N_real;   var /= sp.N_real;  var -= avg*avg;
+	*S  = avg;          last_std  = sqrt(var);
+    last_samp=sp;
+
+    free(x_new);
+	return(nb_errors);
 } /* end of function "compute_entropy_rate_ann_mask" ************************************/
 
 

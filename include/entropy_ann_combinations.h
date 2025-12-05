@@ -22,8 +22,11 @@ int compute_entropy_increments_ann  (double *x, int nx, int m, int p, int stride
                             int tau_Theiler, int N_eff, int N_realizations, int k, int incr_type, double *S);
 
 // entropy rate (using entropy and/or MI)*/
-int compute_entropy_rate_ann        (double *x, int nx, int m, int p, int stride,
+int compute_entropy_rate_ann_old    (double *x, int nx, int m, int p, int stride,
                             int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *H);
+
+int compute_entropy_rate_ann        (double *x, int nx, int m, int p, int stride,
+                            int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *H);                            
 
 // for the functions below, there are 2 returned values : I1 and I2, corresponding to algorithm 1 and 2
 

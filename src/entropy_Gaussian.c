@@ -77,7 +77,6 @@ void debug_trace(char *text, double *x, int npts, int m, int p, int stride, int 
 int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau, 
                             int tau_Theiler, int N_eff, int N_realizations, double *S)
 {	register int j; 
-	int    n=m*p; // total dimensionality
 	double *x_new, S_tmp, avg=0.0, var=0.0;
 	int    N_real_max=0;
 	samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
@@ -97,7 +96,7 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
     tau_Theiler=sp.Theiler; N_eff = sp.N_eff;  N_realizations=sp.N_real;
     if (N_real_max<1)       return(printf("[compute_entropy_Gaussian] : aborting !\n"));
     
-    x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
+    x_new  = (double*)calloc(m*p*sp.N_eff, sizeof(double));
     
     perm_real = create_unity_perm(N_real_max);  if (sp.type>=3) shuffle_perm(perm_real);
     perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
@@ -116,7 +115,7 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
 #endif
         Theiler_embed(x+(tau*(p-1)+perm_real->data[j]), npts, m, p, tau, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 
-        S_tmp = compute_entropy_nd_Gaussian(x_new, sp.N_eff, n);
+        S_tmp = compute_entropy_nd_Gaussian(x_new, sp.N_eff, m*p);
 #ifdef DEBUGp
         printf(" %1.2f", S_tmp);
         save_dataset_d("debug_xn", x_new, sp.N_eff);
