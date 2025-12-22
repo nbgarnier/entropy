@@ -43,7 +43,7 @@ struct thread_output
 /****************************************************************************************/
 void *threaded_Shannon_entropy_func(void *ptr)
 {   struct thread_args  *args = (struct thread_args *)ptr; // cast arguments to the usable struct
-    struct thread_output *out = calloc(sizeof(struct thread_output),1); // allocate heap memory for this thread's results
+    struct thread_output *out = calloc(1, sizeof(struct thread_output)); // allocate heap memory for this thread's results
     register int i;
     double eps=0.0, l_hs=0.0;
     int core     = args->core,

@@ -159,7 +159,7 @@ int compute_entropy_increments_Gaussian(double *x, int npts, int m, int px, int 
 /* 2021-12-15 : now using copies of data to be OK for non-stationary signals            */
 /* 2022-05-14 : new samplings, tested OK on Modane data on 2022-06-01                   */
 /* 2022-10-11 : fork from the _ann function                                             */
-/* 2025-12-05 : fully rewrittend function                                               */
+/* 2025-12-05 : fully rewritten function                                                */
 /****************************************************************************************/
 int compute_entropy_rate_Gaussian(double *x, int npts, int m, int p, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int method, double *S)
@@ -208,7 +208,6 @@ int compute_entropy_rate_Gaussian(double *x, int npts, int m, int p, int stride,
         else if (method==ENTROPY_RATE_MI) 
         {   H  = compute_entropy_nd_Gaussian               (x_new, sp.N_eff, m);
             MI = compute_mutual_information_direct_Gaussian(x_new, sp.N_eff, m, m*p);
-            
             h = H-MI;
         }
 
@@ -224,8 +223,6 @@ int compute_entropy_rate_Gaussian(double *x, int npts, int m, int p, int stride,
     free(x_new);
     free_perm(perm_real);    free_perm(perm_pts);
 	return(nb_errors);  
-    
-    return(nb_errors);
 } /* end of function "compute_entropy_rate_Gaussian" *************************************/
 
 

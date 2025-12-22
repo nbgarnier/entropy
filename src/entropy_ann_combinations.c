@@ -194,7 +194,7 @@ int compute_entropy_increments_ann(double *x, int npts, int m, int px, int strid
 /* 2020-02-26 : does not output the standard deviation (yet?)                           */
 /* 2021-12-15 : now using copies of data to be OK for non-stationary signals            */
 /* 2022-05-14 : new samplings, tested OK on Modane data on 2022-06-01                   */
-/* 2025-12-03 : deprecated                                                              */
+/* 2025-12-03 : deprecated, renamed with _old                                           */
 /****************************************************************************************/
 int compute_entropy_rate_ann_old(double *x, int npts, int m, int p, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)

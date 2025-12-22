@@ -79,7 +79,7 @@ struct thread_output
 /****************************************************************************************/
 void *threaded_MI_algo1_NBG_func(void *ptr)
 {   struct thread_args  *args = (struct thread_args *)ptr; // cast arguments to the usable struct
-    struct thread_output *out = calloc(sizeof(struct thread_output),1); // allocate heap memory for this thread's results
+    struct thread_output *out = calloc(1, sizeof(struct thread_output)); // allocate heap memory for this thread's results
     register int i, d;
     double *yi;
     double epsilon=0.0, l_Is=0.0;       // pointers to tmp variables
@@ -208,7 +208,7 @@ void *threaded_MI_algo1_NBG_func(void *ptr)
 /****************************************************************************************/
 void *threaded_MI_algo1_ANN_func(void *ptr)
 {   struct thread_args  *args = (struct thread_args *)ptr; // cast arguments to the usable struct
-    struct thread_output *out = calloc(sizeof(struct thread_output),1); // allocate heap memory for this thread's results
+    struct thread_output *out = calloc(1, sizeof(struct thread_output)); // allocate heap memory for this thread's results
     register int i, d;
     double *yi;
     double *epsilon_z;
@@ -343,7 +343,7 @@ void *threaded_MI_algo1_ANN_func(void *ptr)
 /****************************************************************************************/
 void *threaded_MI_algo2_NBG_func(void *ptr)
 {   struct thread_args  *args = (struct thread_args *)ptr; // cast arguments to the usable struct
-    struct thread_output *out = calloc(sizeof(struct thread_output),1); // allocate heap memory for this thread's results
+    struct thread_output *out = calloc(1, sizeof(struct thread_output)); // allocate heap memory for this thread's results
     register int i, d;
     double *yi, *epsilon_z;
     double epsilon_1, epsilon_2, l_Is=0.0;
@@ -458,7 +458,7 @@ void *threaded_MI_algo2_NBG_func(void *ptr)
 /****************************************************************************************/
 void *threaded_MI_algo2_ANN_func(void *ptr)
 {   struct thread_args  *args = (struct thread_args *)ptr; // cast arguments to the usable struct
-    struct thread_output *out = calloc(sizeof(struct thread_output),1); // allocate heap memory for this thread's results
+    struct thread_output *out = calloc(1, sizeof(struct thread_output)); // allocate heap memory for this thread's results
     register int i, d;
     double *yi, *epsilon_z;
 //    double epsilon=0.0;
