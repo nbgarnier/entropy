@@ -57,6 +57,15 @@ from .core_optimized import (
     process_files_parallel,
 )
 
+# Benchmark utilities for RR analysis
+from .benchmark_rr import (
+    run_benchmark,
+    process_rr_array,
+    load_rr_files,
+    generate_synthetic_rr,
+    EntropyMetrics,
+)
+
 __version__ = "4.2.0-pure"
 __all__ = [
     # Core functions
@@ -99,4 +108,10 @@ __all__ = [
     "compute_TE_fast",
     "compute_over_scales_fast",
     "process_files_parallel",
+    # Benchmark utilities
+    "run_benchmark",
+    "process_rr_array",
+    "load_rr_files",
+    "generate_synthetic_rr",
+    "EntropyMetrics",
 ]
