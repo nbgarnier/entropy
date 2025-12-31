@@ -31,6 +31,7 @@ from .tools import (
     reorder,
     embed,
     crop,
+    compute_over_scales,
 )
 
 from .masks import (
@@ -71,6 +72,7 @@ __all__ = [
     "reorder",
     "embed",
     "crop",
+    "compute_over_scales",
     # Masks
     "mask_finite",
     "mask_NaN",
