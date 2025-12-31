@@ -47,6 +47,16 @@ from .others import (
     surrogate,
 )
 
+# Optimized versions
+from .core_optimized import (
+    compute_entropy_fast,
+    compute_entropy_rate_fast,
+    compute_MI_fast,
+    compute_TE_fast,
+    compute_over_scales_fast,
+    process_files_parallel,
+)
+
 __version__ = "4.2.0-pure"
 __all__ = [
     # Core functions
@@ -82,4 +92,11 @@ __all__ = [
     "compute_entropy_Renyi",
     "compute_complexities",
     "surrogate",
+    # Optimized versions
+    "compute_entropy_fast",
+    "compute_entropy_rate_fast",
+    "compute_MI_fast",
+    "compute_TE_fast",
+    "compute_over_scales_fast",
+    "process_files_parallel",
 ]
