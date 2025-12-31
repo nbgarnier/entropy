@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "entropy_pure"
+version = "4.2.0"
+description = "Information Theory tools and entropies for multi-scale analysis (pure Python)"
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+authors = [
+    {name = "Nicolas B. Garnier", email = "nicolas.garnier@ens-lyon.fr"}
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20",
+    "scipy>=1.7",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "matplotlib"]
+
+[tool.setuptools.packages.find]
+where = ["."]
