@@ -46,8 +46,9 @@ src/.DS_Store
 src/cython/.DS_Store 
 src/cython/dist/ 
 src/cython/entropy/.DS_Store 
-src/cython/entropy/__pycache__/ 
-src/cython/entropy/build/ 
+src/cython/entropy/__pycache__/
+src/cython/entropy/build/
+src/entropy_pure/__pycache__/ 
 src/cython/entropy/entropy.c 
 src/cython/entropy/tools.c
 src/cython/entropy/entropy.pxd_old 
