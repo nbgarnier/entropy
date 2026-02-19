@@ -136,7 +136,12 @@ def _entropy_knn(x: np.ndarray, k: int = 5) -> float:
     Uses the formula:
     H = n * mean(log(2 * epsilon)) + psi(N) - psi(k)
 
-    where epsilon is the distance to the k-th nearest neighbor.
+    where epsilon is the distance to the k-th nearest neighbor,
+    excluding all points at distance 0 (duplicates).
+
+    This matches the C/ANN implementation where the kd-tree search
+    skips all zero-distance points (ANN_ALLOW_SELF_MATCH=false
+    triggers a ``dist != 0`` check in kd_search.cpp).
 
     Parameters
     ----------
@@ -162,13 +167,36 @@ def _entropy_knn(x: np.ndarray, k: int = 5) -> float:
     # Build k-d tree (transpose so points are rows)
     tree = KDTree(x.T)
 
-    # Find k+1 nearest neighbors (including self)
-    distances, _ = tree.query(x.T, k=k+1, workers=-1)
+    # Determine how many extra neighbors to request to skip duplicates.
+    # Count the maximum number of duplicate points (same coordinates).
+    if n_dims == 1:
+        _, counts = np.unique(x.ravel(), return_counts=True)
+    else:
+        _, counts = np.unique(x.T, axis=0, return_counts=True)
+    max_dup = int(counts.max())
 
-    # Get distance to k-th neighbor (excluding self which is at distance 0)
-    epsilon = distances[:, k]
+    # Request enough neighbors: k non-zero + up to max_dup zeros
+    # Use L-infinity (Chebyshev) norm to match ANN library (compiled with ANN_METRIC=LINF)
+    k_ext = min(n_pts, k + max_dup)
+    distances, _ = tree.query(x.T, k=k_ext, p=np.inf, workers=-1)
 
-    # Filter out zero distances
+    # For each point, find the k-th non-zero distance.
+    # Distances are sorted ascending, so zeros come first.
+    n_zeros = np.sum(distances == 0, axis=1)  # includes self
+    target_idx = n_zeros + k - 1  # index of k-th non-zero neighbor
+
+    # Points with enough non-zero neighbors
+    has_enough = target_idx < k_ext
+    n_errors = n_pts - np.sum(has_enough)
+
+    # Extract epsilon using advanced indexing
+    target_idx_safe = np.minimum(target_idx, k_ext - 1)
+    epsilon = distances[np.arange(n_pts), target_idx_safe]
+
+    # Mark points without enough neighbors
+    epsilon[~has_enough] = 0.0
+
+    # Filter out error points (epsilon still 0 means not enough unique neighbors)
     valid = epsilon > 0
     n_valid = np.sum(valid)
 
@@ -181,8 +209,8 @@ def _entropy_knn(x: np.ndarray, k: int = 5) -> float:
     h += digamma(n_valid) - digamma(k)
 
     # Store info for get_last_info
-    commons._last_info['n_errors'] = n_pts - n_valid
-    commons._last_info['n_eff_local'] = n_valid
+    commons._last_info['n_errors'] = int(n_errors)
+    commons._last_info['n_eff_local'] = int(n_valid)
 
     return h
 
@@ -686,6 +714,8 @@ def compute_entropy_rate(x: np.ndarray, method: int = 2, m: int = 1,
     if x.ndim == 1:
         x = x.reshape(1, -1)
 
+    n_dims, n_pts = x.shape
+
     if method == 0:
         # H(m) / m
         H_m = compute_entropy(x, n_embed=m, stride=stride, Theiler=Theiler,
@@ -702,24 +732,42 @@ def compute_entropy_rate(x: np.ndarray, method: int = 2, m: int = 1,
 
     else:  # method == 2
         # H(1) - MI(x_t, x_past)
-        H_1 = compute_entropy(x, n_embed=1, stride=stride, Theiler=Theiler,
+        # Build unified embedding matching C's Theiler_embed:
+        # - Points step by 1 (consecutive, like C's Theiler=1)
+        # - Embedding lags at stride intervals
+        # - H(1) and MI operate on the SAME point set
+        n_dims_x = x.shape[0]
+        pts_offset = stride * m  # matches C's stride*(p+1-1) = stride*p
+        n_available = n_pts - pts_offset
+
+        if n_available < 2 * k:
+            return np.nan
+
+        # Resolve N_eff
+        N_eff_local = N_eff
+        if N_eff_local == 0:
+            N_eff_local = commons._samp_default['N_eff']
+        if N_eff_local <= 0 or N_eff_local > n_available:
+            N_eff_local = n_available
+        n_use = min(N_eff_local, n_available)
+
+        # Build embedding arrays: consecutive time points with stride-spaced lags
+        t_indices = pts_offset + np.arange(n_use)
+        x_curr = x[:, t_indices]
+
+        x_past_emb = np.zeros((n_dims_x * m, n_use), dtype=np.float64)
+        for lag in range(m):
+            past_indices = t_indices - (lag + 1) * stride
+            x_past_emb[lag * n_dims_x:(lag + 1) * n_dims_x, :] = x[:, past_indices]
+
+        # H(1) on the current values from the unified embedding
+        H_1 = compute_entropy(x_curr, n_embed=1, stride=1, Theiler=Theiler,
                              N_eff=N_eff, N_real=N_real, k=k, mask=mask)
 
-        # Embed for past
-        if m > 1:
-            x_past = _embed_data(x, m, stride)
-            # Current point
-            offset = stride * m
-            x_curr = x[:, offset:]
-            n_pts = min(x_curr.shape[1], x_past.shape[1])
-            x_curr = x_curr[:, :n_pts]
-            x_past = x_past[:, :n_pts]
-
-            MI_vals = compute_MI(x_curr, x_past, n_embed_x=1, n_embed_y=1, stride=1,
-                                Theiler=Theiler, N_eff=N_eff, N_real=N_real, k=k)
-            MI = MI_vals[0]
-        else:
-            MI = 0.0
+        # MI between current and past (already correctly paired)
+        MI_vals = compute_MI(x_curr, x_past_emb, n_embed_x=1, n_embed_y=1,
+                            stride=1, Theiler=Theiler, N_eff=N_eff, N_real=N_real, k=k)
+        MI = MI_vals[0]
 
         return H_1 - MI
 
