@@ -20,7 +20,15 @@ This fork adds **entropy_pure** - a complete pure Python reimplementation that r
 - **Sample Entropy / ApEn** - Complexity measures via `compute_complexities()`
 - **Parallel processing** - `process_files_parallel()` for batch jobs
 
-Both versions produce numerically equivalent results.
+### Validation Results
+
+The pure Python implementation was systematically validated against the C/ANN reference on 251 five-minute RR-interval segments from ambulatory ECG recordings. Three implementation discrepancies were identified and corrected:
+
+1. **Zero-distance handling** -- the ANN library excludes all zero-distance neighbors, not just the query point itself; the Python code now replicates this behavior.
+2. **L-infinity norm** -- ANN is compiled with the Chebyshev ($L_\infty$) norm; `scipy.spatial.KDTree.query` is now called with `p=np.inf` to match.
+3. **Entropy-rate embedding alignment** -- at time scales $\tau > 1$, the marginal entropy and mutual information terms must share a unified embedding; the Python code now mirrors the C `Theiler_embed` layout.
+
+After all corrections, Shannon entropy $H(m{=}2)$ matches to machine precision ($R^2 = 1.0000$) and entropy rate $h(m{=}2)$ agrees to within 0.06% ($R^2 = 0.9998$) across time scales $\tau \in \{1, 2, 4\}$.
 
 ---
 
