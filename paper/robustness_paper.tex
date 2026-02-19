@@ -1,0 +1,383 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{siunitx}
+\usepackage{array}
+
+% Custom commands
+\newcommand{\hdecrate}{$h$\,decay rate}
+\newcommand{\SEdecrate}{SampEn\,decay rate}
+\newcommand{\AEdecrate}{ApEn\,decay rate}
+\DeclareMathOperator{\MI}{MI}
+
+\title{Input-Signal Robustness of Multiscale Entropy Biomarkers:\\
+The Permutation Entropy Rate as a Uniquely Invariant\\
+Complexity Measure for Cardiac Time Series}
+\author{Martin G.\ Frasch$^{1}$ \and Nicolas B.\ Garnier$^{2}$}
+
+\newcommand{\affiliations}{%
+$^{1}$Department of Obstetrics and Gynecology, University of Washington, Seattle, WA, USA\\
+$^{2}$Laboratoire de Physique, CNRS, ENS de Lyon, Universit\'{e} de Lyon, Lyon, France
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+\begingroup
+\centering
+\small
+\affiliations
+\par
+\endgroup
+\vspace{1em}
+
+\begin{abstract}
+Entropy-based complexity measures derived from cardiac interval time series are sensitive to seemingly arbitrary preprocessing choices: whether the input is heart rate (HR) or R-R interval (RRI), and whether the signal is normalized.
+We systematically evaluate the robustness of three multiscale entropy decay rates---permutation entropy rate ($h$), Sample Entropy (SampEn), and Approximate Entropy (ApEn)---across four input conditions (\{HR, RRI\} $\times$ \{raw, normalized\}) in 251~segments from 49~children.
+The $h$~decay rate shows near-perfect cross-condition agreement (Pearson $r = 0.983$--$0.998$) and maintains a significant dose-response relationship ($p < 0.006$, Cohen's $d > 1.5$) in all four conditions.
+In contrast, SampEn and ApEn decay rates are highly sensitive to input choice ($r$ as low as $-0.06$), with statistical significance depending on the specific condition tested.
+We provide a theoretical explanation grounded in the rank-based nature of k-nearest-neighbor estimation, which is invariant under the monotonic HR$\leftrightarrow$RRI transform, whereas the absolute tolerance threshold used in template matching is not.
+These results establish the permutation entropy decay rate as the uniquely robust complexity biomarker for cardiac time series and caution against interpreting template-matching entropy results without explicit robustness verification.
+\end{abstract}
+
+
+\section{Introduction}\label{sec:intro}
+
+Multiscale entropy analysis has become a standard tool for characterizing the complexity of physiological time series~\citep{costa2002,costa2005}.
+In cardiac applications, entropy is typically computed from either heart-rate (HR, in beats per minute) or R-R interval (RRI, in milliseconds) time series---two representations of the same underlying process related by the reciprocal transform $\text{HR} = 60{,}000 / \text{RRI}$.
+Additional choices include whether to normalize the signal by its standard deviation, which affects the absolute scale of inter-point distances.
+
+While these preprocessing choices are often treated as inconsequential, they can profoundly affect entropy estimates.
+Template-matching algorithms (Sample Entropy, Approximate Entropy) use an absolute tolerance threshold $r_{\text{abs}} = r \times \text{SD}(x)$ that depends on the distributional geometry of the input~\citep{richman2000}.
+The nonlinear HR$\leftrightarrow$RRI transform alters this geometry, potentially changing which templates are counted as matches.
+
+In contrast, k-nearest-neighbor (k-NN) entropy estimators~\citep{kozachenko1987,kraskov2004} operate on rank-ordered distances, a property that confers invariance under monotonic transforms.
+This theoretical distinction has practical consequences that, to our knowledge, have not been systematically evaluated in the context of multiscale cardiac complexity analysis.
+
+We address this gap by computing three families of multiscale entropy measures under four input conditions and evaluating their robustness at three levels: (i)~segment-level cross-condition correlations, (ii)~preservation of dose-response group differences, and (iii)~stability of effect sizes.
+The dataset comprises ambulatory ECG recordings from a cohort study of prenatal steroid exposure~\citep{frasch2024}, providing a clinical context in which biomarker robustness directly affects interpretability.
+
+A companion paper~\citep{garnier2026} describes the numerical validation of the Python entropy library used for the k-NN computations.
+
+
+\section{Methods}\label{sec:methods}
+
+\subsection{Entropy measures}\label{sec:entropy}
+
+We compute three families of entropy from cardiac interval time series, each capturing different aspects of signal complexity.
+
+\subsubsection{Permutation entropy rate ($h$)}
+
+The permutation entropy rate quantifies the conditional uncertainty of the next value given the past, estimated via k-nearest-neighbor (k-NN) distances using the Kozachenko--Leonenko (KL) estimator~\citep{kozachenko1987}:
+\begin{equation}\label{eq:kl}
+  \hat{H}(X) = d \cdot \frac{1}{N_{\text{v}}} \sum_{\substack{i=1 \\ \varepsilon_i > 0}}^{N} \log(2\varepsilon_i)
+  + \psi(N_{\text{v}}) - \psi(k),
+\end{equation}
+where $\varepsilon_i$ is the $L_\infty$ (Chebyshev) distance to the $k$-th nearest neighbor, $\psi(\cdot)$ is the digamma function, and $N_{\text{v}} \leq N$ is the number of points with $\varepsilon_i > 0$.
+
+The entropy rate at time scale $\tau$ is computed via the decomposition~\citep{kraskov2004}:
+\begin{equation}\label{eq:erate}
+  \hat{h}(\tau) = \hat{H}(X_t) - \hat{I}(X_t;\, X_{\text{past}}^{(m)}),
+\end{equation}
+where $X_{\text{past}}^{(m)} = (X_{t-\tau}, X_{t-2\tau}, \ldots, X_{t-m\tau})$ and $\hat{I}$ is estimated via the KSG algorithm~\citep{kraskov2004}.
+Both $\hat{H}$ and $\hat{I}$ are computed on the same unified time-delay embedding to ensure algebraic consistency (see~\citealt{garnier2026} for implementation details).
+
+\subsubsection{Sample Entropy (SampEn)}
+
+SampEn quantifies signal regularity through template matching~\citep{richman2000}:
+\begin{equation}\label{eq:sampen}
+  \text{SampEn}(m, r) = -\ln\!\left(\frac{B^{m+1}}{A^m}\right),
+\end{equation}
+where $A^m$ and $B^{m+1}$ count the number of template pairs matching within tolerance $r_{\text{abs}} = r \times \text{SD}(x)$ at embedding dimensions $m$ and $m+1$, respectively, using the $L_\infty$ norm and excluding self-matches.
+
+\subsubsection{Approximate Entropy (ApEn)}
+
+ApEn follows the same template-matching framework but includes self-matches in the counting~\citep{pincus1991}, making it less sensitive to short data but introducing a bias toward lower values.
+
+\subsection{Multiscale analysis}\label{sec:multiscale}
+
+\subsubsection{Scale sweep}
+
+Entropy is computed at time scales ranging from 0.5~to 5.0~s in steps of $d\tau = 0.04$~s (i.e., \texttt{dstride}~$= 10$ samples at 250~Hz), yielding approximately 113~scale points per segment.
+
+For SampEn and ApEn, multiscale analysis uses non-overlapping block averaging (coarse-graining;~\citealt{costa2002}):
+\begin{equation}\label{eq:coarsegrain}
+  y_j^{(\tau)} = \frac{1}{\tau} \sum_{i=(j-1)\tau+1}^{j\tau} x_i.
+\end{equation}
+For the entropy rate $h$, multiscale behavior is captured implicitly through the stride parameter $\tau$ in the time-delay embedding~(Eq.~\ref{eq:erate}), operating on the original signal with progressively wider lags rather than on a downsampled signal.
+
+\subsubsection{Summary statistics}
+
+From each entropy-versus-scale curve, four summary statistics are extracted:
+\begin{itemize}
+  \item \textbf{AUC}: area under the curve (trapezoidal integration)
+  \item \textbf{max}: maximum entropy value across scales
+  \item \textbf{max\_t}: scale at which the maximum occurs
+  \item \textbf{dec\_rate}: rate of decrease from the maximum to the final scale
+\end{itemize}
+This yields 12~features per segment: \{$h$, SampEn, ApEn\} $\times$ \{AUC, max, max\_t, dec\_rate\}.
+
+\subsection{Computation parameters}\label{sec:params}
+
+\begin{table}[htbp]
+\centering
+\caption{Entropy computation parameters.}\label{tab:params}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Parameter & Value & Notes \\
+\midrule
+Embedding dimension $m$ & 2 & Entropy rate and SampEn/ApEn \\
+k-NN neighbors $k$ & 5 & KL estimator \\
+Tolerance $r$ (SampEn/ApEn) & 0.2 $\times$ SD & Fixed across scales \\
+Distance metric & $L_\infty$ (Chebyshev) & Both k-NN and template matching \\
+Scale range & 0.5--5.0~s & $d\tau = 0.04$~s (\texttt{dstride}${}=10$) \\
+$N_{\text{eff}}$ & 4096 & Points per realization \\
+$N_{\text{real}}$ & 3 & Realizations averaged \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Input conditions}\label{sec:conditions}
+
+All entropy measures were computed under four input-signal variants (Table~\ref{tab:conditions}), each with and without temporal smoothing (8~total configurations).
+
+\begin{table}[htbp]
+\centering
+\caption{Four input conditions for robustness analysis.}\label{tab:conditions}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Label & Signal & Normalization & Transform from RRI \\
+\midrule
+HR\textsubscript{raw} & Heart rate (bpm) & None & $60{,}000 / \text{RRI}$ \\
+HR\textsubscript{norm} & Heart rate & $\div$ SD & Monotonic \\
+RRI\textsubscript{raw} & R-R intervals (ms) & None & Identity \\
+RRI\textsubscript{norm} & R-R intervals & $\div$ SD & Monotonic \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dataset}\label{sec:dataset}
+
+We analyze 251~five-minute ECG segments (250~Hz) from 49~children aged 8~years, drawn from a prospective cohort study of prenatal maternal steroid exposure~\citep{frasch2024}.
+Subjects are classified into three groups based on cumulative maternal steroid dose: low~dose ($<5$~g, $N = 12$--15), high~dose ($\geq 5$~g, $N = 13$--15), and controls ($N = 24$--30), with exact counts varying by segment due to quality exclusions.
+R-R intervals are extracted via ensemble R-peak detection with signal quality index (SQI) filtering.
+
+\subsection{Statistical analysis}\label{sec:stats}
+
+\subsubsection{Cross-condition correlations}
+Segment-level Pearson correlations between decay rates computed under different input conditions.
+
+\subsubsection{Dose-response preservation}
+Kruskal-Wallis tests comparing three dose groups on the mental arithmetic segment (M3\_bis\_M4, peak cognitive load), repeated under each input condition.
+
+\subsubsection{Pairwise effect sizes}
+Mann-Whitney $U$ tests with Cohen's $d$ for the low-dose vs.\ high-dose comparison under each condition.
+
+
+\section{Results}\label{sec:results}
+
+\subsection{Cross-condition correlations}\label{sec:corr}
+
+Table~\ref{tab:correlations} shows segment-level Pearson correlations ($N = 251$) between decay rates computed under the four input conditions.
+
+\begin{table}[htbp]
+\centering
+\caption{Cross-condition Pearson correlations for entropy decay rates.
+The $h$~decay rate shows near-perfect agreement ($r > 0.98$) across all conditions.
+SampEn and ApEn decay rates are highly sensitive to input choice.}\label{tab:correlations}
+\small
+\begin{tabular}{l cccccc}
+\toprule
+& \multicolumn{2}{c}{$h$ decay rate} & \multicolumn{2}{c}{SampEn decay rate} & \multicolumn{2}{c}{ApEn decay rate} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+Pair & $r$ & & $r$ & & $r$ & \\
+\midrule
+HR\textsubscript{raw} vs HR\textsubscript{norm}   & \textbf{0.997} & & 0.713 & & 0.091 \\
+HR\textsubscript{raw} vs RRI\textsubscript{raw}   & \textbf{0.983} & & 0.502 & & 0.099 \\
+HR\textsubscript{raw} vs RRI\textsubscript{norm}  & \textbf{0.985} & & 0.698 & & 0.089 \\
+HR\textsubscript{norm} vs RRI\textsubscript{raw}  & \textbf{0.985} & & 0.316 & & $-0.045$ \\
+HR\textsubscript{norm} vs RRI\textsubscript{norm} & \textbf{0.986} & & 0.953 & & 0.980 \\
+RRI\textsubscript{raw} vs RRI\textsubscript{norm} & \textbf{0.998} & & 0.310 & & $-0.060$ \\
+\midrule
+Range & \textbf{0.983--0.998} & & 0.310--0.953 & & $-0.060$--0.980 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The $h$~decay rate is virtually invariant to input choice, with all pairwise correlations exceeding 0.98.
+In contrast, SampEn decay rate correlations range from 0.31 to 0.95, and ApEn decay rate correlations range from $-0.06$ to 0.98.
+For both template-matching measures, only the HR\textsubscript{norm} vs RRI\textsubscript{norm} pair achieves reasonable agreement ($r > 0.95$), while comparisons involving raw signals show moderate to negligible correlations.
+
+\subsection{Dose-response preservation}\label{sec:kw}
+
+Table~\ref{tab:kw} presents Kruskal-Wallis tests comparing three dose groups on the mental arithmetic segment under each input condition.
+
+\begin{table}[htbp]
+\centering
+\caption{Dose-response analysis (Kruskal-Wallis) on the M3\_bis\_M4 segment across input conditions.
+Only the $h$~decay rate reaches significance ($p < 0.01$) in all four conditions.}\label{tab:kw}
+\small
+\begin{tabular}{l cc cc cc}
+\toprule
+& \multicolumn{2}{c}{$h$ decay rate} & \multicolumn{2}{c}{SampEn decay rate} & \multicolumn{2}{c}{ApEn decay rate} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+Condition & $H$ & $p$ & $H$ & $p$ & $H$ & $p$ \\
+\midrule
+HR\textsubscript{raw}  & 10.16 & \textbf{0.006} & 12.49 & \textbf{0.002} & 1.90 & 0.387 \\
+HR\textsubscript{norm} & 10.59 & \textbf{0.005} & 4.09  & 0.129           & 4.41 & 0.110 \\
+RRI\textsubscript{raw} & 10.18 & \textbf{0.006} & 4.51  & 0.105           & 0.37 & 0.832 \\
+RRI\textsubscript{norm}& 10.69 & \textbf{0.005} & 4.49  & 0.106           & 4.51 & 0.105 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The $h$~decay rate yields consistent $H$ statistics (10.16--10.69) and significant $p$~values ($p < 0.006$) across all four conditions.
+The SampEn decay rate is significant only under HR\textsubscript{raw} ($p = 0.002$) and fails to reach significance in all other conditions.
+The ApEn decay rate is not significant in any condition.
+
+\subsection{Pairwise comparisons}\label{sec:pairwise}
+
+Table~\ref{tab:pairwise} shows Mann-Whitney $U$ tests for the low-dose vs.\ high-dose comparison.
+
+\begin{table}[htbp]
+\centering
+\caption{Low-dose vs.\ high-dose pairwise comparisons (Mann-Whitney $U$)
+on the M3\_bis\_M4 segment.
+The $h$~decay rate shows consistently large effects ($d > 1.5$, $p < 0.005$) in all conditions.}\label{tab:pairwise}
+\small
+\begin{tabular}{l ccc ccc}
+\toprule
+& \multicolumn{3}{c}{$h$ decay rate} & \multicolumn{3}{c}{SampEn decay rate} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Condition & $U$ & $p$ & $d$ & $U$ & $p$ & $d$ \\
+\midrule
+HR\textsubscript{raw}  & 25 & \textbf{0.004} & 1.53 & 14 & \textbf{$<$0.001} & 1.97 \\
+HR\textsubscript{norm} & 23 & \textbf{0.003} & 1.57 & 42 & 0.054               & 0.93 \\
+RRI\textsubscript{raw} & 25 & \textbf{0.004} & 1.57 & 21 & 0.062               & 0.97 \\
+RRI\textsubscript{norm}& 24 & \textbf{0.004} & 1.66 & 41 & 0.047               & 0.98 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The $h$~decay rate shows large, stable effects (Cohen's $d = 1.53$--$1.66$) across all conditions, with $p < 0.005$ uniformly.
+The SampEn decay rate achieves the largest single effect size ($d = 1.97$) under HR\textsubscript{raw}, but this effect does not generalize: in the remaining three conditions, the $p$~values hover near $0.05$ and the effect sizes drop to $d \approx 0.95$.
+
+\subsection{Summary of robustness properties}\label{sec:summary}
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of robustness properties across entropy decay rates.}\label{tab:summary}
+\begin{tabular}{@{}l ccc@{}}
+\toprule
+Property & $h$ dec.\ rate & SampEn dec.\ rate & ApEn dec.\ rate \\
+\midrule
+Cross-condition $r$ (min) & \textbf{0.983} & 0.310 & $-0.060$ \\
+Significant in all 4 (KW) & \textbf{Yes (4/4)} & No (1/4) & No (0/4) \\
+Signif.\ low vs.\ high, all 4 (MW) & \textbf{Yes (4/4)} & No (1--2/4) & No (0--1/4) \\
+Effect size range ($d$) & 1.53--1.66 & 0.93--1.97 & 0.05--0.93 \\
+HR\textsubscript{norm} vs RRI\textsubscript{norm} $r$ & \textbf{0.986} & 0.953 & 0.980 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Discussion}\label{sec:discussion}
+
+\subsection{Theoretical basis: k-NN rank invariance}\label{sec:theory}
+
+The robustness of the $h$~decay rate follows from the rank-based nature of the k-NN estimator.
+The KL estimator (Eq.~\ref{eq:kl}) depends on neighbor distances $\varepsilon_i$ through their logarithms.
+Under a monotonic transform $g(x)$:
+\begin{enumerate}
+  \item The \emph{rank ordering} of inter-point distances is preserved---the same points remain nearest neighbors.
+  \item The distances scale by the local derivative $|g'|$, adding a term $\overline{\ln|g'|}$ to the entropy estimate.
+  \item Entropy \emph{differences} across scales---which determine the decay rate---are \emph{invariant}, because the constant offset cancels in the subtraction.
+\end{enumerate}
+
+The HR$\leftrightarrow$RRI conversion ($g(x) = 60{,}000/x$) is a strictly monotonic (decreasing) transform.
+Normalization by standard deviation ($x \mapsto x/\sigma$) is also monotonic.
+Therefore, while absolute entropy values differ across conditions (by a constant $\overline{\ln|g'|}$), the \emph{shape} of the entropy-versus-scale curve---and hence its decay rate---is preserved.
+This explains the cross-condition correlations $r > 0.98$ observed for the $h$~decay rate.
+
+\subsection{Template-matching sensitivity}\label{sec:template}
+
+SampEn and ApEn use an absolute tolerance threshold $r_{\text{abs}} = 0.2 \times \text{SD}(x)$.
+Under the nonlinear HR$\leftrightarrow$RRI transform:
+\begin{enumerate}
+  \item The standard deviation changes nonlinearly: $\text{SD}(60{,}000/x) \neq 60{,}000 \cdot \text{SD}(x) / \overline{x}^2$ in general.
+  \item The tolerance $r_{\text{abs}}$ captures a \emph{different proportion} of the signal's distributional geometry.
+  \item The set of matching templates changes, sometimes dramatically.
+\end{enumerate}
+
+This effect is asymmetric across the HR/RRI range: at low HR values (long RRI), a given RRI tolerance corresponds to a small HR tolerance, while at high HR values the same RRI tolerance corresponds to a large HR tolerance.
+The low cross-condition correlations for SampEn ($r$ as low as 0.31) and ApEn ($r$ as low as $-0.06$) directly reflect this sensitivity.
+
+\subsection{Normalization as partial remedy}\label{sec:normalization}
+
+Normalization by standard deviation partially mitigates the template-matching sensitivity.
+The HR\textsubscript{norm} vs RRI\textsubscript{norm} correlations are high for all three measures ($r = 0.953$--$0.986$; Table~\ref{tab:correlations}, last row).
+However, this agreement only holds between normalized variants; comparisons involving raw signals remain unstable.
+Moreover, normalization does not restore the dose-response relationship: even under RRI\textsubscript{norm}, only the $h$~decay rate retains significance (Table~\ref{tab:kw}).
+
+This observation has important practical implications: while normalization improves reproducibility of template-matching measures, it does not make them robust biomarkers.
+The $h$~decay rate, by contrast, yields the same statistical conclusion regardless of preprocessing choice.
+
+\subsection{The SampEn ``HR\textsubscript{raw} anomaly''}\label{sec:anomaly}
+
+The SampEn decay rate achieves its strongest result ($H = 12.49$, $p = 0.002$, $d = 1.97$) specifically under HR\textsubscript{raw}---exceeding even the $h$~decay rate in that single condition.
+This isolated finding does not replicate under any other input condition.
+We interpret it as an artifact of the particular distributional geometry of raw heart rate: the reciprocal transform compresses long RRI values (low HR) and expands short RRI values (high HR), creating a specific template-matching landscape that happens to amplify group differences.
+Had only HR\textsubscript{raw} been tested, SampEn decay rate would have appeared to be the stronger biomarker---a cautionary example of condition-dependent findings.
+
+\subsection{Relation to implementation validation}\label{sec:validation}
+
+A companion paper~\citep{garnier2026} validates the Python implementation of the k-NN entropy estimators against the reference C/ANN library, identifying and correcting three implementation-level discrepancies (zero-distance handling, distance-metric mismatch, embedding alignment).
+The present work complements that validation by demonstrating that k-NN entropy measures are not only numerically correct but also \emph{methodologically robust}---their biological conclusions are invariant to preprocessing choices that fundamentally alter template-matching results.
+
+The two papers share a common insight: the rank-based nature of k-NN estimation is the key property.
+In~\citet{garnier2026}, it ensures that the corrected implementation produces identical neighbor rankings as the C reference.
+Here, it ensures that the same neighbor rankings---and hence the same entropy decay rates---emerge regardless of whether the input is HR or RRI, raw or normalized.
+
+\subsection{Limitations}\label{sec:limitations}
+
+This analysis evaluates robustness across input-signal transformations but does not address other sources of variability such as segment length, R-peak detection method, or noise contamination.
+The dose-response analysis is limited to a single cognitive-stress segment (mental arithmetic) in a modest cohort ($N = 49$), and replication in larger datasets is needed.
+The theoretical rank-invariance argument is exact only for strictly monotonic transforms; nonlinear transforms that change the rank order (e.g., absolute value) would break the invariance.
+
+
+\section{Conclusion}\label{sec:conclusion}
+
+Among three families of multiscale entropy decay rates, only the permutation entropy rate ($h$~decay rate) is robust to the choice of input signal representation.
+Its cross-condition correlations exceed $r = 0.98$, and it maintains a large, significant dose-response effect ($d > 1.5$, $p < 0.005$) under all four tested conditions.
+The theoretical basis is the rank invariance of k-NN distance estimation under monotonic transforms---a property absent from the template-matching framework used by SampEn and ApEn.
+
+We recommend that studies reporting entropy-based cardiac complexity measures:
+\begin{enumerate}
+  \item Use k-NN-based entropy rates as the primary complexity biomarker.
+  \item Verify robustness across input conditions before interpreting template-matching results.
+  \item Report the specific input condition (HR vs.\ RRI, raw vs.\ normalized) to enable reproducibility.
+\end{enumerate}
+
+All analysis code and data are available at \url{https://github.com/martinfrasch/entropy} and \url{https://github.com/martinfrasch/ECG_steroids}.
+
+
+\section*{Acknowledgments}
+
+The robustness analysis and manuscript preparation were performed with assistance from Claude~Code (Anthropic).
+
+
+\bibliographystyle{abbrvnat}
+\bibliography{references_robustness}
+
+\end{document}

@@ -1,0 +1,82 @@
+% Robustness Analysis Tables for Manuscript
+% Generated 2026-02-19 from ER_v3 data (RRI/HR x raw/normalized, smoothed)
+
+% ============================================================
+% Table: Cross-condition correlations
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Cross-condition Pearson correlations for entropy decay rates.
+Values are segment-level correlations ($N=251$) between decay rates computed from
+four input signal variants: heart rate (HR) or R-R interval (RRI), each raw or
+normalized by standard deviation. Only $h$ decay rate (permutation entropy) shows
+near-perfect agreement ($r > 0.98$) across all conditions.}
+\label{tab:robustness_correlations}
+\small
+\begin{tabular}{l cccccc}
+\toprule
+& \multicolumn{2}{c}{$h$ decay rate} & \multicolumn{2}{c}{SampEn decay rate} & \multicolumn{2}{c}{ApEn decay rate} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+Pair & $r$ & & $r$ & & $r$ & \\
+\midrule
+HR\textsubscript{raw} vs HR\textsubscript{norm}   & \textbf{0.997} & & 0.713 & & 0.091 \\
+HR\textsubscript{raw} vs RRI\textsubscript{raw}   & \textbf{0.983} & & 0.502 & & 0.099 \\
+HR\textsubscript{raw} vs RRI\textsubscript{norm}  & \textbf{0.985} & & 0.698 & & 0.089 \\
+HR\textsubscript{norm} vs RRI\textsubscript{raw}  & \textbf{0.985} & & 0.316 & & $-0.045$ \\
+HR\textsubscript{norm} vs RRI\textsubscript{norm} & \textbf{0.986} & & 0.953 & & 0.980 \\
+RRI\textsubscript{raw} vs RRI\textsubscript{norm} & \textbf{0.998} & & 0.310 & & $-0.060$ \\
+\midrule
+Range & \textbf{0.983--0.998} & & 0.310--0.953 & & $-0.060$--0.980 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table: KW dose-response across conditions
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Dose-response analysis across input conditions.
+Kruskal-Wallis tests comparing three dose groups (low, high, controls)
+on the M3\_bis\_M4 (mental arithmetic) segment.
+Only $h$ decay rate reaches significance ($p < 0.01$) in all four conditions.}
+\label{tab:robustness_kw}
+\small
+\begin{tabular}{l cc cc cc}
+\toprule
+& \multicolumn{2}{c}{$h$ decay rate} & \multicolumn{2}{c}{SampEn decay rate} & \multicolumn{2}{c}{ApEn decay rate} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+Condition & $H$ & $p$ & $H$ & $p$ & $H$ & $p$ \\
+\midrule
+HR\textsubscript{raw}  & 10.16 & \textbf{0.006}** & 12.49 & \textbf{0.002}** & 1.90 & 0.387 \\
+HR\textsubscript{norm} & 10.59 & \textbf{0.005}** & 4.09  & 0.129              & 4.41 & 0.110 \\
+RRI\textsubscript{raw} & 10.18 & \textbf{0.006}** & 4.51  & 0.105              & 0.37 & 0.832 \\
+RRI\textsubscript{norm}& 10.69 & \textbf{0.005}** & 4.49  & 0.106              & 4.51 & 0.105 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table: Low-vs-high pairwise
+% ============================================================
+\begin{table}[htbp]
+\centering
+\caption{Low-dose vs.\ high-dose pairwise comparisons (Mann-Whitney $U$)
+on the M3\_bis\_M4 segment. Cohen's $d$ computed from group means and
+pooled standard deviation. The $h$ decay rate shows consistent large effects
+($d > 1.5$, $p < 0.005$) regardless of input signal or normalization.}
+\label{tab:robustness_pairwise}
+\small
+\begin{tabular}{l ccc ccc}
+\toprule
+& \multicolumn{3}{c}{$h$ decay rate} & \multicolumn{3}{c}{SampEn decay rate} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Condition & $U$ & $p$ & $d$ & $U$ & $p$ & $d$ \\
+\midrule
+HR\textsubscript{raw}  & 25 & \textbf{0.004}** & 1.53 & 14 & \textbf{$<$0.001}*** & 1.97 \\
+HR\textsubscript{norm} & 23 & \textbf{0.003}** & 1.57 & 42 & 0.054                 & 0.93 \\
+RRI\textsubscript{raw} & 25 & \textbf{0.004}** & 1.57 & 21 & 0.062                 & 0.97 \\
+RRI\textsubscript{norm}& 24 & \textbf{0.004}** & 1.66 & 41 & 0.047*                & 0.98 \\
+\bottomrule
+\end{tabular}
+\end{table}
