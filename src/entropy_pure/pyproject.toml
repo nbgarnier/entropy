@@ -32,5 +32,8 @@ classifiers = [
 [project.optional-dependencies]
 dev = ["pytest", "matplotlib"]
 
-[tool.setuptools.packages.find]
-where = ["."]
+[tool.setuptools]
+packages = ["entropy_pure"]
+
+[tool.setuptools.package-dir]
+entropy_pure = "."

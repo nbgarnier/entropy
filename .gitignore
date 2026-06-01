@@ -14,7 +14,9 @@ Makefile
 src/mask_old.c 
 config.log 
 config.status 
-src/cython/build/* 
+src/cython/build/*
+src/entropy_pure/build/*
+src/entropy_pure/entropy_pure.egg-info/*
 src/cython/dist/* s
 src/cython/doc/* 
 src/cython/entropy.egg-info/* 

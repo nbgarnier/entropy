@@ -10,7 +10,8 @@ setup(
     description="Information Theory tools and entropies for multi-scale analysis (pure Python)",
     author="Nicolas B. Garnier",
     author_email="nicolas.garnier@ens-lyon.fr",
-    packages=find_packages(),
+    packages=['entropy_pure'],
+    package_dir={'entropy_pure': '.'},
     python_requires='>=3.8',
     install_requires=[
         'numpy>=1.20',
