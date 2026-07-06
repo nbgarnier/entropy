@@ -118,7 +118,7 @@ def compute_complexities(double[:, ::1] x, int n_embed=1, int stride=1, double r
      computes ApEn and SampEn complexities (kernel estimates).
  
      :param x: signal (NumPy array with ndim=2, time as second dimension)
-     :param n_embed: embedding dimension (default=1)
+     :param n_embed: embedding dimension (default=1 -> entropy rate (2)-(1) )
      :param stride: stride for embedding (default=1) 
      :param r: radius (default=0.2)
      :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        

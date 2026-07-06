@@ -42,7 +42,7 @@ struct thread_output
 /****************************************************************************************/
 void *threaded_Renyi_entropy_func(void *ptr)
 {   struct thread_args  *args = (struct thread_args *)ptr; 
-    struct thread_output *out = calloc(sizeof(struct thread_output),1); 
+    struct thread_output *out = calloc(1, sizeof(struct thread_output)); 
     register int i;
     double eps=0.0, l_hs=0.0;
     int core     = args->core,

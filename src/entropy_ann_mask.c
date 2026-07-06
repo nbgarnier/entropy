@@ -15,11 +15,12 @@
  */
 
 #include <math.h>                        // for fabs
-#include <string.h>
+// #include <string.h>                      // fior memcpy
 #include <gsl/gsl_statistics_double.h>   // for std of intermediate (pre-processed) data
 
 #include "library_commons.h"             // for definition of nb_errors, and stds
 #include "library_matlab.h"              // compilation for Matlab
+#include "verbosity.h"                   // for error printings
 #include "entropy_ann.h"                 // for "front-end" functions 
 #include "entropy_ann_mask.h"
 #include "mask.h"                        // for basic masking functions
@@ -40,7 +41,7 @@
 #define noDEBUG		// for debug information, replace "noDEBUG" by "DEBUG"
 #define LOOK 167	// for debug also (of which point(s) will we save the data ?)
 
-
+#define MAX_MESSAGE_SIZE 128
 
 /****************************************************************************************/
 /* computes Shannon entropy, using nearest neighbor statistics (Grassberger 2004)       */
@@ -85,6 +86,7 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
+	char message[MAX_MESSAGE_SIZE];
 //	double temps;
 	
     *S = my_NAN;
@@ -95,16 +97,21 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
 	                p    += 1;  // convention: increments of order 1 (p) require 2 (p+1) points in order to be computed
 	     }
     
-    if ((m<1) || (p<1)) return(printf("[compute_entropy_ann_mask] : m and p must be at least 1 !\n"));
-    if (k<1)            return(printf("[compute_entropy_ann_mask] : k must be at least 1 !\n"));
-    if (stride<1)       return(printf("[compute_entropy_ann_mask] : stride must be at least 1 !\n"));
+    if ((m<1) || (p<1)) return(print_error("[compute_entropy_ann_mask]", "m and p must be at least 1"));
+    if (k<1)            return(print_error("[compute_entropy_ann_mask]", "k must be at least 1"));
+    if (stride<1)       return(print_error("[compute_entropy_ann_mask]", "stride must be at least 1"));
     if ((method<0) || (method>2))
-                        return(printf("[compute_entropy_ann_mask] : method must be 0, 1 or 2 !\n"));
+                        return(print_error("[compute_entropy_ann_mask]", "method must be 0, 1 or 2"));
  
     N_real_max = set_sampling_parameters_mask(mask, npts, p, stride, 0, &sp, "compute_entropy_ann_mask");
-    if (N_real_max<1)   return(printf("[compute_entropy_ann_mask] : aborting\n"));
-    if (sp.N_eff < 2*k) return(printf("[compute_entropy_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
-//printf("N_real_max = %d / N_eff = %d\n", sp.N_real_max, sp.N_eff);
+    if (N_real_max<1)   
+    {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
+        return(print_error("compute_entropy_ann_mask", message));
+    }
+    if (sp.N_eff < 2*k) 
+    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+        return(print_error("compute_entropy_ann_mask", message));
+    }
 
     x_new    = (double*)calloc(m*p_new*sp.N_eff, sizeof(double));
     
@@ -118,9 +125,9 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
 //if (j==0) printf("stride %d, Theiler %d, N_eff_max %d, time to analyze mask: %f", stride, sp.Theiler, sp.N_eff_max, temps);
         
         if (npts_good<sp.N_eff) 
-        {   printf("[compute_entropy_ann_mask] : npts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
-            return(-1);
-        }
+        {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
+            return(print_error("compute_entropy_ann_mask", message));
+        } 
 //temps=0; tic();       
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
@@ -207,7 +214,8 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
-
+    char message[MAX_MESSAGE_SIZE];
+    
     *S = my_NAN;
 
     // adapt embedding dimension according to method:
@@ -216,16 +224,22 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
 	                p    += 1;  // convention: increments of order 1 (p) require 2 (p+1) points in order to be computed
 	     }
 
-    if ((m<1) || (p<1))     return(printf("[compute_Renyi_ann_mask] : m and p must be at least 1 !\n"));
-    if (k<1)                return(printf("[compute_Renyi_ann_mask] : k must be at least 1 !\n"));
-    if (stride<1)           return(printf("[compute_Renyi_ann_mask] : stride must be at least 1 !\n"));
-    if (q==1)               return(printf("[compute_Renyi_ann_mask] : Renyi entropy of order q=1?...\n"));
+    if ((m<1) || (p<1))     return(print_error("compute_Renyi_ann_mask", "m and p must be at least 1"));
+    if (k<1)                return(print_error("compute_Renyi_ann_mask", "k must be at least 1"));
+    if (stride<1)           return(print_error("compute_Renyi_ann_mask", "stride must be at least 1"));
+    if (q==1)               return(print_error("compute_Renyi_ann_mask", "Renyi entropy of order q=1?..."));
     if ((method<0) || (method>2))
                         return(printf("[compute_entropy_ann_mask] : method must be 0, 1 or 2 !\n"));
     
     N_real_max = set_sampling_parameters_mask(mask, npts, p, stride, 0, &sp, "compute_entropy_ann_mask");
-    if (N_real_max<1)   return(printf("[compute_entropy_ann_mask] : aborting\n"));
-    if (sp.N_eff < 2*k) return(printf("[compute_entropy_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
+    if (N_real_max<1)   
+    {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
+        return(print_error("compute_Renyi_ann_mask", message));
+    }
+    if (sp.N_eff < 2*k) 
+    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+        return(print_error("compute_Renyi_ann_mask", message));
+    }
 
     x_new    = (double*)calloc(m*p_new*sp.N_eff, sizeof(double));
 
@@ -234,9 +248,9 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
     for (j=0; j<sp.N_real; j++)   // loop over independant windows
     {   npts_good = analyze_mask_for_sampling(mask+j, npts-j, p, stride, 0, sp.Theiler, 1, &ind_epoch); 
         if (npts_good<sp.N_eff) 
-        {   printf("\tnpts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
-            return(-1);
-        }
+        {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
+            return(print_error("compute_Renyi_ann_mask", message));
+        } 
         
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
@@ -325,10 +339,10 @@ int compute_entropy_rate_ann_mask_old(double *x, char *mask, int npts, int m, in
     *S = my_NAN;    // default returned value
     
     if ((method!=ENTROPY_RATE_FRACTION) && (method!=ENTROPY_RATE_DIFFERENCE) && (method!=ENTROPY_RATE_MI))
-                        return(printf("[compute_entropy_rate_ann] : invalid method (should be 0,1 or 2)!\n"));
-    if ((m<1) || (p<1)) return(printf("[compute_entropy_rate_ann] : m and p must be at least 1 !\n"));
-    if ((stride<1))     return(printf("[compute_entropy_rate_ann] : stride must be at least 1 !\n"));
-    if ((k<1))          return(printf("[compute_entropy_rate_ann] : k must be at least 1 !\n"));
+                        return(print_error("compute_entropy_rate_ann_mask_old", "invalid method (should be 0,1 or 2)"));
+    if ((m<1) || (p<1)) return(print_error("compute_entropy_rate_ann_mask_old", "m and p must be at least 1"));
+    if ((stride<1))     return(print_error("compute_entropy_rate_ann_mask_old", "stride must be at least 1"));
+    if ((k<1))          return(print_error("compute_entropy_rate_ann_mask_old", "k must be at least 1"));
     
     if (method==ENTROPY_RATE_FRACTION)
     {   compute_entropy_ann_mask(x, mask, npts, m, p, stride, tau_Theiler, N_eff, N_realizations, k, 0, &H);
@@ -420,20 +434,27 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
+    char message[MAX_MESSAGE_SIZE];
     
     *S = my_NAN;    // default returned value
     
     if ((method!=ENTROPY_RATE_FRACTION) && (method!=ENTROPY_RATE_DIFFERENCE) && (method!=ENTROPY_RATE_MI))
-                        return(my_NAN*printf("[compute_entropy_rate_ann_mask] : invalid method (should be 0,1 or 2)!\n"));
-    if ((m<1) || (p<1)) return(my_NAN*printf("[compute_entropy_rate_ann_mask] : m and p must be at least 1 !\n"));
-    if ((stride<1))     return(my_NAN*printf("[compute_entropy_rate_ann_mask] : stride must be at least 1 !\n"));
-    if ((k<1))          return(my_NAN*printf("[compute_entropy_rate_ann_mask] : k must be at least 1 !\n"));
+                        return(print_error("compute_entropy_rate_ann_mask", "invalid method (should be 0,1 or 2)"));
+    if ((m<1) || (p<1)) return(print_error("compute_entropy_rate_ann_mask", "m and p must be at least 1"));
+    if ((stride<1))     return(print_error("compute_entropy_rate_ann_mask", "stride must be at least 1"));
+    if ((k<1))          return(print_error("compute_entropy_rate_ann_mask", "k must be at least 1"));
+
     
     // additional checks and auto-adjustments of parameters:
     N_real_max = set_sampling_parameters_mask(mask, npts, p+1, stride, 0, &sp, "compute_entropy_ann_mask");
-    if (N_real_max<1)   return(my_NAN*printf("[compute_entropy_rate_ann_mask] : aborting! (Theiler %d, N_eff %d, N_real %d)\n", 
-                                sp.Theiler, sp.N_eff, sp.N_real));
-    if (sp.N_eff < 2*k) return(my_NAN*printf("[compute_entropy_rate_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
+    if (N_real_max<1)   
+    {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
+        return(print_error("compute_entropy_rate_ann_mask", message));
+    }
+    if (sp.N_eff < 2*k) 
+    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+        return(print_error("compute_entropy_rate_ann_mask", message));
+    }
    
     x_new  = (double*)calloc(m*(p+1)*sp.N_eff, sizeof(double));
 
@@ -442,8 +463,8 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
     {   npts_good = analyze_mask_for_sampling(mask+j, npts-j, p+1, stride, 0, sp.Theiler, 1, &ind_epoch); 
         
         if (npts_good<sp.N_eff) 
-        {   printf("[compute_entropy_rate_ann_mask] : npts_good = %d < N_eff =%d (real %d/%d)!!!\n", npts_good, sp.N_eff, j, sp.N_real);
-            return(-1);
+        {   sprintf(message, "npts_good = %d < N_eff =%d  (realization %d/%d)", npts_good, sp.N_eff, j, sp.N_real);
+            return(print_error("compute_entropy_rate_ann_mask", message));
         }
         
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
@@ -551,18 +572,24 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
+	char message[MAX_MESSAGE_SIZE];
 	
-    // default value (in case of return on error):	
-    *I1=my_NAN; *I2=my_NAN;
+    *I1=my_NAN; *I2=my_NAN;     // default value (in case of return on error):	
 
-	if ((mx<1) || (my<1)) return(printf("[compute_mutual_information_ann_mask] : mx and my must be at least 1 !\n"));
-	if ((px<1) || (py<1)) return(printf("[compute_mutual_information_ann_mask] : px and py must be at least 1 !\n"));
-	if (stride<1)         return(printf("[compute_mutual_information_ann_mask] : stride must be at least 1 !\n"));
-    if (k<1)              return(printf("[compute_mutual_information_ann-mask] : k has to be at least 1.\n"));
+	if ((mx<1) || (my<1)) return(print_error("compute_mutual_information_ann_mask", "mx and my must be at least 1"));
+	if ((px<1) || (py<1)) return(print_error("compute_mutual_information_ann_mask", "px and py must be at least 1"));
+	if (stride<1)         return(print_error("compute_mutual_information_ann_mask", "stride must be at least 1"));
+    if (k<1)              return(print_error("compute_mutual_information_ann_mask", "k has to be at least 1"));
 
     N_real_max = set_sampling_parameters_mask(mask, npts, pp, stride, 0, &sp, "compute_mutual_information_ann_mask");
-    if (N_real_max<1)   return(printf("[compute_mutual_information_ann_mask] : aborting\n"));
-    if (sp.N_eff < 2*k) return(printf("[compute_mutual_information_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
+    if (N_real_max<1)   
+    {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
+        return(print_error("compute_mutual_information_ann_mask", message));
+    }
+    if (sp.N_eff < 2*k) 
+    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+        return(print_error("compute_mutual_information_ann_mask", message));
+    }
     
     x_new    = (double*)calloc(n*sp.N_eff, sizeof(double));
     
@@ -571,8 +598,8 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
 	{   
 	    npts_good = analyze_mask_for_sampling(mask+j, npts-j, pp, stride, 0, sp.Theiler, 1, &ind_epoch); 
         if (npts_good<sp.N_eff) 
-        {   printf("[compute_mutual_information_ann_mask] : npts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
-            return(-1);
+        {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
+            return(print_error("compute_mutual_information_ann_mask", message));
         }      
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
@@ -658,20 +685,26 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
+	char message[MAX_MESSAGE_SIZE];
 
     // default value (in case of return on error):
     *T1=my_NAN; *T2=my_NAN;
     
-	if (lag<1)            return(printf("[compute_transfer_entropy_ann_mask] : lag has to be equal or larger than 1.\n"));
-	if (stride<1)         return(printf("[compute_transfer_entropy_ann_mask] : stride must be at least 1 !\n"));
-    if ((mx<1) || (my<1)) return(printf("[compute_transfer_entropy_ann_mask] : mx and my must be larger than 1 !\n"));
-    if ((px<1) || (py<1)) return(printf("[compute_transfer_entropy_ann_mask] : px and py must be larger than 1 !\n"));
-    if (k<1)              return(printf("[compute_transfer_entropy_ann_mask] : k has to be equal or larger than 1.\n"));
+	if (lag<1)            return(print_error("compute_transfer_entropy_ann_mask", "lag has to be equal or larger than 1"));
+	if (stride<1)         return(print_error("compute_transfer_entropy_ann_mask", "stride must be at least 1"));
+    if ((mx<1) || (my<1)) return(print_error("compute_transfer_entropy_ann_mask", "mx and my must be at least 1"));
+	if ((px<1) || (py<1)) return(print_error("compute_transfer_entropy_ann_mask", "px and py must be at least 1"));
+	if (k<1)              return(print_error("compute_transfer_entropy_ann_mask", "k has to be at least 1"));
     
     N_real_max = set_sampling_parameters_mask(mask, npts, pp, stride, lag, &sp, "compute_transfer_entropy_ann_mask");
-    if (N_real_max<1)     return(printf("[compute_transfer_entropy_ann_mask] : aborting\n"));
-    if (sp.N_eff < 2*k)   return(printf("[compute_transfer_entropy_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
-    
+    if (N_real_max<1)   
+    {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
+        return(print_error("compute_transfer_entropy_ann_mask", message));
+    }
+    if (sp.N_eff < 2*k) 
+    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+        return(print_error("compute_transfer_entropy_ann_mask", message));
+    }
     x_new  = (double*)calloc(nn*sp.N_eff, sizeof(double));
 
     nb_errors=0; last_npts_eff=0;
@@ -679,8 +712,8 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
     {   
         npts_good = analyze_mask_for_sampling(mask+j, npts-j, pp, stride, lag, sp.Theiler, 1, &ind_epoch); 
         if (npts_good<sp.N_eff) 
-        {   printf("\tnpts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
-            return(-1);
+        {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
+            return(print_error("compute_transfer_entropy_ann_mask", message));
         }      
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
@@ -772,25 +805,30 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
+	char message[MAX_MESSAGE_SIZE];
 	    
     // default value (in case of return on error):
     *T1=my_NAN; *T2=my_NAN;
     
-	if (lag<1)      return(printf("[compute_partial_TE_ann_mask] : lag has to be equal or larger than 1.\n"));
-	if (stride<1)   return(printf("[compute_partial_TE_ann_mask] : stride must be at least 1 !\n"));
-    if ((mx<1) || (my<1) || (mz<1))
-                    return(printf("[compute_partial_TE_ann_mask] : initial dimensions of data must be at least 1 !\n"));
-    if ((px<1) || (py<1) || (pz<1))
-                    return(printf("[compute_partial_TE_ann_mask] : embedding dimensions must be at least 1 !\n"));
-    if (k<1)        return(printf("[compute_partial_TE_ann_mask] : k has to be equal or larger than 1.\n"));
+    if (lag<1)                      return(print_error("compute_partial_TE_ann_mask", "lag has to be equal or larger than 1"));
+	if (stride<1)                   return(print_error("compute_partial_TE_ann_mask", "stride must be at least 1"));
+    if ((mx<1) || (my<1) || (mz<1)) return(print_error("compute_partial_TE_ann_mask", "initial dimensions of data must be at least 1"));
+	if ((px<1) || (py<1) || (pz<1)) return(print_error("compute_partial_TE_ann_mask", "embedding dimensions must be at least 1"));
+	if (k<1)                        return(print_error("compute_partial_TE_ann_mask", "k has to be at least 1"));
     
 	n	 = my*(py+1)+mx*px+mz*pz;   // dimension of the new variable
 	pp   = (px>py) ? px : py;       // who has the largest past ?
     pp   = (pp>pz) ? pp : pz;
 
 	N_real_max = set_sampling_parameters_mask(mask, npts, pp, stride, lag, &sp, "compute_partial_TE_ann_mask");
-    if (N_real_max<1)   return(printf("[compute_partial_TE_ann_mask] : aborting\n"));
-    if (sp.N_eff < 2*k) return(printf("[compute_partial_TE_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
+    if (N_real_max<1)   
+    {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
+        return(print_error("compute_partial_TE_ann_mask", message));
+    }
+    if (sp.N_eff < 2*k) 
+    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+        return(print_error("compute_partial_TE_ann_mask", message));
+    }
     
     x_new    = (double*)calloc(n*sp.N_eff, sizeof(double));
     
@@ -799,8 +837,8 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
     {   
         npts_good = analyze_mask_for_sampling(mask+j, npts-j, pp, stride, lag, sp.Theiler, 1, &ind_epoch); 
         if (npts_good<sp.N_eff) 
-        {   printf("\tnpts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
-            return(-1);
+        {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
+            return(print_error("compute_partial_TE_ann_mask", message));
         }      
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
@@ -884,23 +922,28 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_pts;
+	char message[MAX_MESSAGE_SIZE];
 
     *I1=my_NAN; *I2=my_NAN;
     
-	if (stride<1)   return(printf("[compute_partial_MI_ann_mask] : stride has to be equal or larger than 1.\n"));
-	if ((px<1) || (py<1) || (pz<1))
-                    return(printf("[compute_partial_MI_ann_mask] : embedding dimensions must be at least 1 !\n"));
-    if ((mx<1) || (my<1) || (mz<1))
-                    return(printf("[compute_partial_MI_ann_mask] : initial dimensions of data must be at least 1 !\n"));
-    if (k<1)        return(printf("[compute_partial_MI_ann_mask] : k has to be equal or larger than 1.\n"));
+	if (stride<1)                   return(print_error("compute_partial_MI_ann_mask", "stride must be at least 1"));
+    if ((mx<1) || (my<1) || (mz<1)) return(print_error("compute_partial_MI_ann_mask", "initial dimensions of data must be at least 1"));
+	if ((px<1) || (py<1) || (pz<1)) return(print_error("compute_partial_MI_ann_mask", "embedding dimensions must be at least 1"));
+	if (k<1)                        return(print_error("compute_partial_MI_ann_mask", "k must be at least 1"));
     
     n	   = mx*px + my*py + mz*pz;    // total dimension of the new variable
 	pp     = (px>py) ? px : py;        // who has the largest past ?
 	pp     = (pp>pz) ? pp : pz;
 
     N_real_max = set_sampling_parameters_mask(mask, npts, pp, stride, 0, &sp, "compute_partial_MI_ann_mask");
-    if (N_real_max<1)   return(printf("[compute_partial_MI_ann_mask] : aborting\n"));
-    if (sp.N_eff < 2*k) return(printf("[compute_partial_MI_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
+    if (N_real_max<1)   
+    {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
+        return(print_error("compute_partial_MI_ann_mask", message));
+    }
+    if (sp.N_eff < 2*k) 
+    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+        return(print_error("compute_partial_MI_ann_mask", message));
+    }
     
     x_new    = (double*)calloc(n*sp.N_eff, sizeof(double));
   
@@ -909,8 +952,8 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
     {   
         npts_good = analyze_mask_for_sampling(mask+j, npts-j, pp, stride, 0, sp.Theiler, 1, &ind_epoch); 
         if (npts_good<sp.N_eff) 
-        {   printf("\tnpts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff);
-            return(-1);
+        {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
+            return(print_error("compute_partial_MI_ann_mask", message));
         }      
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
@@ -1006,19 +1049,26 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
 	gsl_permutation *perm_real, *perm_pts;
+	char message[MAX_MESSAGE_SIZE];
 
     *I1=my_NAN; *I2=my_NAN;
 
-	if ((mx<1)||(my<1)) return(printf("[compute_directed_information_ann_mask] : nx and ny have to be equal or larger than 1.\n"));	
-	if (N<1)            return(printf("[compute_directed_information_ann_mask] : N has to be equal or larger than 1.\n"));
-	if (stride<1)       return(printf("[compute_directed_information_ann_mask] : stride has to be equal or larger than 1.\n"));
-    if (k<1)            return(printf("[compute_directed_information_ann_mask] : k has to be equal or larger than 1.\n"));
+	if (stride<1)           return(print_error("compute_directed_information_ann_mask", "stride must be at least 1"));
+    if ((mx<1) || (my<1))   return(print_error("compute_directed_information_ann_mask", "initial dimensions of data must be at least 1"));
+	if (N<1)                return(print_error("compute_directed_information_ann_mask", "N must be at least 1"));
+	if (k<1)                return(print_error("compute_directed_information_ann_mask", "k must be at least 1"));
     
     // additional checks and auto-adjustments of parameters, using max N:
     N_real_max = set_sampling_parameters_mask(mask, npts, N, stride, 0, &sp, "compute_directed_information_ann_mask");
-    if (N_real_max<1)   return(printf("[compute_directed_information_ann_mask] : aborting !\n"));
-    if (sp.N_eff < 2*k) return(printf("[compute_directed_information_ann_mask] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
-
+    if (N_real_max<1)   
+    {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
+        return(print_error("compute_directed_information_ann_mask", message));
+    }
+    if (sp.N_eff < 2*k) 
+    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+        return(print_error("compute_directed_information_ann_mask", message));
+    }
+    
     di1    = (double*)calloc(N, sizeof(double));    var1 = (double*)calloc(N, sizeof(double));
     di2    = (double*)calloc(N, sizeof(double));    var2 = (double*)calloc(N, sizeof(double));
 	x_new  = (double*)calloc((mx+my)*N*sp.N_eff, sizeof(double));
@@ -1029,7 +1079,10 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
     for (j=0; j<sp.N_real; j++)         // loop over realizations
     {               
         npts_good = analyze_mask_for_sampling(mask+perm_real->data[j], npts-perm_real->data[j], N, stride, 0, sp.Theiler, 1, &ind_epoch); 
-        if (npts_good<sp.N_eff)     return(printf("\tnpts_good = %d < N_eff =%d!!!\n", npts_good, sp.N_eff));
+        if (npts_good<sp.N_eff) 
+        {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
+            return(print_error("compute_directed_information_ann_mask", message));
+        }
             
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));

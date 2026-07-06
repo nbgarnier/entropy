@@ -90,7 +90,7 @@ size_t load_dataset_d(char *filename, double **x1)
 	data_file=fopen(filename, "rb");
 	if (data_file==NULL) printf("load_data_set: error opening file %s\n",filename);
 	
-	x =(double*)calloc(1,sizeof(float)); 
+	x =(double*)calloc(1,sizeof(double)); 
 	N=-1;
 	while (!feof(data_file)) 
 	{ 	i=fread(x,sizeof(double),1,data_file); 

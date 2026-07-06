@@ -435,7 +435,7 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
     gsl_permutation *perm_pts;
     char message[128];
     
-    *ApEn=my_NAN;  *SampEn=my_NAN;
+    for (k=0; k<m+1; k++)   { ApEn[k] = my_NAN;        SampEn[k] = my_NAN;    }
 
     if (m<0)        return(print_error("compute_complexity_mask", "m cannot be negative"));
     if (r==0)       return(print_error("compute_complexity_mask", "r must be strictly positive"));
@@ -443,6 +443,8 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
     
     N_real_max = set_sampling_parameters_mask(mask, npts, m+1, stride, 0, &sp, "compute_complexity_mask");
     if (N_real_max<1) return(print_error("compute_complexity_mask", "not enough points, aborting"));
+    
+    if (lib_verbosity>2) printf("[compute_complexity_mask] will use N_real = %d (N_real_max = %d), N_eff = %d (N_eff_max = %d), Theiler = %d, type = %d\n", sp.N_real, sp.N_real_max, sp.N_eff, sp.N_eff_max, sp.Theiler, sp.type); 
     
     x_new   = (double*)calloc((m+1)*sp.N_eff, sizeof(double));
     alloc_complexity_kernel(sp.N_eff, m+1);
@@ -454,7 +456,7 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
     {  
         npts_good = analyze_mask_for_sampling(mask+j, npts-j, m+1, stride, 0, sp.Theiler, 1, &ind_epoch); 
         if (npts_good<sp.N_eff) 
-        {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
+        {   sprintf(message, "npts_good = %d < N_eff =%d (Theiler %d)", npts_good, sp.N_eff, sp.Theiler);
             return(print_error("compute_complexity_mask", message));
         }   
         perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling

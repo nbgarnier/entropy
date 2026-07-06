@@ -204,13 +204,13 @@ int get_N_eff_from_mask(char *mask, int npts, int p, int stride, int lag, int ta
     N_eff       = find_min_int(N_eff_max, N_real);
     
     if (lib_verbosity>3)    
-    {   printf("[get_N_eff_from_mask] for scale %d and Theiler %d\n", stride, tau_Theiler);
+    {   printf("[get_N_eff_from_mask] for scale (tau) %d and tau_Theiler %d\n", stride, tau_Theiler);
         printf("\t N_eff_max = [ ");
         for (j=0; j<N_real; j++) printf("%d  ", N_eff_max[j]);
-        printf("] ");
+        printf("]\n");
     }
     if (lib_verbosity>2) 
-        printf("[get_N_eff_from_mask]\t=> N_eff_max = %d\n", N_eff);
+        printf("[get_N_eff_from_mask] returning with N_eff_max = %d\n", N_eff);
     
     free(N_eff_max);
     return(N_eff);
@@ -247,12 +247,15 @@ int get_N_eff_from_mask(char *mask, int npts, int p, int stride, int lag, int ta
 /* 2023-12-01: full rewriting. Now the function should be called with sp->type=0 or -1  */
 /*              in order to operate properly when invoked from a compute_XXX function   */
 /* 2023-12-02: now Theiler type 4 also allows for an increase of tau_Theiler            */
+/* 2026-05-12: bug correction (ratio of reduction of tau_Theiler -> rewritten)          */
 /****************************************************************************************/
 int set_sampling_parameters_mask(char *mask, int npts, int p, int stride, int lag, samp_param *sp, char *func_name)
 {   int do_auto_Neff=0;
-	int sampling_ratio=1;
-	double ratio;
-    
+	int sampling_ratio=1;   
+	double ratio, r;        
+	    
+    if (lib_verbosity>3) printf("[set_sampling_parameters_mask] starting, with N_real = %d (N_real_max = %d), N_eff = %d (N_eff_max = %d), Theiler = %d, type = %d\n", sp->N_real, sp->N_real_max, sp->N_eff, sp->N_eff_max, sp->Theiler, sp->type); 
+
     if (sp->type<0)                                 // 2023-12-01: now the function can be called recursively
     {   if (sp->Theiler>0)          sp->type=0;     // tau_Theiler is imposed (this is indeed a viable option)
         else if (sp->Theiler==-4)   sp->type=4;     // 4: we may reduce Theiler to have the required N_eff
@@ -320,16 +323,23 @@ int set_sampling_parameters_mask(char *mask, int npts, int p, int stride, int la
         if (sp->N_eff_max<sp->N_eff)                // we do not have enough points
         {                                           // we reduce tau_Theiler
             if (sp->N_eff_max>1)
-            {   ratio = sp->N_eff/sp->N_eff_max;   
-                if (ratio<1.3) ratio=1.3;           // first peculiar situation where sp->N_eff and sp->N_eff_max are similar
-                sampling_ratio = (int)ceil(ratio);
-                sp->Theiler = (int)(sp->Theiler/sampling_ratio/1.3);
+            {   ratio = (double)sp->N_eff/sp->N_eff_max;    // the "real" ratio: we round it up to avoid peculiar problems
+                if (ratio<1.3)                      // first peculiar situation where sp->N_eff and sp->N_eff_max are similar
+                {   sp->Theiler = (int)((double)sp->Theiler/1.3);
+                    r = 1.3;
+                }
+                else
+                {   r = (double)sp->Theiler;
+                    sp->Theiler = (int)((double)sp->Theiler/ratio)-1;
+                    r /= (double)sp->Theiler;
+                }
                 if (lib_verbosity>2)    
-                    printf("[set_sampling_parameters_mask] tau Theiler reduction: (ratio %1.3f) now %d\n", ratio, sp->Theiler);
+                    printf("[set_sampling_parameters_mask] tau Theiler reduction: (min ratio %1.3f, using %1.3f) now %d\n", 
+                                ratio, r, sp->Theiler);
                 
                 if (sp->Theiler>1)
                 {   sp->type=0;
-                    sp->N_eff_max = set_sampling_parameters_mask(mask, npts, p, stride, lag, sp, func_name); // re-run with fixed Theiler
+                    sp->N_real_max = set_sampling_parameters_mask(mask, npts, p, stride, lag, sp, func_name); // re-run with fixed Theiler
                     sp->type=4;
                 }
                 else 
@@ -358,7 +368,7 @@ int set_sampling_parameters_mask(char *mask, int npts, int p, int stride, int la
                     if (lib_verbosity>2)    
                         printf("[set_sampling_parameters_mask] tau Theiler reduction: (ratio %1.3f) now %d\n", ratio, sp->Theiler);
                     sp->type=0;
-                    sp->N_eff_max = set_sampling_parameters_mask(mask, npts, p, stride, lag, sp, func_name); // re-run with fixed Theiler
+                    sp->N_real_max = set_sampling_parameters_mask(mask, npts, p, stride, lag, sp, func_name); // re-run with fixed Theiler
                     sp->type=4;
                 }
             }
@@ -366,6 +376,7 @@ int set_sampling_parameters_mask(char *mask, int npts, int p, int stride, int la
         sp->Theiler_max = sp->Theiler;
     }
     
+    if (lib_verbosity>3) printf("[set_sampling_parameters_mask] returning with N_real = %d (N_real_max = %d), N_eff = %d (N_eff_max = %d), Theiler = %d, type = %d\n", sp->N_real, sp->N_real_max, sp->N_eff, sp->N_eff_max, sp->Theiler, sp->type);  
     return(sp->N_real_max);
 } /* end of function "set_sampling_parameters_mask" */
 
