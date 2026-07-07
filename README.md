@@ -89,82 +89,19 @@ See Python examples in `bin/python/`.
 
 to cite this work, please use this DOI: [![DOI](https://zenodo.org/badge/635707956.svg)](https://doi.org/10.5281/zenodo.13218642)
 
-
-
-## What's New in This Fork
-
-This fork adds **entropy_pure** - a complete pure Python reimplementation that requires no compilation:
-
-| Feature | Original (C/C++) | This Fork (entropy_pure) |
-|---------|------------------|--------------------------|
-| Installation | `./configure && make` | `pip install .` |
-| Dependencies | GSL, FFTW, ANN, compilers | numpy, scipy only |
-| Platform | Requires platform-specific build | Cross-platform (Win/Mac/Linux) |
-| Speed | Maximum performance | ~1.5-3x slower (still efficient) |
-| API compatibility | Original | 100% identical |
-
-**New features in entropy_pure:**
-- **RR interval benchmarking** - Batch process cardiac data with CSV output
-- **Multi-scale analysis** - Built-in `compute_over_scales()` for time-scale analysis
-- **Sample Entropy / ApEn** - Complexity measures via `compute_complexities()`
-- **Parallel processing** - `process_files_parallel()` for batch jobs
-
-### Validation Results
-
-The pure Python implementation was systematically validated against the C/ANN reference on 251 five-minute RR-interval segments from ambulatory ECG recordings. Three implementation discrepancies were identified and corrected:
-
-1. **Zero-distance handling** -- the ANN library excludes all zero-distance neighbors, not just the query point itself; the Python code now replicates this behavior.
-2. **L-infinity norm** -- ANN is compiled with the Chebyshev ($L_\infty$) norm; `scipy.spatial.KDTree.query` is now called with `p=np.inf` to match.
-3. **Entropy-rate embedding alignment** -- at time scales $\tau > 1$, the marginal entropy and mutual information terms must share a unified embedding; the Python code now mirrors the C `Theiler_embed` layout.
-
-After all corrections, Shannon entropy $H(m{=}2)$ matches to machine precision ($R^2 = 1.0000$) and entropy rate $h(m{=}2)$ agrees to within 0.06% ($R^2 = 0.9998$) across time scales $\tau \in \{1, 2, 4\}$.
-
----
-
-## Quick Start: Pure Python (Recommended for Most Users)
-
-```bash
-cd src/entropy_pure
-pip install .
-```
-
-```python
-import numpy as np
-from entropy_pure import (
-    compute_entropy, compute_entropy_rate, compute_MI, compute_TE,
-    compute_complexities, compute_over_scales, run_benchmark
-)
-
-# Basic entropy
-x = np.random.randn(1, 10000)
-H = compute_entropy(x)
-h = compute_entropy_rate(x, m=2)
-
-# Sample Entropy
-ApEn, SampEn = compute_complexities(x, n_embed=2, r=0.2)
-
-# Multi-scale analysis
-scales = np.array([1, 2, 4, 8, 16])
-h_values, _ = compute_over_scales(compute_entropy_rate, scales, x, m=2)
-
-# Batch RR interval processing
-rr_arrays = {'patient1': rr1, 'patient2': rr2}
-results = run_benchmark(rr_arrays, output_file='results.csv')
-```
-
 See [src/entropy_pure/README.md](src/entropy_pure/README.md) for complete documentation.
 
 ---
 
 ## Available Functions
 
-Both versions provide:
+All versions provide:
 
 | Function | Description |
 |----------|-------------|
-| `compute_entropy` | Shannon entropy (k-NN estimator) |
+| `compute_entropy` | Shannon entropy |
 | `compute_entropy_rate` | Entropy rate |
-| `compute_MI` | Mutual Information (KSG algorithm) |
+| `compute_MI` | Mutual Information |
 | `compute_TE` | Transfer Entropy |
 | `compute_PMI` | Partial Mutual Information |
 | `compute_PTE` | Partial Transfer Entropy |
@@ -172,15 +109,3 @@ Both versions provide:
 | `compute_relative_entropy` | KL divergence |
 | `compute_entropy_Renyi` | Renyi entropy |
 | `compute_complexities` | ApEn and SampEn |
-
-## Notes
-
-This library provides continuous entropy estimates using nearest neighbors. It relies on the [ANN library](http://www.cs.umd.edu/~mount/ANN/) by David Mount and Sunil Arya, which has been patched and included in the source tree.
-
-## Documentation
-
-See the [documentation webpage](https://perso.ens-lyon.fr/nicolas.garnier/files/html/) for detailed function help.
-
-## Citing
-
-To cite this work, please use this DOI: [![DOI](https://zenodo.org/badge/635707956.svg)](https://doi.org/10.5281/zenodo.13218642)
