@@ -34,14 +34,20 @@ H = entropy.compute_entropy(x)
 
 # pure Python version
 
-No compilation is required.
-
-
+No compilation is required. The library is installed with pip:
 ```bash
 cd src/entropy_pure
 pip install .
 ```
 
+This pure Python version can be used as a drop-in replacement of the C/Python library in Python scripts:
+```python
+import numpy as np
+import entropy_pure as entropy
+...
+```
+
+o used as in the following example:
 ```python
 import numpy as np
 from entropy_pure import (
