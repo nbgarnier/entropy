@@ -2,7 +2,7 @@
 
 "entropy" is an efficient C/C++ library integrated with Python and Matlab to estimate various entropies and many other quantities from information theory, using nearest neighbors estimates.
 
-A "pure" Python version is also provided (see [entropy_pure](https://github.com/nbgarnier/entropy/src/entropy_pure)), which may be easier to install on your system as it does not require compilation.
+A "pure" Python version is also provided (see [entropy_pure](https://github.com/nbgarnier/entropy/tree/main/src/entropy_pure)), which may be easier to install on your system as it does not require compilation.
 
 # compilation and installation of the C library for use with Matlab or Python
 - run ./configure and eventuallly solve the issues by installing missing programs and libraries (e.g.: "apt install libtool-bin fftw3-dev" on Linux if asked to do so)
@@ -72,7 +72,7 @@ rr_arrays = {'patient1': rr1, 'patient2': rr2}
 results = run_benchmark(rr_arrays, output_file='results.csv')
 ```
 
-See [entropy_pure](https://github.com/nbgarnier/entropy/src/entropy_pure)
+See [entropy_pure](https://github.com/nbgarnier/entropy/tree/main/src/entropy_pure)
 
 # notes
 
