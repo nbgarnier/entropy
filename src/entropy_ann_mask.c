@@ -12,6 +12,7 @@
  *  2021-12-15 : multithread versions of all functions (but untested)
  *  2022-06-10 : new samplings for all functions (most untested)
  *  2023-02-23 : TE(X->Y) is now correctly ordered (was: TE(Y->X)); same with DI
+ *  2026-07-14 : now with Gaussian estimates of entropies where possible
  */
 
 #include <math.h>                        // for fabs
@@ -36,6 +37,7 @@
 #include "entropy_ann_threads_MI.h"      // for "engine" function for MI with pthreads
 #include "entropy_ann_threads_PMI.h"     // for "engine" function for PMI with pthreads
 #include "entropy_ann_Renyi.h"           // for "engine" function for Renyi entropy
+#include "entropy_Gaussian_single.h"     // for "engine" functions to compute H, MI, PMI
 #include "timings.h"
 
 #define noDEBUG		// for debug information, replace "noDEBUG" by "DEBUG"
@@ -75,6 +77,7 @@
 /* 2022-05-28 : new samplings (WIP)                                                     */
 /* 2022-06-03 : this function is merged with _increments(), and "method" is introduced  */
 /* 2022-06-06 : new samplings working OK                                                */
+/* 2026-07-14 : now with Gaussian estimate if k==-1                                     */
 /****************************************************************************************/
 int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
@@ -97,18 +100,18 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
 	                p    += 1;  // convention: increments of order 1 (p) require 2 (p+1) points in order to be computed
 	     }
     
-    if ((m<1) || (p<1)) return(print_error("[compute_entropy_ann_mask]", "m and p must be at least 1"));
-    if (k<1)            return(print_error("[compute_entropy_ann_mask]", "k must be at least 1"));
-    if (stride<1)       return(print_error("[compute_entropy_ann_mask]", "stride must be at least 1"));
+    if ((m<1) || (p<1))     return(print_error("[compute_entropy_ann_mask]", "m and p must be at least 1"));
+    if ((k<1) && (k!=-1))   return(print_error("[compute_entropy_ann_mask]", "k must be at least 1 (or -1 for Gaussian estimate)"));
+    if (stride<1)           return(print_error("[compute_entropy_ann_mask]", "stride must be at least 1"));
     if ((method<0) || (method>2))
-                        return(print_error("[compute_entropy_ann_mask]", "method must be 0, 1 or 2"));
+                            return(print_error("[compute_entropy_ann_mask]", "method must be 0, 1 or 2"));
  
     N_real_max = set_sampling_parameters_mask(mask, npts, p, stride, 0, &sp, "compute_entropy_ann_mask");
     if (N_real_max<1)   
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_entropy_ann_mask", message));
     }
-    if (sp.N_eff < 2*k) 
+    if ((k!=-1) && (sp.N_eff < 2*k))
     {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
         return(print_error("compute_entropy_ann_mask", message));
     }
@@ -149,10 +152,15 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
         data_std     += x_new_std;
         data_std_std += x_new_std*x_new_std;
     
-        if (USE_PTHREAD>0) S_tmp = compute_entropy_nd_ann_threads(x_new, sp.N_eff, m*p_new, k,
+        if (k>=1)   // k-nn estimate, with provided k
+        {   if (USE_PTHREAD>0) S_tmp = compute_entropy_nd_ann_threads(x_new, sp.N_eff, m*p_new, k,
                                     get_cores_number(GET_CORES_SELECTED));
-        else               S_tmp = compute_entropy_nd_ann        (x_new, sp.N_eff, m*p_new, k);
-
+            else               S_tmp = compute_entropy_nd_ann        (x_new, sp.N_eff, m*p_new, k);
+        }
+        else        // Gaussian estimate
+        {
+            S_tmp = compute_entropy_nd_Gaussian(x_new, sp.N_eff, m*p_new);
+        }
         avg  += S_tmp;
         var  += S_tmp*S_tmp;
         nb_errors += nb_errors_local; // each call to "compute_entropy_nd_ann" gives a new value of nb_errors_local
@@ -422,11 +430,12 @@ int compute_entropy_rate_ann_mask_old(double *x, char *mask, int npts, int m, in
 /* 2020-02-23: bug corrected in method=2                                                */
 /* 2020-02-24: forked from "compute_entropy_rate_ann"                                   */
 /* 2025-12-05: fully rewritten function                                                 */
+/* 2026-07-14: now with Gaussian estimates                                              */
 /****************************************************************************************/
 int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
 {   register int i, j;
-    double  H_past=0.0, H=0.0, I1=0.0, I2=0.0;
+    double  H_past=0.0, H=0.0, I1=0.0, I2=0.0, IG=0.0;
     double  h, avg=0.0, var=0.0;
     double *x_new;
     int     N_real_max=0, npts_good;
@@ -439,10 +448,10 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
     *S = my_NAN;    // default returned value
     
     if ((method!=ENTROPY_RATE_FRACTION) && (method!=ENTROPY_RATE_DIFFERENCE) && (method!=ENTROPY_RATE_MI))
-                        return(print_error("compute_entropy_rate_ann_mask", "invalid method (should be 0,1 or 2)"));
-    if ((m<1) || (p<1)) return(print_error("compute_entropy_rate_ann_mask", "m and p must be at least 1"));
-    if ((stride<1))     return(print_error("compute_entropy_rate_ann_mask", "stride must be at least 1"));
-    if ((k<1))          return(print_error("compute_entropy_rate_ann_mask", "k must be at least 1"));
+                            return(print_error("compute_entropy_rate_ann_mask", "invalid method (should be 0,1 or 2)"));
+    if ((m<1) || (p<1))     return(print_error("compute_entropy_rate_ann_mask", "m and p must be at least 1"));
+    if ((stride<1))         return(print_error("compute_entropy_rate_ann_mask", "stride must be at least 1"));
+    if ((k<1) && (k!=-1))   return(print_error("compute_entropy_rate_ann_mask", "k must be at least 1 (or -1 for Gaussian estimate)"));
 
     
     // additional checks and auto-adjustments of parameters:
@@ -477,38 +486,56 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
         Theiler_embed_mask(x+j, npts, m, p+1, stride, ind_shuffled, x_new, sp.N_eff);
 
         if (method==ENTROPY_RATE_FRACTION)
-        {   if (USE_PTHREAD>0) 
-                H      = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*p,     k,           get_cores_number(GET_CORES_SELECTED));
-            else
-                H      = compute_entropy_nd_ann         (x_new, sp.N_eff, m*p,     k);
+        {   if (k>=1)   // k-nn estimate
+            {   if (USE_PTHREAD>0)  
+                        H = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*p,     k, get_cores_number(GET_CORES_SELECTED));
+                else    H = compute_entropy_nd_ann         (x_new, sp.N_eff, m*p,     k);
+            }
+            else        // Gaussian estimate
+            {           H = compute_entropy_nd_Gaussian    (x_new, sp.N_eff, m*p);
+            }
             nb_errors += nb_errors_local;
 
             h = H/p;  
         }
         if (method==ENTROPY_RATE_DIFFERENCE)
-        {   if (USE_PTHREAD>0) 
-            {   H_past = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*p,     k,           get_cores_number(GET_CORES_SELECTED));
-                H      = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*(p+1), k,           get_cores_number(GET_CORES_SELECTED));
+        {   if (k>=1)   // k-nn estimate
+            {   if (USE_PTHREAD>0) 
+                {   H_past = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*p,     k, get_cores_number(GET_CORES_SELECTED));
+                    H      = compute_entropy_nd_ann_threads (x_new, sp.N_eff, m*(p+1), k, get_cores_number(GET_CORES_SELECTED));
+                }
+                else
+                {   H_past = compute_entropy_nd_ann         (x_new, sp.N_eff, m*p,     k);
+                    H      = compute_entropy_nd_ann         (x_new, sp.N_eff, m*(p+1), k);
+                }
             }
-            else
-            {   H_past = compute_entropy_nd_ann         (x_new, sp.N_eff, m*p,     k);
-                H      = compute_entropy_nd_ann         (x_new, sp.N_eff, m*(p+1), k);
+            else        // Gaussian estimate
+            {       H_past = compute_entropy_nd_Gaussian    (x_new, sp.N_eff, m*p);
+                    H      = compute_entropy_nd_Gaussian    (x_new, sp.N_eff, m*(p+1));
             }
             nb_errors += nb_errors_local;   // each call to an engine function gives a new value of nb_errors_local
                                             // we use only the last one, which corresponds to the largest embedding p+1
             h = H-H_past;
         }
         else if (method==ENTROPY_RATE_MI) 
-        {   if (USE_PTHREAD>0) 
-            {   H          = compute_entropy_nd_ann_threads             (x_new, sp.N_eff, m,      k,           get_cores_number(GET_CORES_SELECTED));
-                nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, m, m*p, k, &I1, &I2, get_cores_number(GET_CORES_SELECTED));
+        {   if (k>=1)   // k-nn estimate
+            {   if (USE_PTHREAD>0) 
+                {   H          = compute_entropy_nd_ann_threads             (x_new, sp.N_eff, m,      k,           get_cores_number(GET_CORES_SELECTED));
+                    nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, m, m*p, k, &I1, &I2, get_cores_number(GET_CORES_SELECTED));
+                }
+                else
+                {   H          = compute_entropy_nd_ann                     (x_new, sp.N_eff, m,      k);
+                    nb_errors += compute_mutual_information_direct_ann      (x_new, sp.N_eff, m, m*p, k, &I1, &I2);
+                }
+                
+                h = (MI_algo&MI_ALGO_1) ? H-I1 : H-I2;
             }
-            else
-            {   H          = compute_entropy_nd_ann                     (x_new, sp.N_eff, m,      k);
-                nb_errors += compute_mutual_information_direct_ann      (x_new, sp.N_eff, m, m*p, k, &I1, &I2);
+            else        // Gaussian estimate
+            {       H          = compute_entropy_nd_Gaussian                (x_new, sp.N_eff, m);
+                    IG         = compute_mutual_information_direct_Gaussian (x_new, sp.N_eff, m, m*p);
+                    
+                h = H-IG;       
             }
-
-            h = (MI_algo&MI_ALGO_1) ? H-I1 : H-I2;
         }
 
         avg += h;     var += h*h;
@@ -559,6 +586,7 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
 /* 2020-02-24: checkedd that the embedding is causal                                    */
 /* 2021-12-15: multithreading enabled                                                   */
 /* 2023-12-01: bug correction (wrong pointer as parameter of "Theiler_embed_mask")      */
+/* 2026-07-14: now with Gaussian estimates                                              */
 /****************************************************************************************/
 int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
@@ -579,7 +607,7 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
 	if ((mx<1) || (my<1)) return(print_error("compute_mutual_information_ann_mask", "mx and my must be at least 1"));
 	if ((px<1) || (py<1)) return(print_error("compute_mutual_information_ann_mask", "px and py must be at least 1"));
 	if (stride<1)         return(print_error("compute_mutual_information_ann_mask", "stride must be at least 1"));
-    if (k<1)              return(print_error("compute_mutual_information_ann_mask", "k has to be at least 1"));
+    if ((k<1) && (k!=-1)) return(print_error("compute_mutual_information_ann_mask", "k has to be at least 1 (or -1 for Gaussian estimate)"));
 
     N_real_max = set_sampling_parameters_mask(mask, npts, pp, stride, 0, &sp, "compute_mutual_information_ann_mask");
     if (N_real_max<1)   
@@ -610,12 +638,17 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
         Theiler_embed_mask(x+j, npts, mx, px, stride, ind_shuffled, x_new,                sp.N_eff);
         Theiler_embed_mask(y+j, npts, my, py, stride, ind_shuffled, x_new+mx*px*sp.N_eff, sp.N_eff);
         
-        if (USE_PTHREAD>0)  // if we want multithreading
-            nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, 
+        if (k>=1)   // k-nn estimate
+        {   if (USE_PTHREAD>0)  // if we want multithreading
+                nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, 
                                 mx*px, my*py, k, &mi1, &mi2, get_cores_number(GET_CORES_SELECTED));
-        else                // single threaded algorithms:
-            nb_errors += compute_mutual_information_direct_ann(x_new, sp.N_eff, mx*px, my*py, k, &mi1, &mi2);
-  
+            else                // single threaded algorithms:
+                nb_errors += compute_mutual_information_direct_ann(x_new, sp.N_eff, mx*px, my*py, k, &mi1, &mi2);
+        }
+        else        // Gaussian estimate
+        {       mi1   = compute_mutual_information_direct_Gaussian(x_new, sp.N_eff, mx*px, my*py);
+        }
+        
         avg1 += mi1;    var1 += mi1*mi1;
         avg2 += mi2;	var2 += mi2*mi2;
 		last_npts_eff += last_npts_eff_local;
@@ -672,6 +705,7 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
  * 2021-12-15 : pthreads
  * 2023-02-23 : now TE(X->Y) (1st -> 2nd argument) instead of the opposite
  * 2023-12-01 : bug correction (same as in MI)
+ * 2026-07-14 : now with Gaussian estimates                                             
  *************************************************************************************/
 int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, int lag, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2)
@@ -694,7 +728,7 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
 	if (stride<1)         return(print_error("compute_transfer_entropy_ann_mask", "stride must be at least 1"));
     if ((mx<1) || (my<1)) return(print_error("compute_transfer_entropy_ann_mask", "mx and my must be at least 1"));
 	if ((px<1) || (py<1)) return(print_error("compute_transfer_entropy_ann_mask", "px and py must be at least 1"));
-	if (k<1)              return(print_error("compute_transfer_entropy_ann_mask", "k has to be at least 1"));
+	if ((k<1) && (k!=-1)) return(print_error("compute_transfer_entropy_ann_mask", "k has to be at least 1 (or -1 for Gaussian estimate)"));
     
     N_real_max = set_sampling_parameters_mask(mask, npts, pp, stride, lag, &sp, "compute_transfer_entropy_ann_mask");
     if (N_real_max<1)   
@@ -736,11 +770,17 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
                 x_new[i + (mx*(px+1) + d + l*my)*nx_new] = y[ind_epoch[i] + d*npts + shift - stride*l];
         }
 */
-        if (USE_PTHREAD>0)  // if we want multithreading
-            nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
-        else                // single threaded algorithms:
-            nb_errors += compute_partial_MI_engine_ann        (x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2);
-
+        if (k>=1)   // k-nn estimate
+        {   if (USE_PTHREAD>0)  // if we want multithreading
+                nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
+            else                // single threaded algorithms:
+                nb_errors += compute_partial_MI_engine_ann        (x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2);
+        }
+        else        // Gaussian estimate
+        {
+                te1        = compute_partial_MI_engine_Gaussian   (x_new, sp.N_eff, my, mx*px, my*py);
+        }
+        
         avg1 += te1;    var1 += te1*te1;
 		avg2 += te2;	var2 += te2*te2;
 		last_npts_eff += last_npts_eff_local;
@@ -793,6 +833,7 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
  *              untested
  * 2023-02-23 : now PTE(X->Y) (1st -> 2nd argument) instead of the opposite
  * 2023-12-01 : bug correction (same as in MI)
+ * 2026-07-14 : now with Gaussian estimates       
  *************************************************************************************/
 int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int npts, int *dim, int stride, int lag, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2)
@@ -814,7 +855,7 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
 	if (stride<1)                   return(print_error("compute_partial_TE_ann_mask", "stride must be at least 1"));
     if ((mx<1) || (my<1) || (mz<1)) return(print_error("compute_partial_TE_ann_mask", "initial dimensions of data must be at least 1"));
 	if ((px<1) || (py<1) || (pz<1)) return(print_error("compute_partial_TE_ann_mask", "embedding dimensions must be at least 1"));
-	if (k<1)                        return(print_error("compute_partial_TE_ann_mask", "k has to be at least 1"));
+	if ((k<1) && (k!=-1))           return(print_error("compute_partial_TE_ann_mask", "k has to be at least 1 (or -1 for Gaussian estimate)"));
     
 	n	 = my*(py+1)+mx*px+mz*pz;   // dimension of the new variable
 	pp   = (px>py) ? px : py;       // who has the largest past ?
@@ -851,10 +892,15 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
         Theiler_embed_mask(z+j,     npts, mz, pz, stride, ind_shuffled, x_new+my*(py+1)*sp.N_eff,         sp.N_eff);
         Theiler_embed_mask(x+j,     npts, mx, px, stride, ind_shuffled, x_new+(my*(py+1)+mz*pz)*sp.N_eff, sp.N_eff);
 
-        if (USE_PTHREAD>0)  // if we want multithreading
-            nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, my, mx*px, my*py+mz*pz, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
-        else                 // single threaded algorithms:
-            nb_errors += compute_partial_MI_engine_ann        (x_new, sp.N_eff, my, mx*px, my*py+mz*pz, k, &te1, &te2);
+        if (k>=1)   // k-nn estimate
+        {   if (USE_PTHREAD>0)  // if we want multithreading
+                nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, my, mx*px, my*py+mz*pz, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
+            else                 // single threaded algorithms:
+                nb_errors += compute_partial_MI_engine_ann        (x_new, sp.N_eff, my, mx*px, my*py+mz*pz, k, &te1, &te2);
+        }
+        else
+        {       te1        = compute_partial_MI_engine_Gaussian   (x_new, sp.N_eff, my, mx*px, my*py+mz*pz);
+        }
         
         avg1 += te1;    var1 += te1*te1;
 		avg2 += te2;	var2 += te2*te2;
@@ -907,9 +953,10 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
  *
  * This is just a wrapper to the function "compute_partial_MI_direct_ann"
  *
- * 2013-06-18: fork from compute_partial_MI_nd_ann 
+ * 2013-06-18 : fork from compute_partial_MI_nd_ann 
  *              and getting inspiration from compute_mutual_information_nd_ann_mask
- * 2023-12-01: bug correction (same as in MI)
+ * 2023-12-01 : bug correction (same as in MI)
+ * 2026-07-14 : now with Gaussian estimates        
  *************************************************************************************/
 int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int npts, int *dim, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
@@ -929,7 +976,7 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
 	if (stride<1)                   return(print_error("compute_partial_MI_ann_mask", "stride must be at least 1"));
     if ((mx<1) || (my<1) || (mz<1)) return(print_error("compute_partial_MI_ann_mask", "initial dimensions of data must be at least 1"));
 	if ((px<1) || (py<1) || (pz<1)) return(print_error("compute_partial_MI_ann_mask", "embedding dimensions must be at least 1"));
-	if (k<1)                        return(print_error("compute_partial_MI_ann_mask", "k must be at least 1"));
+	if ((k<1) && (k!=-1))           return(print_error("compute_partial_MI_ann_mask", "k must be at least 1 (or -1 for Gaussian estimate)"));
     
     n	   = mx*px + my*py + mz*pz;    // total dimension of the new variable
 	pp     = (px>py) ? px : py;        // who has the largest past ?
@@ -980,10 +1027,15 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
                 x_new[i + (mx*px + mz*pz + d + l*my)*nx_new] = y[ind_epoch[i] + d*npts + shift - stride*l];
         }
 */
-        if (USE_PTHREAD>0) // if we want multithreading
-            nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, mx*px, my*py, mz*pz, k, &mi1, &mi2, get_cores_number(GET_CORES_SELECTED)); //PMI
-        else
-            nb_errors += compute_partial_MI_engine_ann(x_new, sp.N_eff, mx*px, my*py, mz*pz, k, &mi1, &mi2); //PMI
+        if (k>=1)   // k-nn estimate
+        {   if (USE_PTHREAD>0) // if we want multithreading
+                nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, mx*px, my*py, mz*pz, k, &mi1, &mi2, get_cores_number(GET_CORES_SELECTED)); //PMI
+            else
+                nb_errors += compute_partial_MI_engine_ann(x_new, sp.N_eff, mx*px, my*py, mz*pz, k, &mi1, &mi2); //PMI
+        }
+        else        // Gaussian estimate
+        {       mi1        = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, mx*px, my*py, mz*pz); //PMI
+        }
         avg1 += mi1;    var1 += mi1*mi1;
 		avg2 += mi2;	var2 += mi2*mi2;
 		last_npts_eff += last_npts_eff_local;
@@ -1038,6 +1090,7 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
  * 2020-02-28 : idea: perform a large embedding first, and then loop on dimension : to do?
  * 2022-06-10 : done + new samplings, untested yet
  * 2023-02-23 : now DI(X->Y) (1st -> 2nd argument) instead of the opposite
+ * 2026-07-14 : now with Gaussian estimates  
  *************************************************************************************/
 int compute_directed_information_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int N, int stride, 
                             int Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
@@ -1056,7 +1109,8 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
 	if (stride<1)           return(print_error("compute_directed_information_ann_mask", "stride must be at least 1"));
     if ((mx<1) || (my<1))   return(print_error("compute_directed_information_ann_mask", "initial dimensions of data must be at least 1"));
 	if (N<1)                return(print_error("compute_directed_information_ann_mask", "N must be at least 1"));
-	if (k<1)                return(print_error("compute_directed_information_ann_mask", "k must be at least 1"));
+	if ((k<1) && (k!=-1))   return(print_error("compute_directed_information_ann_mask", "k must be at least 1 (or -1 for Gaussian estimate)"));
+
     
     // additional checks and auto-adjustments of parameters, using max N:
     N_real_max = set_sampling_parameters_mask(mask, npts, N, stride, 0, &sp, "compute_directed_information_ann_mask");
@@ -1095,18 +1149,29 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
             Theiler_embed_mask(x+perm_real->data[j], npts, mx, n, stride, ind_shuffled, x_new+my*n*sp.N_eff, sp.N_eff);
 
             if (n==1) // first term of the sum is regular MI (DI = MI if N==1): 
-            {   if (USE_PTHREAD>0) nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, 
+            {   if (k>=1)   // k-nn estimate
+                {   if (USE_PTHREAD>0) nb_errors += compute_mutual_information_2xnd_ann_threads(x_new, sp.N_eff, 
                                                         my*n, mx*n, k, &tmp1, &tmp2, get_cores_number(GET_CORES_SELECTED));
-                else               nb_errors += compute_mutual_information_direct_ann(x_new, sp.N_eff, 
+                    else               nb_errors += compute_mutual_information_direct_ann(x_new, sp.N_eff, 
                                                         my*n, mx*n, k, &tmp1, &tmp2);
+                }
+                else        // Gaussian estimate
+                                        tmp1      = compute_mutual_information_direct_Gaussian(x_new, sp.N_eff, 
+                                                        my*n, mx*n);
+                
                 di1[0] += tmp1; var1[0] += tmp1*tmp1;        // 2023-02-24: replaced = by +=
                 di2[0] += tmp2; var2[0] += tmp2*tmp2;
             }
             else
-            {   if (USE_PTHREAD>0) nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, 
+            {   if (k>=1)   // k-nn estimate
+                {   if (USE_PTHREAD>0) nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, 
                                                         my, mx*n, my*(n-1), k, &tmp1, &tmp2, get_cores_number(GET_CORES_SELECTED));
-                else               nb_errors += compute_partial_MI_engine_ann(x_new, sp.N_eff, 
+                    else               nb_errors += compute_partial_MI_engine_ann(x_new, sp.N_eff, 
                                                         my, mx*n, my*(n-1), k, &tmp1, &tmp2);
+                }
+                else        // Gaussian estimate
+                                        tmp1      = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, 
+                                                        my, mx*n, my*(n-1));
                 di1[n-1] += tmp1; var1[n-1] += tmp1*tmp1;
                 di2[n-1] += tmp2; var2[n-1] += tmp2*tmp2;
             }

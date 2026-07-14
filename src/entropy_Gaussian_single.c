@@ -185,7 +185,6 @@ double compute_mutual_information_direct_Gaussian(double *x, int npts, int mx, i
 
 
 
-
 /***************************************************************************************
  * computes partial mutual information, as defined by Frenzel and Pompe
  * for Gaussian statistics data			
