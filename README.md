@@ -80,6 +80,8 @@ results = run_benchmark(rr_arrays, output_file='results.csv')
 
 See [src/entropy_pure/README.md](https://github.com/nbgarnier/entropy/tree/main/src/entropy_pure) for complete documentation.
 
+---
+
 # notes
 
 This library provides continuous entropies estimates using nearest neighbors. It relies on the [ANN library](http://www.cs.umd.edu/~mount/ANN/) by David Mount and Sunil Arya, which has been patched and included in the source tree.
@@ -104,8 +106,6 @@ Here is a short list of functions that all versions (C/Python or pure Python) pr
 See help on all functions on the [documentation webpage](https://perso.ens-lyon.fr/nicolas.garnier/files/html/).
 
 See Python examples in `bin/python/`.
-
----
 
 # citing
 
