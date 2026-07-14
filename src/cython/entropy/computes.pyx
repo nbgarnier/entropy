@@ -181,8 +181,6 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real              
      
-             return S
-
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts):
             raise ValueError("mask does not have the same number of points in time (%d) as the data (%d)" %(npts_mask,npts))
@@ -192,12 +190,11 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
         if (do_old==1):
             ratou = computes.compute_entropy_rate_ann_old     (&x[0,0],           npts, nx, m, stride, 
                                     Theiler, N_eff, N_real, k, method, &S)
-        else: 
-            if (k==-1):
-                ratou = computes.compute_entropy_rate_Gaussian(&x[0,0],           npts, nx, m, stride, 
+        elif (k==-1):
+            ratou = computes.compute_entropy_rate_Gaussian(&x[0,0],           npts, nx, m, stride, 
                                     Theiler, N_eff, N_real,    method, &S)
-            else:
-                ratou = computes.compute_entropy_rate_ann     (&x[0,0],           npts, nx, m, stride, 
+        else:
+            ratou = computes.compute_entropy_rate_ann     (&x[0,0],           npts, nx, m, stride, 
                                     Theiler, N_eff, N_real, k, method, &S)
      return S
 
@@ -358,7 +355,7 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
             elif (k==-1):
                 ratou = computes.compute_transfer_entropy_Gaussian(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, &I1)
-                return [I1, PNP.nan]:
+                I2=PNP.nan
             else:
                 ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2, do_sub_Gaussian)

@@ -72,7 +72,8 @@ rr_arrays = {'patient1': rr1, 'patient2': rr2}
 results = run_benchmark(rr_arrays, output_file='results.csv')
 ```
 
-See [entropy_pure](https://github.com/nbgarnier/entropy/tree/main/src/entropy_pure)
+See [src/entropy_pure/README.md](https://github.com/nbgarnier/entropy/tree/main/src/entropy_pure) for complete documentation.
+
 
 # notes
 
@@ -88,8 +89,6 @@ See Python examples in `bin/python/`.
 # citing
 
 to cite this work, please use this DOI: [![DOI](https://zenodo.org/badge/635707956.svg)](https://doi.org/10.5281/zenodo.13218642)
-
-See [src/entropy_pure/README.md](src/entropy_pure/README.md) for complete documentation.
 
 ---
 
