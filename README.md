@@ -4,6 +4,8 @@
 
 A "pure" Python version is also provided (see [entropy_pure](https://github.com/nbgarnier/entropy/tree/main/src/entropy_pure)), which may be easier to install on your system as it does not require compilation.
 
+---
+
 # compilation and installation of the C library for use with Matlab or Python
 - run ./configure and eventuallly solve the issues by installing missing programs and libraries (e.g.: "apt install libtool-bin fftw3-dev" on Linux if asked to do so)
    - on macos, if you are using brew, you just need to install gsl and fftw: "brew install gsl fftw"
@@ -31,6 +33,8 @@ import entropy.entropy as entropy
 x = numpy.random.randn(1,100000)
 H = entropy.compute_entropy(x)
 ```
+
+---
 
 # pure Python version
 
@@ -76,27 +80,13 @@ results = run_benchmark(rr_arrays, output_file='results.csv')
 
 See [src/entropy_pure/README.md](https://github.com/nbgarnier/entropy/tree/main/src/entropy_pure) for complete documentation.
 
-
 # notes
 
-this library provides continuous entropies estimates using nearest neighbors. It relies on the [ANN library](http://www.cs.umd.edu/~mount/ANN/) by David Mount and Sunil Arya, which has been patched and included in the source tree.
+This library provides continuous entropies estimates using nearest neighbors. It relies on the [ANN library](http://www.cs.umd.edu/~mount/ANN/) by David Mount and Sunil Arya, which has been patched and included in the source tree.
 
 # documentation
 
-See help on functions on the [documentation webpage](https://perso.ens-lyon.fr/nicolas.garnier/files/html/).
-
-See Python examples in `bin/python/`.
-
-
-# citing
-
-to cite this work, please use this DOI: [![DOI](https://zenodo.org/badge/635707956.svg)](https://doi.org/10.5281/zenodo.13218642)
-
----
-
-## Available Functions
-
-All versions provide:
+Here is a short list of functions that all versions (C/Python or pure Python) provide:
 
 | Function | Description |
 |----------|-------------|
@@ -110,3 +100,13 @@ All versions provide:
 | `compute_relative_entropy` | KL divergence |
 | `compute_entropy_Renyi` | Renyi entropy |
 | `compute_complexities` | ApEn and SampEn |
+ 
+See help on all functions on the [documentation webpage](https://perso.ens-lyon.fr/nicolas.garnier/files/html/).
+
+See Python examples in `bin/python/`.
+
+---
+
+# citing
+
+to cite this work, please use this DOI: [![DOI](https://zenodo.org/badge/635707956.svg)](https://doi.org/10.5281/zenodo.13218642)
