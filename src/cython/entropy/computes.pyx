@@ -60,17 +60,17 @@ def compute_entropy( double[:, ::1] x, int n_embed=1, int stride=1,
     if (Theiler==0): Theiler=commons.samp_default.Theiler
     if (N_eff==0):   N_eff =commons.samp_default.N_eff
     if (N_real==0):  N_real=commons.samp_default.N_real
-       
-    if (k==-1):
-#        print("Gaussian entropy")
-        ratou = computes.compute_entropy_Gaussian(&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, &S)
-        return S  
-        
+    
     if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts): raise ValueError("mask and data do not have the same number of points in time")
         ratou = computes.compute_entropy_ann_mask(&x[0,0], &mask[0], npts, m, n_embed, stride, Theiler, N_eff, N_real, k, 0, &S)
+        # as of 2026/07/14, the call above is OK for Gaussian estimates (k==-1))
     else:  
-        ratou = computes.compute_entropy_ann     (&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, k, &S)
+        if (k==-1):
+#           print("Gaussian entropy")
+            ratou = computes.compute_entropy_Gaussian(&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, &S)
+        else:
+            ratou = computes.compute_entropy_ann     (&x[0,0], npts, m, n_embed, stride, Theiler, N_eff, N_real, k, &S)
         
     return S
 
@@ -120,18 +120,19 @@ def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, i
      if (Theiler==0): Theiler=commons.samp_default.Theiler
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
-     
-     if (k==-1):
-        ratou = computes.compute_entropy_increments_Gaussian(&x[0,0], npts, m, n_embed, stride, 
-                                    Theiler, N_eff, N_real,    inc_type, &S)
-        return S  
+
         
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts): raise ValueError("mask does not have the same number of points in time as the data")
         ratou = computes.compute_entropy_ann_mask           (&x[0,0], &mask[0], npts, m, n_embed, stride, 
                                     Theiler, N_eff, N_real, k, inc_type, &S)
+        # as of 2026/07/14, this is also OK if k==-1 (Gaussian estimate)
      else:
-        ratou = computes.compute_entropy_increments_ann     (&x[0,0], npts, m, n_embed, stride, 
+        if (k==-1):
+            ratou = computes.compute_entropy_increments_Gaussian(&x[0,0], npts, m, n_embed, stride, 
+                                    Theiler, N_eff, N_real,    inc_type, &S)
+        else:
+            ratou = computes.compute_entropy_increments_ann     (&x[0,0], npts, m, n_embed, stride, 
                                     Theiler, N_eff, N_real, k, inc_type, &S)
 
      return S
@@ -180,10 +181,7 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real              
      
-     if (k==-1):
-        ratou = computes.compute_entropy_rate_Gaussian(&x[0,0],           npts, nx, m, stride, 
-                                    Theiler, N_eff, N_real,    method, &S)
-        return S
+             return S
 
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts):
@@ -192,10 +190,14 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
                                     Theiler, N_eff, N_real, k, method, &S)
      else:
         if (do_old==1):
-            ratou = computes.compute_entropy_rate_ann_old (&x[0,0],           npts, nx, m, stride, 
+            ratou = computes.compute_entropy_rate_ann_old     (&x[0,0],           npts, nx, m, stride, 
                                     Theiler, N_eff, N_real, k, method, &S)
         else: 
-            ratou = computes.compute_entropy_rate_ann     (&x[0,0],           npts, nx, m, stride, 
+            if (k==-1):
+                ratou = computes.compute_entropy_rate_Gaussian(&x[0,0],           npts, nx, m, stride, 
+                                    Theiler, N_eff, N_real,    method, &S)
+            else:
+                ratou = computes.compute_entropy_rate_ann     (&x[0,0],           npts, nx, m, stride, 
                                     Theiler, N_eff, N_real, k, method, &S)
      return S
 
@@ -282,17 +284,19 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
      if (N_eff==0):    N_eff =commons.samp_default.N_eff
      if (N_real==0):   N_real=commons.samp_default.N_real
 
-     if (k==-1):
-        ratou = computes.compute_mutual_information_Gaussian(&x[0,0], &y[0,0],
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real,    &I1) 
-        return [I1, PNP.nan]  
+       
                
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")
         ratou = computes.compute_mutual_information_ann_mask(&x[0,0], &y[0,0], &mask[0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, &I1, &I2)
      else:
-        ratou = computes.compute_mutual_information_ann     (&x[0,0], &y[0,0], 
+        if (k==-1):
+            ratou = computes.compute_mutual_information_Gaussian(&x[0,0], &y[0,0],
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real,    &I1) 
+            I2=PNP.nan
+        else:
+            ratou = computes.compute_mutual_information_ann     (&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, Theiler, N_eff, N_real, k, &I1, &I2)
      return [I1,I2]
 
@@ -303,63 +307,62 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
             int Theiler=0, int N_eff=0, int N_real=0, 
             int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1'), int do_sub_Gaussian=0):
-     """           
-     computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.
+    """           
+    computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.
      
-     .. math::
-         TE(x,y) = TE(x\\rightarrow y) 
+    .. math::
+        TE(x,y) = TE(x\\rightarrow y) 
           
-     :param x: (y): signals (NumPy arrays with ndim=2, time along second dimension)
-     :param n_embed_x: embedding dimension for x (default=1)
-     :param n_embed_y: embedding dimension for y (default=1)
-     :param stride: stride for embedding (default=1)     
-     :param lag: distance of the future point in time (default=1)
-     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
-     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
-     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
-     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
-     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
-     :param do_sub_Gaussian: 0 for TE, or 1 for the difference TE-TE(Gaussian). In that case, 6 values are returned, in the following order: ``
-               TE, TE(Gaussian), TE-TE(Gaussian), std(TE), std(TE(Gaussian)), std(TE-TE(Gaussian))
+    :param x: (y): signals (NumPy arrays with ndim=2, time along second dimension)
+    :param n_embed_x: embedding dimension for x (default=1)
+    :param n_embed_y: embedding dimension for y (default=1)
+    :param stride: stride for embedding (default=1)     
+    :param lag: distance of the future point in time (default=1)
+    :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
+    :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
+    :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+    :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+    :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
+    :param do_sub_Gaussian: 0 for TE, or 1 for the difference TE-TE(Gaussian). In that case, 6 values are returned, in the following order: ``
+              TE, TE(Gaussian), TE-TE(Gaussian), std(TE), std(TE(Gaussian)), std(TE-TE(Gaussian))
                  
-     :returns: two values (one per algorithm)
+    :returns: two values (one per algorithm)
      
-     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
-     """
-     cdef double I1=0, I2=0
-     cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
-     cdef int npts_mask=mask.size, ratou
-     cdef CNP.ndarray[dtype=double, ndim=1] TE1_all = PNP.zeros(6, dtype='float')
+    see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+    """
+    cdef double I1=0, I2=0
+    cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
+    cdef int npts_mask=mask.size, ratou
+    cdef CNP.ndarray[dtype=double, ndim=1] TE1_all = PNP.zeros(6, dtype='float')
 
-     if (npts<nx):    raise ValueError("please transpose x")
-     if (npty<ny):    raise ValueError("please transpose y")
-     if (npty!=npts): raise ValueError("x and y do not have the same number of pts in time")
-     if (Theiler==0): Theiler=commons.samp_default.Theiler
-     if (N_eff==0):   N_eff =commons.samp_default.N_eff
-     if (N_real==0):  N_real=commons.samp_default.N_real
+    if (npts<nx):    raise ValueError("please transpose x")
+    if (npty<ny):    raise ValueError("please transpose y")
+    if (npty!=npts): raise ValueError("x and y do not have the same number of pts in time")
+    if (Theiler==0): Theiler=commons.samp_default.Theiler
+    if (N_eff==0):   N_eff =commons.samp_default.N_eff
+    if (N_real==0):  N_real=commons.samp_default.N_real
  
-     if do_sub_Gaussian:
-         if (mask.size>1): raise ValueError("cannot use mask if do_sub_Gaussian")
-         if (k==-1):       raise ValueError("cannot use Gaussian estimate if do_sub_Gaussian")
+    if do_sub_Gaussian:
+        if (mask.size>1): raise ValueError("cannot use mask if do_sub_Gaussian")
+        if (k==-1):       raise ValueError("cannot use Gaussian estimate if do_sub_Gaussian")
 
-     if (k==-1):
-            ratou = computes.compute_transfer_entropy_Gaussian(&x[0,0], &y[0,0], 
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, &I1)
-            return [I1, PNP.nan]
-
-     if (mask.size>1): # then this is a real mask, not just the default value
+    if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")
             ratou = computes.compute_transfer_entropy_ann_mask(&x[0,0], &y[0,0], &mask[0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2)
-     else:
+    else:
             if do_sub_Gaussian:
-               ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
+                ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1_all[0], &I2, do_sub_Gaussian)
-               return(TE1_all)
+                return(TE1_all)
+            elif (k==-1):
+                ratou = computes.compute_transfer_entropy_Gaussian(&x[0,0], &y[0,0], 
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, &I1)
+                return [I1, PNP.nan]:
             else:
-               ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
+                ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2, do_sub_Gaussian)
-     return [I1,I2]
+    return [I1,I2]
 
 
 
@@ -409,16 +412,18 @@ def compute_PMI(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
      dim[0]   = dim_x;      dim[1]   = dim_y;      dim[2]   = dim_z;
      dim[3+0] = n_embed_x;  dim[3+1] = n_embed_y;  dim[3+2] = n_embed_z;
 
-     if (k==-1):
-            ratou = computes.compute_partial_MI_Gaussian(&x[0,0], &y[0,0], &z[0,0], 
-                            npts, dim, stride, Theiler, N_eff, N_real, &I1);
-            return [I1, PNP.nan]  
+      
 
      if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts):  raise ValueError("mask's size doesn't match data's shape")
             ratou = computes.compute_partial_MI_ann_mask(&x[0,0], &y[0,0], &z[0,0], &mask[0],
                             npts, dim, stride, Theiler, N_eff, N_real, k, &I1, &I2);
      else:
+        if (k==-1):
+            ratou = computes.compute_partial_MI_Gaussian(&x[0,0], &y[0,0], &z[0,0], 
+                            npts, dim, stride, Theiler, N_eff, N_real, &I1);
+            I2=PNP.nan
+        else:
             ratou = computes.compute_partial_MI_ann     (&x[0,0], &y[0,0], &z[0,0], 
                             npts, dim, stride, Theiler, N_eff, N_real, k, &I1, &I2);
      return [I1,I2]
@@ -516,15 +521,16 @@ def compute_DI(double[:, ::1] x, double[:, ::1] y, int N, int stride=1,
      if (Theiler==0): Theiler=commons.samp_default.Theiler
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
-       
-     if (k==-1):
-         ratou = computes.compute_directed_information_Gaussian   (&x[0,0], &y[0,0],           npts, nx, ny, N, stride, Theiler, N_eff, N_real, &I1)
-         return [I1, PNP.nan]
-         
+     
      if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts):  raise ValueError("mask's size doesn't match data's shape")
             ratou = computes.compute_directed_information_ann_mask(&x[0,0], &y[0,0], &mask[0], npts, nx, ny, N, stride, Theiler, N_eff, N_real, k, &I1, &I2)
-     else:  ratou = computes.compute_directed_information_ann     (&x[0,0], &y[0,0],           npts, nx, ny, N, stride, Theiler, N_eff, N_real, k, &I1, &I2)
+     else:  
+        if (k==-1):
+            ratou = computes.compute_directed_information_Gaussian   (&x[0,0], &y[0,0],           npts, nx, ny, N, stride, Theiler, N_eff, N_real, &I1)
+            I2=PNP.nan
+        else:
+            ratou = computes.compute_directed_information_ann     (&x[0,0], &y[0,0],           npts, nx, ny, N, stride, Theiler, N_eff, N_real, k, &I1, &I2)
      return [I1,I2]
 
 
