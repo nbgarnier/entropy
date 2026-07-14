@@ -43,11 +43,13 @@ pip install .
 This pure Python version can be used as a drop-in replacement of the C/Python library in Python scripts:
 ```python
 import numpy as np
-import entropy_pure as entropy
-...
+import entropy_pure as entropy      # <-- note the difference here only
+
+x = numpy.random.randn(1,100000)
+H = entropy.compute_entropy(x)
 ```
 
-o used as in the following example:
+or used as in the following example:
 ```python
 import numpy as np
 from entropy_pure import (
