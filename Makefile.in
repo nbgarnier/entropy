@@ -103,6 +103,7 @@ zip : clean
 		bin/matlab/compute_ApEn.m bin/matlab/compute_SampEn.m bin/matlab/compute_KC.m 
 	$(TAR) -rvf code.tar bin/matlab/embed.m bin/matlab/compute_entropyrate_NaN.m \
 		bin/matlab/compute_MI_NaN.m bin/matlab/compute_TE_NaN.m
+	$(TAR) -rvf code.tar src/entropy_pure
 	$(TAR) -rvf code.tar bin/python/*.py
 	$(TAR) -rvf code.tar lib
 	gzip code.tar
