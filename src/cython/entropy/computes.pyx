@@ -141,7 +141,7 @@ def compute_entropy_increments( double[:, ::1] x, int inc_type=1, int order=1, i
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
+def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int n_embed=1, int stride=1,
             int Theiler=0, int N_eff=0, int N_real=0,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1'),
             int do_old=0): # tmp parameter for testing only
@@ -155,7 +155,7 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
 
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param method: an integer. in {0,1,2} to indicate which method to use (default=2) (see below)
-     :param m: embedding dimension (default=1)
+     :param m or n_emebed: embedding dimension (default=1) (note: m will be deprecated soon, use n_embed)
      :param stride: stride for embedding (default=1) 
      :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
      :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
@@ -179,7 +179,9 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int stride=1,
      if (npts<nx):    raise ValueError("please transpose x")
      if (Theiler==0): Theiler=commons.samp_default.Theiler
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
-     if (N_real==0):  N_real=commons.samp_default.N_real              
+     if (N_real==0):  N_real=commons.samp_default.N_real  
+     if (n_embed!=1): m=n_embed       # 2026-08-25: we prefer to use "n_embed" instead of "m", but keep "m" for compatibility
+     print(m)
      
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts):
