@@ -155,7 +155,7 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int n_embed=1
 
      :param x: signal (NumPy array with ndim=2, time along second dimension)
      :param method: an integer. in {0,1,2} to indicate which method to use (default=2) (see below)
-     :param m or n_emebed: embedding dimension (default=1) (note: m will be deprecated soon, use n_embed)
+     :param m or n_embed: embedding dimension (default=1) (note: m may be deprecated one day, use n_embed instead)
      :param stride: stride for embedding (default=1) 
      :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
      :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
@@ -181,7 +181,6 @@ def compute_entropy_rate( double[:, ::1] x, int method=2, int m=1, int n_embed=1
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real  
      if (n_embed!=1): m=n_embed       # 2026-08-25: we prefer to use "n_embed" instead of "m", but keep "m" for compatibility
-     print(m)
      
      if (npts_mask>1): # then this is a real mask, not just the default value
         if (npts_mask!=npts):
