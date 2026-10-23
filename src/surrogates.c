@@ -10,6 +10,7 @@
 /* 2023-02-27 : added Fourier method (with fftw) corresponding to                       */
 /*              Theiler et al Physica D 58 pp77-94 (1992)                               */
 /* 2023-03-01 : Jupyter notebook causality_couples_2023-03-01_test_surrogates.ipynb     */
+/* 2026-10-23 : bug correction by Martin Frasch                                         */
 /****************************************************************************************/
 #include <stddef.h>                     // for size_t
 #include <string.h>                     // for memcpy
@@ -272,16 +273,16 @@ void surrogate_aaFt(double *x, int npts, int mx)
 	        data_Ft[i][0] = (u*cos(phase_shift[i]) - v*sin(phase_shift[i]))/npts;
 		    data_Ft[i][1] = (u*sin(phase_shift[i]) + v*cos(phase_shift[i]))/npts;
 	    } 
-        fftw_execute(plan_surrogate_inverse);       // we now have y'(t), a Gaussian Ft surrogate of the data
+        fftw_execute(plan_surrogate_inverse);       // we now have y'(t), a FT surrogate of the Gaussian data
 
         // then reorder x to obtain the surrogate x':
         for (i=0; i<npts; i++)	surrogates_indices[i] = i;
-	    QuickSort_double(data_in, surrogates_indices, 0, npts-1); /* we sort the data */
+	    QuickSort_double(data_in, surrogates_indices, 0, npts-1);   // we sort y'(t)
         for (i=0; i<npts; i++)	surrogates_ind_inv[surrogates_indices[i]] = i;    
         
         memcpy(y, x+d*npts, npts*sizeof(double));   // original x
         QuickSort_double(y, surrogates_indices, 0, npts-1); // order x, don't care about indices
-        for (i=0; i<npts; i++)	(x+d*npts)[i] = y[surrogates_ind_inv[i]]; // re-ordered according to y'
+        for (i=0; i<npts; i++)	(x+d*npts)[i] = y[surrogates_ind_inv[i]]; // re-ordered x according to y'
     }
     
     free(y);
@@ -321,15 +322,16 @@ void surrogate_improved(double *x, int npts, int mx, int N_steps)
         for (i=0; i<(npts/2+1); i++)    
         {   x_PSD[i] = sqrt(data_Ft[i][0]*data_Ft[i][0] + data_Ft[i][1]*data_Ft[i][1]);
         }
-        // backup rank PDF of x:
+        // backup rank PDF of x (y is a sorted version of x):
         memcpy(y, x+d*npts, npts*sizeof(double));
         for (i=0; i<npts; i++)	surrogates_indices[i] = i;
-	    QuickSort_double(y, surrogates_indices, 0, npts-1); /* we sort the data */
-        for (i=0; i<npts; i++)	surrogates_ind_inv[surrogates_indices[i]] = i;    
+	    QuickSort_double(y, surrogates_indices, 0, npts-1);     // we sort x, and keep it safe in y
+//        for (i=0; i<npts; i++)	surrogates_ind_inv[surrogates_indices[i]] = i;    // 2026/10/23: this line is useless
         
         // step 0:
         gsl_ran_shuffle(surrogates_rng, data_in, npts, sizeof(double));     
         
+        // iteratively alter "data_in":
         for (i_step=0; i_step<N_steps; i_step++)
         {   
             // first, we adjust the PSD (phases are kept):
@@ -342,10 +344,13 @@ void surrogate_improved(double *x, int npts, int mx, int N_steps)
             fftw_execute(plan_surrogate_inverse);
             
             // second, we rank order:
-            memcpy(y, data_in, npts*sizeof(double));  
-            for (i=0; i<npts; i++)	surrogates_indices[i] = i;            // useless
-	        QuickSort_double(y, surrogates_indices, 0, npts-1); 
-            for (i=0; i<npts; i++)	data_in[i] = y[surrogates_ind_inv[i]]; // re-ordered according to original x    
+            // 2026/10/23: this part was incorrect, it has been corrected thanks to Martin Frasch's observations
+            for (i=0; i<npts; i++)	surrogates_indices[i] = i;           
+	        QuickSort_double(data_in, surrogates_indices, 0, npts-1);      // we only care about the indices
+	        for (i=0; i<npts; i++)	surrogates_ind_inv[surrogates_indices[i]] = i;  // and especially their inverse
+            for (i=0; i<npts; i++)	data_in[i] = y[surrogates_ind_inv[i]]; // re-ordered the original x (stored in y) 
+                                                                           // according to the current iteration
+                                                           
         }
         
         memcpy(x+d*npts, data_in, npts*sizeof(double)); 

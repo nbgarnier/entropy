@@ -416,9 +416,9 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
         stds  = PNP.std (x, axis=1)
         commons.Gaussianize(&z[0,0], npts, nx)
         if (nx>1): 
-            for m in PNP.arange(nx):    z[m,:] = z[m,:]*stds[m] + means[m]
+            for m in PNP.arange(nx):    zout[m,:] = zout[m,:]*stds[m] + means[m]
         else: 
-            z = z*stds + means
+            zout = zout*stds + means
     return(zout)
 
 
