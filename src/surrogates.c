@@ -297,6 +297,7 @@ void surrogate_aaFt(double *x, int npts, int mx)
 /* creates a surrogate of a (possibly multi-dimensional) dataset of npts elements       */
 /* in-place                                                                             */
 /* "improved surrogate data" from Schreiber and Schmitz PRL 77 pp635-638 (1996)         */
+/* -> same PSD and same PDF                                                             */
 /*                                                                                      */
 /* 2023-02-28 : new function, untested                                                  */
 /* 2026-10-23 : note: each dimension of input data x is treated independently           */
