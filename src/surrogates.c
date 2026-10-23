@@ -93,6 +93,7 @@ void free_surrogate_FFTW(void)
 /*                                                                                      */
 /* 2023-02-27 : new function                                                            */
 /* 2023-02-28 : tested OK.                                                              */
+/* 2026-10-23 : bug correction by Martin Frasch                                         */
 /****************************************************************************************/
 void surrogate_uFt(double *x, int npts, int mx)
 {   double u,v, mean, mtmp;
@@ -102,7 +103,8 @@ void surrogate_uFt(double *x, int npts, int mx)
     init_surrogates_rng();
     
     // create random phase shifts:
-    for (i=0; i<(npts/2+1); i++) phase_shift[i]=gsl_rng_uniform(surrogates_rng);
+    for (i=0; i<(npts/2+1); i++)    // 2026/10/23: added 2*M_PI which was missing
+        phase_shift[i] = 2*M_PI*gsl_rng_uniform(surrogates_rng);
     
     for (d=0; d<mx; d++)
     {   memcpy(data_in, x+d*npts, npts*sizeof(double));
@@ -140,6 +142,7 @@ void surrogate_uFt(double *x, int npts, int mx)
 /* 2023-02-27 : new function                                                            */
 /* 2023-02-28 : tested OK.                                                              */
 /* 2023-03-01 : added trick from Theiler himself                                        */
+/* 2026-10-23 : bug correction by Martin Frasch                                         */
 /****************************************************************************************/
 void surrogate_wFt(double *x, int npts, int mx)
 {   double u,v, mean, mtmp;
@@ -150,7 +153,8 @@ void surrogate_wFt(double *x, int npts, int mx)
     init_surrogates_rng();
     
     // create random phase shifts:
-    for (i=0; i<(npts/2+1); i++) phase_shift[i]=gsl_rng_uniform(surrogates_rng);
+    for (i=0; i<(npts/2+1); i++)    // 2026/10/23: added 2*M_PI which was missing
+        phase_shift[i] = 2*M_PI*gsl_rng_uniform(surrogates_rng);
     
     for (d=0; d<mx; d++)
     {   memcpy(data_in, x+d*npts, npts*sizeof(double));
@@ -232,6 +236,7 @@ void Gaussianize(double *x, int npts, int mx)
 /* "amplitude adjusted Fourier transform" from Theiler et al Physica D 58 (1992) 2.4.3  */
 /*                                                                                      */
 /* 2023-02-28 : new function, not optimized                                             */
+/* 2026-10-23 : bug correction by Martin Frasch                                         */
 /****************************************************************************************/
 void surrogate_aaFt(double *x, int npts, int mx)
 {   double u,v;
@@ -245,7 +250,8 @@ void surrogate_aaFt(double *x, int npts, int mx)
     y              =(double*)calloc((size_t)npts, sizeof(double)); 
 
     // create random phase shifts:
-    for (i=0; i<(npts/2+1); i++) phase_shift[i]=gsl_rng_uniform(surrogates_rng);
+    for (i=0; i<(npts/2+1); i++)    // 2026/10/23: added 2*M_PI which was missing
+        phase_shift[i] = 2*M_PI*gsl_rng_uniform(surrogates_rng);
    
     for (d=0; d<mx; d++)
     {   memcpy(data_in, x+d*npts, npts*sizeof(double)); 
@@ -268,7 +274,7 @@ void surrogate_aaFt(double *x, int npts, int mx)
 	    } 
         fftw_execute(plan_surrogate_inverse);       // we now have y'(t), a Gaussian Ft surrogate of the data
 
-        //then reorder x to obtain the surrogate x':
+        // then reorder x to obtain the surrogate x':
         for (i=0; i<npts; i++)	surrogates_indices[i] = i;
 	    QuickSort_double(data_in, surrogates_indices, 0, npts-1); /* we sort the data */
         for (i=0; i<npts; i++)	surrogates_ind_inv[surrogates_indices[i]] = i;    
@@ -293,6 +299,8 @@ void surrogate_aaFt(double *x, int npts, int mx)
 /* "improved surrogate data" from Schreiber and Schmitz PRL 77 pp635-638 (1996)         */
 /*                                                                                      */
 /* 2023-02-28 : new function, untested                                                  */
+/* 2026-10-23 : note: each dimension of input data x is treated independently           */
+/*              note: looks OK, but needs further testing                               */
 /****************************************************************************************/
 void surrogate_improved(double *x, int npts, int mx, int N_steps)
 {   int d=0, i, i_step;
@@ -323,7 +331,7 @@ void surrogate_improved(double *x, int npts, int mx, int N_steps)
         
         for (i_step=0; i_step<N_steps; i_step++)
         {   
-            // first, we adjust the PSD:
+            // first, we adjust the PSD (phases are kept):
             fftw_execute(plan_surrogate_direct);
             for (i=0; i<(npts/2+1); i++) 
             {   mod = sqrt(data_Ft[i][0]*data_Ft[i][0] + data_Ft[i][1]*data_Ft[i][1]);
@@ -337,7 +345,6 @@ void surrogate_improved(double *x, int npts, int mx, int N_steps)
             for (i=0; i<npts; i++)	surrogates_indices[i] = i;            // useless
 	        QuickSort_double(y, surrogates_indices, 0, npts-1); 
             for (i=0; i<npts; i++)	data_in[i] = y[surrogates_ind_inv[i]]; // re-ordered according to original x    
-          
         }
         
         memcpy(x+d*npts, data_in, npts*sizeof(double)); 
@@ -416,6 +423,8 @@ void shuffle_data(double *x, int npts, int mx)
 /* this function should be slightly more efficient than creating a copy of the data,    */
 /* and then shuffling it in-place, because we save some copy time and some malloc       */
 /* (especially in mx>1 dimensions, and especially when in Python)                       */
+/*                                                                                      */
+/* but this versions may have a memory leak when invoked from python!                   */
 /*                                                                                      */
 /* 2023-01-31 : first version                                                           */
 /****************************************************************************************/

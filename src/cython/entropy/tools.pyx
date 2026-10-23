@@ -9,10 +9,10 @@ import  numpy as PNP # shoud be useless here
 cimport numpy as CNP
 from time import time
 
-# on initialise NumPy : # necessaire... 
+# initialize NumPy : # mandatory... 
 CNP.import_array()
 
-# on importe les definitions du C (fichiers .pxd) :
+# importe C definitions (.pxd files) :
 cimport entropy.tools
 
 from entropy.entropy import get_last_info
