@@ -35,6 +35,8 @@ extern "C" {
     double ANN_find_distance_in_tree1   (int i,     int n, int k, int core); // new 2025-02-13
     double ANN_find_distance_ex         (double *x, int n, int k, int core); // new 2019
     
+    void ANN_get_nearest_neighbors(double *x0, int k, int *inds, int core);  // new 2026-10-27
+    
     int ANN_count_nearest_neighbors_nd_tree1(double *x0, double epsilon, int core); // new 2019
     int ANN_count_nearest_neighbors_nd_tree2(double *x0, double epsilon, int core); // new 2019
     int ANN_count_nearest_neighbors_nd_tree3(double *x0, double epsilon, int core); // new 2019

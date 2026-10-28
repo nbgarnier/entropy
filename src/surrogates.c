@@ -33,7 +33,7 @@
 
 // following are used by basic shuffling method, AND by FT surrogates methods:
 static int surrogates_rng_state=0;  // to keep track of the rng state
-static gsl_rng *surrogates_rng;
+gsl_rng *surrogates_rng;            // 2026-10-28 removed static because is now global (extern in .h)
 
 // following is used by aaFt surrogate method:    
 static int *surrogates_indices; 

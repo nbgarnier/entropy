@@ -338,6 +338,29 @@ double ANN_find_distance_ex(double *x, int n, int k, int core)
 
 
 /**************************************************************************************
+ * ANN_get_nearest_neighbors
+ * to get (the indices of) the k nearest neighbors of a point x0
+ * (the point x0 can be exterior to the set of points for which the kd-tree was built)
+ *
+ * x0 is the central point (of dimension d, the dimension of the tree)
+ * k is the nb of nearest neighbors to return
+ *
+ * returned value : inds (pointer of (*int) type, of size k) 
+ *
+ * 2026-10-27 : first version
+ *************************************************************************************/
+void ANN_get_nearest_neighbors(double *x0, int k, int *inds, int core)
+{   kdTree->annkSearch(x0,                          // query point
+                       k-1+ANN_ALLOW_SELF_MATCH,    // number of near neighbors (including or excluding central point)
+                       inds+(1-ANN_ALLOW_SELF_MATCH), // nearest neighbors (returned) 
+                                // is the central point returned? if not, we have to get it too (done outside)
+                       dists[core],                 // distance (returned, useless)
+                       ANN_eps);                 
+}
+
+
+
+/**************************************************************************************
  * ANN_count_nearest_neighbors_nd_treeX
  * to count nearest neighbors of a point x0 in a ball of radius epsilon in n-dimensions
  *

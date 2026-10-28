@@ -13,9 +13,12 @@
 #ifndef SURROGATES_H
 #define SURROGATES_H
 
-// #include <gsl/gsl_permutation.h>
+//#include <gsl/gsl_rng.h>              // for random numbers generation
+#include <gsl/gsl_randist.h>			// for gsl_ran_shuffle()
+#include <gsl/gsl_permutation.h>		// for gsl_permutation type
 
 // private:
+extern gsl_rng *surrogates_rng;
 int  init_surrogate_FFTW(int npts);
 void free_surrogate_FFTW(void);
 void init_surrogates_rng(void);

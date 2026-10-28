@@ -55,7 +55,7 @@ endif
 
 # common C objects:
 OBJS = ANN_wrapper.o ANN_wrapper_second_level.o \
-	samplings.o samplings_basic.o surrogates.o mask.o \
+	samplings.o samplings_basic.o surrogates.o surrogates_ann_PMI.o mask.o \
 	math_tools.o nns_count.o library_commons.o verbosity.o timings.o \
 	entropy_ann.o entropy_ann_mask.o entropy_ann_Renyi.o \
 	entropy_ann_single_entropy.o entropy_ann_single_RE.o \
