@@ -16,6 +16,7 @@
 # 2022-10-11: Gaussian estimates now included
 # 2022-11-26: change in library hierarchy
 # 2023-11-28: legacy samplings removed from Python library calls
+# 2026-10-28: TE with surrogates from local permutation scheme
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
@@ -302,10 +303,10 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
+def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, int lag=1, 
             int N_surrogates=0, int k_perm=10,
             int Theiler=0, int N_eff=0, int N_real=0,
-            int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
+            int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
     """           
     computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.
      
@@ -334,17 +335,18 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     cdef int npts_mask=mask.size, ratou
     cdef CNP.ndarray[dtype=double, ndim=1] TE1_all = PNP.zeros(6, dtype='float')
 
+    TE_surrogates = PNP.zeros((2, N_surrogates), dtype=float)
+    cdef double[:, :] TE_bias = TE_surrogates
+
     if (npts<nx):    raise ValueError("please transpose x")
     if (npty<ny):    raise ValueError("please transpose y")
     if (npty!=npts): raise ValueError("x and y do not have the same number of pts in time")
     if (Theiler==0): Theiler=commons.samp_default.Theiler
     if (N_eff==0):   N_eff =commons.samp_default.N_eff
     if (N_real==0):  N_real=commons.samp_default.N_real
-
-    if (N_surrogates>0):  
-        TE_surrogates = PNP.zeros((2, N_surrogates), dtype=float)
-#        commons.surrogates_local_perm(&x[0,0], &z[0,0], npts, dim_x, dim_z, k_perm, N_surrogates, &surrogates[0,0,0])
-
+    if ((N_surrogates>0) and (N_real>1)):
+                    print("[info] you want to use surrogates, and more than 1 realization; this is OK.")
+    
     if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")
             if (N_surrogates>0):  raise ValueError("you want surrogates, and using a mask; this is not implemented yet")
@@ -352,12 +354,20 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1, &TE2)
     else:
             if (k==-1): # Gaussian TE
+                if (N_surrogates>0):  raise ValueError("you want surrogates, and Gaussian TE; this is not implemented yet")
                 ratou = computes.compute_transfer_entropy_Gaussian(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, &TE1)
                 TE2=PNP.nan
                 
             else:
-                ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
+                if (N_surrogates>0):
+                    ratou = computes.compute_transfer_entropy_ann_debias(&x[0,0], &y[0,0], 
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, N_surrogates, k_perm, Theiler, N_eff, N_real, k, 
+                                    &TE1, &TE2, &TE_bias[0,0])
+                    return [TE1,TE2], TE_bias
+
+                else:
+                    ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1, &TE2)
     return [TE1,TE2]
 

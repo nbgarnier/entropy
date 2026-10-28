@@ -564,15 +564,14 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
 /* k_perm       : the nb of points for the local permutations (python default=10)       */
 /*                                                                                      */
 /* new returned values:                                                                 */
-/* T1_bias      : (of size N_surrogates) the TE using surrogates (algo 1)               */
-/* T2_bias      : (of size N_surrogates) the TE using surrogates (algo 2)               */
-/* (T1_bias and T2_bias must be already allocated)                                      */
+/* TE_bias      : (of size 2*N_surrogates) the TE using surrogates (algo 1 & algo 2)    */
+/*                (TE_bias must be already allocated)                                   */
 /*                                                                                      */
 /* 2026-10-28 : forked from "compute_transfer_entropy_ann()" above                      */
 /****************************************************************************************/
 int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
                             int N_surrogates, int k_perm,
-                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, double *T1_bias, double *T2_bias)
+                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, double *TE_bias)
 {	register int j, i_surrogate, shift;
     register int nn	= my*(py+1)+mx*px;   // dimension of the new variable
     register int pp = (px>py) ? px : py; // who has the largest past ?
@@ -633,8 +632,8 @@ int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, in
             else                nb_errors += compute_partial_MI_engine_ann        (full_x_new, sp.N_eff, 
                                             my, mx*px, my*py, k, &te1, &te2);
             
-            T1_bias[i_surrogate] += te1;   
-		    T2_bias[i_surrogate] += te2;
+            TE_bias[i_surrogate] += te1;   
+		    TE_bias[i_surrogate+N_surrogates] += te2;
         }
 
 	}
@@ -648,10 +647,7 @@ int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, in
     last_std  = sqrt(var1); last_std2 = sqrt(var2);
 	
     // the bias will be given by the average of T1_bias (and/or of T2_bias), which we return:
-    for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
-    {   T1_bias[i_surrogate] /= sp.N_real;
-        T2_bias[i_surrogate] /= sp.N_real;
-    }
+    for (i_surrogate=0; i_surrogate<2*N_surrogates; i_surrogate++)  TE_bias[i_surrogate] /= sp.N_real;
 
     nb_errors_total += nb_errors;
     last_samp=sp;

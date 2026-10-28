@@ -38,6 +38,11 @@ int compute_regularity_index_ann    (double *x, int npts, int mx, int px, int st
 int compute_transfer_entropy_ann    (double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2);
 
+// transfer entropy with internal bias estimation (with local permutation surrogates) (new 2026-10-28)
+int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
+                            int N_surrogates, int k_perm,
+                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, double *TE_bias);
+
 // directed information (using PMI):
 int compute_directed_information_ann(double *x, double *y, int nx, int mx, int my, int N, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2);
