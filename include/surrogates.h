@@ -18,7 +18,7 @@
 #include <gsl/gsl_permutation.h>		// for gsl_permutation type
 
 // private:
-extern gsl_rng *surrogates_rng;
+extern gsl_rng *surrogates_rng;         // 2026-10-28 now extern to be used by multiple files
 int  init_surrogate_FFTW(int npts);
 void free_surrogate_FFTW(void);
 void init_surrogates_rng(void);

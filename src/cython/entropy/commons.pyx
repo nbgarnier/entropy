@@ -425,6 +425,59 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int k_perm=10, int N_surrogates=10):
+    """
+    creates a set of surrogates to be used for PMI estimation
+    
+    :param x,y,z: signals (NumPy arrays with ndim=2, time along second dimension)
+    :param k_perm: the nb of neighbors to consider for a local permutationan integer to indicate which type of surrogate to create (default 10)
+    :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
+    :returns: an nd-array of surrogates for x (each with the same dimmensionality as the input data x)
+
+    To generate the best possible surrogate x^* for PMI(x,y|z), it is required to provided x and z (y is not used).
+    Only surrogates for x are returned, to be used with the same (y,z) as provided.
+    Each surrogate has the same dimensionality as x.
+    """
+    cdef int npts=x.shape[1], dim_x=x.shape[0], npty=y.shape[1], dim_y=y.shape[0]
+    cdef int nptz=z.shape[1], dim_z=z.shape[0]
+
+    if (npts<dim_x):  raise ValueError("please transpose x")
+    if (npty<dim_y):  raise ValueError("please transpose y")
+    if (nptz<dim_z):  raise ValueError("please transpose z")          
+    if (npty!=npts):  raise ValueError("x and y do not have the same number of points in time")
+    if (nptz!=npts):  raise ValueError("x and z do not have the same number of points in time")
+    if (k_perm<2):    raise ValueError("k_perm needs to be larger than 1 in order to have an effect...")
+    if (N_surrogates<1): raise ValueError("I need to compute at least 1 surrogate...")
+
+    zout = PNP.zeros((N_surrogates, dim_x, npts), dtype=float)
+    cdef double[:, :, :] surrogates = zout
+    
+    commons.surrogates_local_perm(&x[0,0], &z[0,0], npts, dim_x, dim_z, k_perm, N_surrogates, &surrogates[0,0,0])
+    return(zout)
+
+
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+#cpdef surrogates_TE( double[:, ::1] y, int lag=1, int k_perm=10, int N_surrogates=10):
+#    """
+#    creates a set of surrogates of y to be used for TE(x->y) estimation 
+#    
+#    :param y: (NumPy array with ndim=2, time along second dimension) the "destination" signal, i.e., the signal 
+#    that may be caused by x (for the reverse TE(y->x), invoke again the surrogates_TE() function using parameter x)
+#    :param lag: distance of the future point in time (integer, default=1) choose it according to you TE invocation
+#    :param k_perm: the nb of neighbors to consider for a local permutationan integer to indicate which type of surrogate to create (default 10)
+#    :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
+#    :returns: an nd-array of surrogates for x (each with the same dimmensionality as the input data x)
+#
+#    To generate the best possible surrogate y^* for TE(x->y), it is required to provided lag.
+#    Only surrogates for y_{lag} are returned, to be used with the same y as provided.
+#    Each surrogate has the same dimensionality as y.
+#    """    
+
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def mask_finite_C(double[:, ::1] x):
     """ 
     mask=mask_finite(x) : build a mask corresponding to non-NaN values in the data x
