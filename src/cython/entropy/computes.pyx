@@ -304,8 +304,8 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 @cython.wraparound(False)
 def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
             int Theiler=0, int N_eff=0, int N_real=0, 
-            int N_surrogates, int k_perm=10,
-            int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1'), int do_sub_Gaussian=0):
+            int N_surrogates=0, int k_perm=10,
+            int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
     """           
     computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.
      
@@ -324,8 +324,6 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     :param k_perm: nb of neighbors to consider for generating the surrogates (default=10)
     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
-    :param do_sub_Gaussian: 0 for TE, or 1 for the difference TE-TE(Gaussian). In that case, 6 values are returned, in the following order: ``
-              TE, TE(Gaussian), TE-TE(Gaussian), std(TE), std(TE(Gaussian)), std(TE-TE(Gaussian))
                  
     :returns: two values (one per algorithm)
      
@@ -343,33 +341,25 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     if (N_eff==0):   N_eff =commons.samp_default.N_eff
     if (N_real==0):  N_real=commons.samp_default.N_real
 
-    if (N_surrogates>0): 
-        TE1_surrogates = PNP.zeros((nx, npts), dtype=float)
-        cdef double[:, :] z = zout
- 
-    if do_sub_Gaussian:
-        if (mask.size>1): raise ValueError("cannot use mask if do_sub_Gaussian")
-        if (k==-1):       raise ValueError("cannot use Gaussian estimate if do_sub_Gaussian")
+    if (N_surrogates>0):  
+        TE_surrogates = PNP.zeros((2, N_surrogates), dtype=float)
+#        commons.surrogates_local_perm(&x[0,0], &z[0,0], npts, dim_x, dim_z, k_perm, N_surrogates, &surrogates[0,0,0])
 
     if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")
             if (N_surrogates>0):  raise ValueError("you want surrogates, and using a mask; this is not implemented yet")
             ratou = computes.compute_transfer_entropy_ann_mask(&x[0,0], &y[0,0], &mask[0], 
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2)
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1, &TE2)
     else:
-            if do_sub_Gaussian:
-                if (N_surrogates>0): raise ValueError("you want surrogates, and simultaneous estimation of TE and Gaussian TE; this is not implemented yet")
-                ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1_all[0], &I2, do_sub_Gaussian)
-                return(TE1_all)
-            elif (k==-1):
+            if (k==-1): # Gaussian TE
                 ratou = computes.compute_transfer_entropy_Gaussian(&x[0,0], &y[0,0], 
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, &I1)
-                I2=PNP.nan
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, &TE1)
+                TE2=PNP.nan
+                
             else:
                 ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2, do_sub_Gaussian)
-    return [I1,I2]
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1, &TE2)
+    return [TE1,TE2]
 
 
 
