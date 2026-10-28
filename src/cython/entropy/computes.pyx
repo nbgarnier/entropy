@@ -304,6 +304,7 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 @cython.wraparound(False)
 def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
             int Theiler=0, int N_eff=0, int N_real=0, 
+            int N_surrogates, int k_perm=10,
             int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1'), int do_sub_Gaussian=0):
     """           
     computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.
@@ -319,6 +320,8 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     :param Theiler: Theiler scale (should be >= stride, but lower values are tolerated). If Theiler<0, then automatic Theiler is applied as described in function :any:`set_Theiler`.        
     :param N_eff: nb of points to consider in the statistics (default=4096) or -1 for largest possible value (legacy behavior)
     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
+    :param N_surrogates: nb of surrogates (created with a local permutation scheme) to generate and use (to estimate the bias) (default=0, no bias estimation)
+    :param k_perm: nb of neighbors to consider for generating the surrogates (default=10)
     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
     :param do_sub_Gaussian: 0 for TE, or 1 for the difference TE-TE(Gaussian). In that case, 6 values are returned, in the following order: ``
@@ -328,7 +331,7 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
      
     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
     """
-    cdef double I1=0, I2=0
+    cdef double TE1=0, TE2=0, tmp1, tmp2
     cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
     cdef int npts_mask=mask.size, ratou
     cdef CNP.ndarray[dtype=double, ndim=1] TE1_all = PNP.zeros(6, dtype='float')
@@ -339,6 +342,10 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     if (Theiler==0): Theiler=commons.samp_default.Theiler
     if (N_eff==0):   N_eff =commons.samp_default.N_eff
     if (N_real==0):  N_real=commons.samp_default.N_real
+
+    if (N_surrogates>0): 
+        TE1_surrogates = PNP.zeros((nx, npts), dtype=float)
+        cdef double[:, :] z = zout
  
     if do_sub_Gaussian:
         if (mask.size>1): raise ValueError("cannot use mask if do_sub_Gaussian")
@@ -346,10 +353,12 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 
     if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")
+            if (N_surrogates>0):  raise ValueError("you want surrogates, and using a mask; this is not implemented yet")
             ratou = computes.compute_transfer_entropy_ann_mask(&x[0,0], &y[0,0], &mask[0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &I1, &I2)
     else:
             if do_sub_Gaussian:
+                if (N_surrogates>0): raise ValueError("you want surrogates, and simultaneous estimation of TE and Gaussian TE; this is not implemented yet")
                 ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1_all[0], &I2, do_sub_Gaussian)
                 return(TE1_all)
@@ -401,8 +410,8 @@ def compute_PMI(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
      if (npts<dim_x):  raise ValueError("please transpose x")
      if (npty<dim_y):  raise ValueError("please transpose y")
      if (nptz<dim_z):  raise ValueError("please transpose z")          
-     if (npty!=npts):  raise ValueError("x and y do not have the same the same number of points in time")
-     if (nptz!=npts):  raise ValueError("x and z do not have the same the same number of points in time")
+     if (npty!=npts):  raise ValueError("x and y do not have the same number of points in time")
+     if (nptz!=npts):  raise ValueError("x and z do not have the same number of points in time")
      if (Theiler==0):  Theiler=commons.samp_default.Theiler
      if (N_eff==0):    N_eff =commons.samp_default.N_eff
      if (N_real==0):   N_real=commons.samp_default.N_real
@@ -410,7 +419,6 @@ def compute_PMI(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
      dim[0]   = dim_x;      dim[1]   = dim_y;      dim[2]   = dim_z;
      dim[3+0] = n_embed_x;  dim[3+1] = n_embed_y;  dim[3+2] = n_embed_z;
 
-      
 
      if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts):  raise ValueError("mask's size doesn't match data's shape")
@@ -468,8 +476,8 @@ def compute_PTE(double[:, ::1] x, double[:, ::1] y, double[:, ::1] z,
      if (npts<dim_x): raise ValueError("please transpose x")
      if (npty<dim_y): raise ValueError("please transpose y")
      if (nptz<dim_z): raise ValueError("please transpose z")        
-     if (npty!=npts): raise ValueError("x and y do not have the same the same number of points in time")
-     if (nptz!=npts): raise ValueError("x and z do not have the same the same number of points in time")
+     if (npty!=npts): raise ValueError("x and y do not have the same number of points in time")
+     if (nptz!=npts): raise ValueError("x and z do not have the same number of points in time")
      if (Theiler==0): Theiler=commons.samp_default.Theiler
      if (N_eff==0):   N_eff =commons.samp_default.N_eff
      if (N_real==0):  N_real=commons.samp_default.N_real
