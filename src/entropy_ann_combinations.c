@@ -38,6 +38,7 @@
 #include "nns_count.h"              // NBG counting functions (2019-01-23)
 #include "samplings.h"              // created 2021-12-17 (to factor some operations)
 #include "math_tools.h"
+#include "surrogates_PMI.h"         // for TE/PMI surrogates (local permutations)
 #include "entropy_ann.h"
 #include "entropy_ann_threads.h"
 #include "entropy_ann_combinations.h"
@@ -534,7 +535,7 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
 		last_npts_eff += last_npts_eff_local;
 
 	}
-    if (nb_errors!=0) return(printf("[compute_transfer_entropy_nd_ann] error, %d points were problematic\n", nb_errors));
+    if (nb_errors!=0) return(printf("[compute_transfer_entropy_ann] error, %d points were problematic\n", nb_errors));
 
     avg1 /= sp.N_real;  var1 /= sp.N_real;  var1 -= avg1*avg1;
 	avg2 /= sp.N_real;	var2 /= sp.N_real;  var2 -= avg2*avg2;
@@ -551,6 +552,115 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
     free_perm(perm_real);    free_perm(perm_pts);
 	return(nb_errors);
 } /* end of function "compute_transfer_entropy_ann" */
+
+
+
+/****************************************************************************************/
+/* same as above, but with a built-in estimation of bias with surrogates                */
+/* using local permutations, as defined by J. Runge                                     */
+/*                                                                                      */
+/* new parameters:                                                                      */
+/* N_surrogates : the nb of surrogates to create and use                                */
+/* k_perm       : the nb of points for the local permutations (python default=10)       */
+/*                                                                                      */
+/* new returned values:                                                                 */
+/* T1_bias      : (of size N_surrogates) the TE using surrogates (algo 1)               */
+/* T2_bias      : (of size N_surrogates) the TE using surrogates (algo 2)               */
+/* (T1_bias and T2_bias must be already allocated)                                      */
+/*                                                                                      */
+/* 2026-10-28 : forked from "compute_transfer_entropy_ann()" above                      */
+/****************************************************************************************/
+int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
+                            int N_surrogates, int k_perm,
+                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, double *T1_bias, double *T2_bias)
+{	register int j, i_surrogate, shift;
+    register int nn	= my*(py+1)+mx*px;   // dimension of the new variable
+    register int pp = (px>py) ? px : py; // who has the largest past ?
+	double *full_x_new, *surrogates;
+	double te1=0.0, te2=0.0, avg1=0.0, avg2=0.0, var1=0.0, var2=0.0;
+    int     N_real_max=0;
+    samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations};
+	gsl_permutation *perm_real, *perm_pts;
+
+    *T1=my_NAN; *T2=my_NAN;
+
+	if (lag<1)          return(printf("[compute_transfer_entropy_ann] : lag has to be equal or larger than 1.\n"));
+	if (stride<1)       return(printf("[compute_transfer_entropy_ann] : stride must be at least 1 !\n"));
+    if ((mx<1)||(my<1)) return(printf("[compute_transfer_entropy_ann] : mx and my must be larger than 1 !\n"));
+    if ((px<1)||(py<1)) return(printf("[compute_transfer_entropy_ann] : px and py must be larger than 1 !\n"));
+    if (k<1)            return(printf("[compute_transfer_entropy_ann] : k has to be equal or larger than 1.\n"));
+    
+	// additional checks and auto-adjustments of parameters:
+    N_real_max = set_sampling_parameters(nx-lag, pp, stride, &sp, "compute_transfer_entropy_ann");
+    if (N_real_max<1)     return(printf("[compute_transfer_entropy_ann] : aborting !\n"));
+    if (sp.N_eff < 2*k)   return(printf("[compute_transfer_entropy_ann] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
+
+    full_x_new  = (double*)calloc(          nn*sp.N_eff, sizeof(double));
+    surrogates  = (double*)calloc(N_surrogates*sp.N_eff, sizeof(double));
+	shift  = (pp-1)*stride;                             // present is shifted
+	
+	perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
+    perm_pts  = create_unity_perm(sp.N_eff_max);        // for random sampling
+    
+    nb_errors=0; last_npts_eff=0;
+    for (j=0; j<sp.N_real; j++)                         // loop over independant windows
+	{   if (sp.type>=3) shuffle_perm(perm_pts);
+
+        Theiler_embed(y+shift+lag+perm_real->data[j], nx, my,  1, stride, sp.Theiler, perm_pts->data, full_x_new,                      sp.N_eff);
+        Theiler_embed(y+shift+perm_real->data[j],     nx, my, py, stride, sp.Theiler, perm_pts->data, full_x_new+(      my *sp.N_eff), sp.N_eff);
+        Theiler_embed(x+shift+perm_real->data[j],     nx, mx, px, stride, sp.Theiler, perm_pts->data, full_x_new+(my*(py+1)*sp.N_eff), sp.N_eff);
+
+        // compute the TE between the (correctly embedded) signals:
+        if (USE_PTHREAD>0)  nb_errors += compute_partial_MI_direct_ann_threads(full_x_new, sp.N_eff, 
+                                            my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
+        else                nb_errors += compute_partial_MI_engine_ann        (full_x_new, sp.N_eff, 
+                                            my, mx*px, my*py, k, &te1, &te2);
+            
+        avg1 += te1;    var1 += te1*te1;
+		avg2 += te2;	var2 += te2*te2;
+		last_npts_eff += last_npts_eff_local;
+
+        // (new) generate appropriate surrogates and use them to compute the (bias of the) TE:
+        surrogates_local_perm_engine(full_x_new, sp.N_eff, 1, px, py, k_perm, N_surrogates, surrogates);
+
+        for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
+        {   // inject the surrogate (of future point at t+lag) into the full data:
+            memcpy(full_x_new, (surrogates + i_surrogate*sp.N_eff), sp.N_eff * sizeof(float));
+
+            // and re-compute the TE:
+            if (USE_PTHREAD>0)  nb_errors += compute_partial_MI_direct_ann_threads(full_x_new, sp.N_eff, 
+                                            my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
+            else                nb_errors += compute_partial_MI_engine_ann        (full_x_new, sp.N_eff, 
+                                            my, mx*px, my*py, k, &te1, &te2);
+            
+            T1_bias[i_surrogate] += te1;   
+		    T2_bias[i_surrogate] += te2;
+        }
+
+	}
+    if (nb_errors!=0) return(printf("[compute_transfer_entropy_ann_debias] error, %d points were problematic\n", nb_errors));
+
+    avg1 /= sp.N_real;  var1 /= sp.N_real;  var1 -= avg1*avg1;
+	avg2 /= sp.N_real;	var2 /= sp.N_real;  var2 -= avg2*avg2;
+
+    *T1 = avg1;         
+	*T2 = avg2;         
+    last_std  = sqrt(var1); last_std2 = sqrt(var2);
+	
+    // the bias will be given by the average of T1_bias (and/or of T2_bias), which we return:
+    for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
+    {   T1_bias[i_surrogate] /= sp.N_real;
+        T2_bias[i_surrogate] /= sp.N_real;
+    }
+
+    nb_errors_total += nb_errors;
+    last_samp=sp;
+    
+    free(full_x_new);
+
+    free_perm(perm_real);    free_perm(perm_pts);
+	return(nb_errors);
+} /* end of function "compute_transfer_entropy_ann_debias" */
 
 
 

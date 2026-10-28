@@ -303,8 +303,8 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, 
-            int Theiler=0, int N_eff=0, int N_real=0, 
             int N_surrogates=0, int k_perm=10,
+            int Theiler=0, int N_eff=0, int N_real=0,
             int lag=1, int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
     """           
     computes the transfer entropy TE(x->y) (influence of x over y) of two n-d vectors x and y using nearest neighbors search with ANN library.

@@ -62,7 +62,10 @@ int is_in_set(int i, int *set, int npts)
  *
  * parameters:
  * -> for the _engine() function (the first one below):
- * x      contains all the data, which is of size (m+p+q)*npts, that is, huge
+ * x      contains all the data, which is of size (m+p+q)*npts, ordered like this :										
+ * 			x1(t=1)...x1(t=nx-1) x2(t=0) ... x2(t=nx-2) ... xn(t=0) ... xn(t=nx-2)
+ * 			components of X are first, and then are components of conditioning variable Z,
+ * 			and then are components of second variable Y                                     
  * p      is the dimension of y (can be 0 if not used, as Y is indeed useless)
  * -> for the regalar (exposed) function (the second one below):
  * x,z  contain all the X and Z data, which are respectively of size (m*npts) and (q*npts)
@@ -74,13 +77,13 @@ int is_in_set(int i, int *set, int npts)
  * N_surrogates is the number of different surrogates to generate 
  * (because of the use of a k-d tree, it is much more efficient to generate all surrogates in one call)
  *
- * for the _engine() function (the first one below), data in x is ordered like this :										
- * x1(t=1)...x1(t=nx-1) x2(t=0) ... x2(t=nx-2) ... xn(t=0) ... xn(t=nx-2)
- * components of X are first, and then are components of conditioning variable Z,
- * and then are components of second variable Y                                         
- *
- * these function uses subfunction(s) :								
- *	- ANN_get_nearest_neighbors (new function in ANN_wrapper.cpp 2026-10-27)							
+ * returns:     
+ * surrogates : a pointer to the set of surrogates for the variable x only (only x is permuted)
+ * 		   so the size of surrogates is (N_surrogates * m * npts)
+ * 
+ * these function uses subfunction(s) :			
+ *  - is_in_set()					(above in the present file)	
+ *	- ANN_get_nearest_neighbors()   (new function in ANN_wrapper.cpp 2026-10-27)							
  *
  *											
  * 2026-10-27 : new file, new functions
@@ -141,9 +144,7 @@ int surrogates_local_perm_engine(double *x, int npts, int m, int p, int q, int k
 
 			// we use the indice j:
 			for (d=0; d<m; d++)			// copy full x_j vector (size m) (at indice j)
-				surrogates[i_permed +d*npts] = x[j +d*npts];
-			for (d=m; d<n; d++)			// copy other dimensions (Y and Z) (if required, undecided yet)
-				surrogates[i_permed +d*npts] = x[i_permed +d*npts];		// (they are unchanged)
+				(surrogates + i_surrogate*m*npts)[i_permed +d*npts] = x[j +d*npts];
 			// and record it as used:
 			used_ind[n_used] = j;
 			n_used++;
@@ -209,7 +210,7 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
 
 			// we use the indice j:
 			for (d=0; d<m; d++)			// copy full x_j vector (size m) (at indice j)
-				surrogates[i_permed +d*npts] = x[j +d*npts];
+				(surrogates + i_surrogate*m*npts)[i_permed +d*npts] = x[j +d*npts];
 			// and record it as used:
 			used_ind[n_used] = j;
 			n_used++;
