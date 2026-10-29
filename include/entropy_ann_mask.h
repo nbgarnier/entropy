@@ -25,9 +25,10 @@ int compute_entropy_rate_ann_mask      (double *x, char *mask, int npts, int m, 
 int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride,
                             int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2);
 
-/* functions to compute transfer entropy	*/
+/* functions to compute transfer entropy	*/                          // uses PMI
 int compute_transfer_entropy_ann_mask  (double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, int lag, 
-                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2); // uses PMI
+                            int N_surrogates, int k_perm,
+                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, double *TE_bias); 
 
 /* functions to compute partial transfer entropy */
 int compute_partial_TE_ann_mask        (double *x, double *y, double *z, char *mask, int nx, int *dim, int stride, int lag, 

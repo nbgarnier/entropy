@@ -13,9 +13,6 @@
 /* low level utility function to test if i is in set                        */
 int is_in_set(int i, int *set, int npts);
 
-/* low-level function to generate surrogates for partial mutual information	*/
-int surrogates_local_perm_engine(double *x, int nx, int m, int q, int k_perm, int N_surrogates, double *surrogates);
-
 /* exposed function to generate surrogates for partial mutual information	*/
 int surrogates_local_perm(double *x, double *z, int nx, int m, int q, int k_perm, int N_surrogates, double *surrogates);
 

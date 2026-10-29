@@ -61,7 +61,8 @@ cdef extern from "entropy_Gaussian_combinations.h":
 				int tau_Theiler, int N_eff, int N_realizations, double *I1)
 	
 	int compute_transfer_entropy_Gaussian(double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
-				int tau_Theiler, int N_eff, int N_realizations, double *T1)
+				int N_surrogates, int k_perm,
+				int tau_Theiler, int N_eff, int N_realizations, double *T1, double *TE_bias)
 
 	int compute_directed_information_Gaussian(double *x, double *y, int nx, int mx, int my, int N, int stride, 
 				int tau_Theiler, int N_eff, int N_realizations, double *I1)
@@ -72,27 +73,28 @@ cdef extern from "entropy_ann_2d.h":
 
 cdef extern from "entropy_ann_mask.h":
 	int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int stride, 
-				int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S);
+				int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
 
 	int compute_Renyi_ann_mask  (double *x, char *mask, int npts, int m, int p, int stride, double q, 
-				int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S);
+				int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
 
 	int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p, int stride, 
 				int tau_Theiler, int N_eff, int N_realizations, int k, int method, double *S)
 
 	int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, 
-				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2);
+				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
 
 	int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, int lag, 
-				int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2);
+				int N_surrogates, int k_perm,
+				int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, double *TE_bias)
 
 	int compute_partial_TE_ann_mask     (double *x, double *y, double *z, char *mask, int nx, int *dim, int stride, int lag, 
-				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2);
+				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
 
 	int compute_partial_MI_ann_mask     (double *x, double *y, double *z, char *mask, int nx, int *dim, int stride, 
-				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2);
+				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
 
 	int compute_directed_information_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int N, int stride, 
-				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2);
+				int tau_Theiler, int N_eff, int N_realizations, int k, double *I1, double *I2)
 
 

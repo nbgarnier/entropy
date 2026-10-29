@@ -324,19 +324,21 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     :param N_surrogates: nb of surrogates (created with a local permutation scheme) to generate and use (to estimate the bias) (default=0, no bias estimation)
     :param k_perm: nb of neighbors to consider for generating the surrogates (default=10)
     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
+    :type k: int(, optional)
     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
                  
-    :returns: two values (one per algorithm). 
-            and a (2, N_surrogates) nd-array of TE values computed with surrogates iif N_surrogates>0
+    :returns: two values (one per algorithm),
+            (and a (2, N_surrogates) nd-array of TE values computed with surrogates iif N_surrogates>0).
 
-    example:
-        TE1 = compute_TE(x, y, lag=lag)[0]                      
-        print("TE :", TE1)                                      // TE value (for algorithm 1 (default))
-        TE, TE_bias = compute_TE(x, y, lag=lag, N_surrogates=10)
-        print("TE :", TE[0], "with bias", np.mean(TE_bias[0]))  // print TE and bias (for algorithm 1)
-     
-    see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
-    see function :any:`choose_algorithm` to select which algorithm is used (default algo 1)
+    example
+    _______
+    | TE1 = compute_TE(x, y, lag=lag)[0]                      
+    | print("TE :", TE1)                                      # TE value (for algorithm 1 (default))
+    | TE, TE_bias = compute_TE(x, y, lag=lag, N_surrogates=10)
+    | print("TE :", TE[0], "with bias", np.mean(TE_bias[0]))  # print TE and bias (for algorithm 1)
+    
+    | see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+    | see function :any:`choose_algorithm` to select which algorithm is used (default algo 1)
     """
     cdef double TE1=0, TE2=0, tmp1, tmp2
     cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
@@ -355,15 +357,15 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     
     if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")
-            if (N_surrogates>0):  raise ValueError("you want surrogates, and using a mask; this is not implemented yet")
             ratou = computes.compute_transfer_entropy_ann_mask(&x[0,0], &y[0,0], &mask[0], 
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, k, &TE1, &TE2)
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, N_surrogates, k_perm, Theiler, N_eff, N_real, k, &TE1, &TE2, &TE_bias[0,0])
+            if (N_surrogates>0): return [TE1,TE2], TE_bias
     else:
             if (k==-1): # Gaussian TE
-                if (N_surrogates>0):  raise ValueError("you want surrogates, and Gaussian TE; this is not implemented yet")
                 ratou = computes.compute_transfer_entropy_Gaussian(&x[0,0], &y[0,0], 
-                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, Theiler, N_eff, N_real, &TE1)
+                                    npts, nx, ny, n_embed_x, n_embed_y, stride, lag, N_surrogates, k_perm, Theiler, N_eff, N_real, &TE1, &TE_bias[0,0])
                 TE2=PNP.nan
+                if (N_surrogates>0): return [TE1,TE2], TE_bias
                 
             else:
                 if (N_surrogates>0):

@@ -34,7 +34,8 @@ int compute_regularity_index_Gaussian    (double *x, int npts, int mx, int px, i
 
 // transfer entropy (using PMI):
 int compute_transfer_entropy_Gaussian    (double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
-                            int tau_Theiler, int N_eff, int N_realizations, double *T1);
+                            int N_surrogates, int k_perm,
+                            int tau_Theiler, int N_eff, int N_realizations, double *T1, double *TE_bias);
 
 // directed information (using PMI):
 int compute_directed_information_Gaussian(double *x, double *y, int nx, int mx, int my, int N, int stride, 

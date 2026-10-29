@@ -16,7 +16,7 @@
  */
 
 #include <math.h>                        // for fabs
-// #include <string.h>                      // fior memcpy
+#include <string.h>                      // for memcpy
 #include <gsl/gsl_statistics_double.h>   // for std of intermediate (pre-processed) data
 
 #include "library_commons.h"             // for definition of nb_errors, and stds
@@ -26,6 +26,7 @@
 #include "entropy_ann_mask.h"
 #include "mask.h"                        // for basic masking functions
 #include "samplings.h"                   // for sub-sampling functions
+#include "surrogates_PMI.h"              // for TE/PMI surrogates (local permutations)
 #include "entropy_ann_single_entropy.h"  // for "engine" function for Shannon entropy
 #include "entropy_ann_single_RE.h"       // for "engine" function for relative entropy
 #include "entropy_ann_single_MI.h"       // for "engine" function for MI 
@@ -708,12 +709,13 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
  * 2026-07-14 : now with Gaussian estimates                                             
  *************************************************************************************/
 int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, int lag, 
-                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2)
-{	register int i, j;
+                            int N_surrogates, int k_perm,
+                            int tau_Theiler, int N_eff, int N_realizations, int k, double *T1, double *T2, double *TE_bias)
+{	register int i, j, i_surrogate;
     register int nn	= my*(py+1)+mx*px;   // dimension of the new variable
     register int pp = (px>py) ? px : py; // largest past (largest embedding dimension)
 	int     N_real_max=0, npts_good;	
-	double  *x_new;
+	double  *full_x_new, *surrogates;
 	double  te1=0.0, te2=0.0, avg1=0.0, avg2=0.0, var1=0.0, var2=0.0;
     int     *ind_epoch;
     size_t  *ind_shuffled=NULL;
@@ -739,7 +741,8 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
     {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
         return(print_error("compute_transfer_entropy_ann_mask", message));
     }
-    x_new  = (double*)calloc(nn*sp.N_eff, sizeof(double));
+    full_x_new  = (double*)calloc(             nn*sp.N_eff, sizeof(double));
+    surrogates  = (double*)calloc(N_surrogates*my*sp.N_eff, sizeof(double));
 
     nb_errors=0; last_npts_eff=0;
     for (j=0; j<sp.N_real; j++)         // loop over independant windows (independant !!! cf Theiler !!!)
@@ -755,9 +758,9 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
         
         // note: in the calls below, the shift must not include (p-1)*stride, because it is already
         // accounted for in the indices in 'ind_shuffled'
-        Theiler_embed_mask(y+j+lag, npts, my,  1, stride, ind_shuffled, x_new,                    sp.N_eff);
-        Theiler_embed_mask(y+j,     npts, my, py, stride, ind_shuffled, x_new+my*sp.N_eff,        sp.N_eff);
-        Theiler_embed_mask(x+j,     npts, mx, px, stride, ind_shuffled, x_new+my*(py+1)*sp.N_eff, sp.N_eff);
+        Theiler_embed_mask(y+j+lag, npts, my,  1, stride, ind_shuffled, full_x_new,                    sp.N_eff);
+        Theiler_embed_mask(y+j,     npts, my, py, stride, ind_shuffled, full_x_new+my*sp.N_eff,        sp.N_eff);
+        Theiler_embed_mask(x+j,     npts, mx, px, stride, ind_shuffled, full_x_new+my*(py+1)*sp.N_eff, sp.N_eff);
        
 /*        for (i=0; i<nx_new; i++)        // loop on time over acceptable points for the current window
         {   for (d=0; d<mx; d++)        // loop over dimensions in x (future point)
@@ -772,13 +775,13 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
 */
         if (k>=1)   // k-nn estimate
         {   if (USE_PTHREAD>0)  // if we want multithreading
-                nb_errors += compute_partial_MI_direct_ann_threads(x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
+                nb_errors += compute_partial_MI_direct_ann_threads(full_x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
             else                // single threaded algorithms:
-                nb_errors += compute_partial_MI_engine_ann        (x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2);
+                nb_errors += compute_partial_MI_engine_ann        (full_x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2);
         }
         else        // Gaussian estimate
         {
-                te1        = compute_partial_MI_engine_Gaussian   (x_new, sp.N_eff, my, mx*px, my*py);
+                te1        = compute_partial_MI_engine_Gaussian   (full_x_new, sp.N_eff, my, mx*px, my*py);
         }
         
         avg1 += te1;    var1 += te1*te1;
@@ -789,6 +792,27 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
         free(ind_epoch);
         free(ind_shuffled);
         free_perm(perm_pts);
+
+
+        // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE:
+        surrogates_local_perm(full_x_new, full_x_new+(my*sp.N_eff), sp.N_eff, my, my*py, k_perm, N_surrogates, surrogates);
+
+        for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
+        {   // inject the surrogate (of future point at t+lag) into the full data:
+            memcpy(full_x_new, (surrogates + i_surrogate*my*sp.N_eff), my*sp.N_eff * sizeof(double));
+            // and re-compute the TE:
+            if (k>=1)   // k-nn estimate
+            {   if (USE_PTHREAD>0)  
+                        nb_errors += compute_partial_MI_direct_ann_threads(full_x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
+                else    nb_errors += compute_partial_MI_engine_ann        (full_x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2);
+            }
+            else        // Gaussian estimate
+            {           te1        = compute_partial_MI_engine_Gaussian   (full_x_new, sp.N_eff, my, mx*px, my*py);
+            }
+            TE_bias[i_surrogate] += te1;   
+		    TE_bias[i_surrogate+N_surrogates] += te2;
+        }
+
     } // loop on j
     
     avg1 /= sp.N_real;  var1 /= sp.N_real;  var1 -= avg1*avg1;
@@ -796,10 +820,13 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
 	*T1 = avg1;         last_std  = sqrt(var1);
 	*T2 = avg2;         last_std2 = sqrt(var2);
 
+    // the bias will be given by the average of T1_bias (and/or of T2_bias), which we return:
+    for (i_surrogate=0; i_surrogate<2*N_surrogates; i_surrogate++)  TE_bias[i_surrogate] /= sp.N_real;
+
     nb_errors_total += nb_errors;	
 	last_samp=sp;
 
-	free(x_new);
+	free(full_x_new);   free(surrogates);
 	return(nb_errors);
 } /* end of function "compute_transfer_entropy_ann_mask" */
 

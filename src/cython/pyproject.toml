@@ -6,14 +6,15 @@ requires = ["setuptools", "wheel", "Cython", "numpy"]  # PEP 508 specifications.
 
 [project]
 name = "entropy"
-version = "2026.10.28" 
+version = "2026.10.29" 
 description = "Information Theory tools and entropies for multi-scale analysis of continuous signals"
 # readme = "README.rst"
 authors = [{name = "Nicolas B. Garnier", email = "nicolas.garnier@ens-lyon.fr"}]
 maintainers = [{name = "Nicolas B. Garnier", email = "nicolas.garnier@ens-lyon.fr"}]
 requires-python = ">=3.7"
 keywords = ["entropy", "Shannon", "continuous entropy", "information theory"]
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
+#license-files = ["LICENSE"]
 classifiers = [
     "Development Status :: 2 - Beta",
     "Programming Language :: Python :: 3"]
