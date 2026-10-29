@@ -326,16 +326,24 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
                  
-    :returns: two values (one per algorithm)
+    :returns: two values (one per algorithm). 
+            and a (2, N_surrogates) nd-array of TE values computed with surrogates iif N_surrogates>0
+
+    example:
+        TE1 = compute_TE(x, y, lag=lag)[0]                      
+        print("TE :", TE1)                                      // TE value (for algorithm 1 (default))
+        TE, TE_bias = compute_TE(x, y, lag=lag, N_surrogates=10)
+        print("TE :", TE[0], "with bias", np.mean(TE_bias[0]))  // print TE and bias (for algorithm 1)
      
     see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
+    see function :any:`choose_algorithm` to select which algorithm is used (default algo 1)
     """
     cdef double TE1=0, TE2=0, tmp1, tmp2
     cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]
     cdef int npts_mask=mask.size, ratou
     cdef CNP.ndarray[dtype=double, ndim=1] TE1_all = PNP.zeros(6, dtype='float')
 
-    TE_surrogates = PNP.zeros((2, N_surrogates), dtype=float)
+    TE_surrogates = PNP.zeros((2, N_surrogates if N_surrogates>0 else 0), dtype=float)
     cdef double[:, :] TE_bias = TE_surrogates
 
     if (npts<nx):    raise ValueError("please transpose x")
@@ -344,8 +352,6 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     if (Theiler==0): Theiler=commons.samp_default.Theiler
     if (N_eff==0):   N_eff =commons.samp_default.N_eff
     if (N_real==0):  N_real=commons.samp_default.N_real
-    if ((N_surrogates>0) and (N_real>1)):
-                    print("[info] you want to use surrogates, and more than 1 realization; this is OK.")
     
     if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")

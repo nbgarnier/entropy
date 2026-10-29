@@ -319,6 +319,8 @@ double ANN_find_distance_in_tree1(int i, int n, int k, int core) // 2021-12-01: 
 /* (returned) : distance of the k-nn from x                                            */
 /*                                                                                     */
 /* 2019-01-22 - first version                                                          */
+/* 2026-10-29 - added parameter "core" as 6th parameter of kdTree->annkSearch          */
+/*              (not sure if it was missing or not)                                    */
 /***************************************************************************************/
 double ANN_find_distance_ex(double *x, int n, int k, int core)
 {   UNUSED(n);
@@ -326,11 +328,12 @@ double ANN_find_distance_ex(double *x, int n, int k, int core)
     /* composantes du point central : */
     //for (d=0; d<n; d++) queryPt[d] = x[d];
     
-    kdTree->annkSearch(x, // queryPt,            // query point
+    kdTree->annkSearch(x, // queryPt,           // query point
                        k+ANN_ALLOW_SELF_MATCH,  // number of near neighbors (including or excluding central point)
-                       nnIdx[core],                // nearest neighbors (returned)
-                       dists[core],                // distance (returned)
-                       ANN_eps);
+                       nnIdx[core],             // nearest neighbors (returned)
+                       dists[core],             // distance (returned)
+                       ANN_eps,
+                       core);                   // added 2026/10/29 (untested, was it a bug?)
 
     return((double)dists[core][k-1+ANN_ALLOW_SELF_MATCH]); // distance from central point
 } /* end of function "ANN_find_distance_ex" ****************************************/
@@ -350,12 +353,22 @@ double ANN_find_distance_ex(double *x, int n, int k, int core)
  * 2026-10-27 : first version
  *************************************************************************************/
 void ANN_get_nearest_neighbors(double *x0, int k, int *inds, int core)
-{   kdTree->annkSearch(x0,                          // query point
-                       k-1+ANN_ALLOW_SELF_MATCH,    // number of near neighbors (including or excluding central point)
-                       inds+(1-ANN_ALLOW_SELF_MATCH), // nearest neighbors (returned) 
+{   kdTree->annkSearch(x0,                              // query point
+                       k-1+ANN_ALLOW_SELF_MATCH,        // number of near neighbors (including or excluding central point)
+                       inds+(1-ANN_ALLOW_SELF_MATCH),   // nnIdx[core], // nearest neighbors (returned) 
                                 // is the central point returned? if not, we have to get it too (done outside)
                        dists[core],                 // distance (returned, useless)
-                       ANN_eps);                 
+                       ANN_eps,
+                       core);   
+//    std::cout << "\t\t[ANN_get_nearest_neighbors] with k=" << k+ANN_ALLOW_SELF_MATCH << "\n";
+//    std::cout << "\t\tnnIdx = [ ";
+//        for (int q=0; q<k+ANN_ALLOW_SELF_MATCH; q++) std::cout << nnIdx[core][q] << " ";
+//        std::cout << "]\n\t\tdists = [ ";
+//        for (int q=0; q<k+ANN_ALLOW_SELF_MATCH; q++) std::cout << dists[core][q] << " ";
+//        std::cout << "]\n";
+// where to put the indices:
+//   inds+(1-ANN_ALLOW_SELF_MATCH)
+//    memcpy(inds+(1-ANN_ALLOW_SELF_MATCH), nnIdx[core], (k-1+ANN_ALLOW_SELF_MATCH) * sizeof(int));
 }
 
 

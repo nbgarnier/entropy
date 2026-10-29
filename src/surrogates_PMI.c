@@ -32,6 +32,7 @@
 /* to test if an indice (i) is in a set (set) of maximal size (npts)		*/
 /* 																			*/
 /* 2026/10/28 : new function												*/
+/* 2026/10/29 : can be inline?												*/
 /****************************************************************************/
 int is_in_set(int i, int *set, int npts)
 {	register int j=0, in_set=0;
@@ -79,7 +80,7 @@ int is_in_set(int i, int *set, int npts)
  *
  * returns:     
  * surrogates : a pointer to the set of surrogates for the variable x only (only x is permuted)
- * 		   so the size of surrogates is (N_surrogates * m * npts)
+ * 		   so the size of surrogates is (N_surrogates * m * npts) (must be already allocated!)
  * 
  * these function uses subfunction(s) :			
  *  - is_in_set()					(above in the present file)	
@@ -87,21 +88,22 @@ int is_in_set(int i, int *set, int npts)
  *
  *											
  * 2026-10-27 : new file, new functions
+ * 2026-10-29 : removed parameter 'p', as it is useless
  ***************************************************************************************/
-int surrogates_local_perm_engine(double *x, int npts, int m, int p, int q, int k_perm, int N_surrogates, double *surrogates)
+int surrogates_local_perm_engine(double *x, int npts, int m, /*int p,*/ int q, int k_perm, int N_surrogates, double *surrogates)
 {	gsl_permutation *perm; 	// we need a permutation to ensure it is not always the the same i that takes priority over other indices
 	register int d, i, j, k, i_surrogate, i_permed;
     double	*z;  
 	double  zi[q]; 
 	int     used_ind[npts], n_used;
 	int     *neighbors;     // to store the indices of neighbors of each central points
-	int     n = m+p+q;      // total dimensionality of data. Note that Y can be completely omitted (so p=0) at no risk, 
+//	int     n = m+p+q;      // total dimensionality of data. Note that Y can be completely omitted (so p=0) at no risk, 
 							// but Y can also be provided (to keep compatibility with the call to compute_PMI_xxx() functions)
     
 	init_surrogates_rng();	// if this hasn't been done already
 	perm = gsl_permutation_alloc(npts);
         
-	if (n<2) return(printf("[surrogates_local_perm] : not enough dimensions in data (at least 2 required for X and Z)\n"));
+	if (m+q<2) return(printf("[surrogates_local_perm] : not enough dimensions in data (at least 2 required for X and Z)\n"));
 	
     /* we allocate memory */
     neighbors = (int*)calloc(npts*k_perm, sizeof(int));
@@ -109,20 +111,24 @@ int surrogates_local_perm_engine(double *x, int npts, int m, int p, int q, int k
     z = x + m*npts; 				// the conditionning variable is the second one, after X, and before Y
     init_ANN(npts, q, k_perm, SINGLE_TH);
     create_kd_tree(z, npts, q);  	// Z tree only
-            
+    
     // search and store neighbors (in Z) of each point:
     for (i=0; i<npts; i++)
 	{   for (d=0; d<q; d++) zi[d] = z[d*npts + i];	// coordinates of z (central point)
 	    (neighbors+k_perm*i)[0] = i;       			// the first (nearest) neighbor is the central point itself
-	    ANN_get_nearest_neighbors(zi, k_perm, neighbors+k_perm*i, SINGLE_TH);
-	    // the other nearest neighbors are returned by the function above (new 2026-10-27)
-	}
+	    ANN_get_nearest_neighbors(zi, k_perm, neighbors+k_perm*i, 0);	
+													// the other nearest neighbors are returned by the function above (new 2026-10-27)
+//		printf("\t[surrogates_local_perm_engine]\t found %d neighbors of point %d : [", k_perm, i);
+//		for (j=0; j<k_perm; j++) printf("%d, ", (neighbors+k_perm*i)[j]);
+//		printf("]\n");
+	}	
 	free_ANN(SINGLE_TH);
 	
     nb_errors_local=0;
 	
 	for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
-    {   for (i=0; i<npts; i++) 
+    {   // printf("\t[surrogates_local_perm_engine] surrogate %d\n", i_surrogate);
+		for (i=0; i<npts; i++) 
 		{	used_ind[i]=-1;   			// 0 is a valid index value, whereas -1 is not
 			gsl_ran_shuffle(surrogates_rng, neighbors+k_perm*i, (size_t)k_perm, sizeof(int));
 		}
@@ -180,7 +186,7 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
     for (i=0; i<npts; i++)
 	{   for (d=0; d<q; d++) zi[d] = z[d*npts + i];	// coordinates of z (central point)
 	    (neighbors+k_perm*i)[0] = i;        		// the first (nearest) neighbor is the central point itself
-	    ANN_get_nearest_neighbors(zi, k_perm, neighbors+k_perm*i, SINGLE_TH);
+	    ANN_get_nearest_neighbors(zi, k_perm, neighbors+k_perm*i, 0);
 	    // the other nearest neighbors are returned by the function above (new 2026-10-27)
 	}
 	free_ANN(SINGLE_TH);
