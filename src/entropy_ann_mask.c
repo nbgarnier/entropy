@@ -706,7 +706,11 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
  * 2021-12-15 : pthreads
  * 2023-02-23 : now TE(X->Y) (1st -> 2nd argument) instead of the opposite
  * 2023-12-01 : bug correction (same as in MI)
- * 2026-07-14 : now with Gaussian estimates                                             
+ * 2026-07-14 : now with Gaussian estimates                   
+ * 2026-10-29 : added internal surrogates generation (local permutation scheme)
+ *              -> 2 new input parameters (N_surrogates and k_perm),
+ *              -> one more returned pointer (TE_bias)
+ * 2026-10-30 : error correction (exchanged y_lag and x_t)                          
  *************************************************************************************/
 int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, int lag, 
                             int N_surrogates, int k_perm,
@@ -741,8 +745,8 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
     {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
         return(print_error("compute_transfer_entropy_ann_mask", message));
     }
-    full_x_new  = (double*)calloc(             nn*sp.N_eff, sizeof(double));
-    surrogates  = (double*)calloc(N_surrogates*my*sp.N_eff, sizeof(double));
+    full_x_new  = (double*)calloc(                nn*sp.N_eff, sizeof(double));
+    surrogates  = (double*)calloc(N_surrogates*mx*px*sp.N_eff, sizeof(double));    // 2026-10-30 correction
 
     nb_errors=0; last_npts_eff=0;
     for (j=0; j<sp.N_real; j++)         // loop over independant windows (independant !!! cf Theiler !!!)
@@ -794,12 +798,12 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
         free_perm(perm_pts);
 
 
-        // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE:
-        surrogates_local_perm(full_x_new, full_x_new+(my*sp.N_eff), sp.N_eff, my, my*py, k_perm, N_surrogates, surrogates);
+        // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE: // 2026-10-30 correction
+        surrogates_local_perm(full_x_new+(my*(py+1)*sp.N_eff), full_x_new+(my*sp.N_eff), sp.N_eff, mx*px, my*py, k_perm, N_surrogates, surrogates);
 
         for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
         {   // inject the surrogate (of future point at t+lag) into the full data:
-            memcpy(full_x_new, (surrogates + i_surrogate*my*sp.N_eff), my*sp.N_eff * sizeof(double));
+            memcpy(full_x_new+(my*(py+1)*sp.N_eff), (surrogates + i_surrogate*mx*px*sp.N_eff), mx*px*sp.N_eff * sizeof(double)); // 2026-10-30 correction
             // and re-compute the TE:
             if (k>=1)   // k-nn estimate
             {   if (USE_PTHREAD>0)  

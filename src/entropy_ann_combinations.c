@@ -568,6 +568,7 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
 /*                (TE_bias must be already allocated)                                   */
 /*                                                                                      */
 /* 2026-10-28 : forked from "compute_transfer_entropy_ann()" above                      */
+/* 2026-10-30 : corrected an error (surrogates should be of y_t and not of x_lag)       */
 /****************************************************************************************/
 int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
                             int N_surrogates, int k_perm,
@@ -594,8 +595,8 @@ int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, in
     if (N_real_max<1)     return(printf("[compute_transfer_entropy_ann] : aborting !\n"));
     if (sp.N_eff < 2*k)   return(printf("[compute_transfer_entropy_ann] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
 
-    full_x_new  = (double*)calloc(             nn*sp.N_eff, sizeof(double));
-    surrogates  = (double*)calloc(N_surrogates*my*sp.N_eff, sizeof(double));
+    full_x_new  = (double*)calloc(                nn*sp.N_eff, sizeof(double));
+    surrogates  = (double*)calloc(N_surrogates*mx*px*sp.N_eff, sizeof(double)); // 2026-10-30 correction
 	shift  = (pp-1)*stride;                             // present is shifted
 	
 	perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
@@ -619,13 +620,13 @@ int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, in
 		avg2 += te2;	var2 += te2*te2;
 		last_npts_eff += last_npts_eff_local;
 
-        // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE:
-        surrogates_local_perm(full_x_new, full_x_new+(my*sp.N_eff), sp.N_eff, my, my*py, k_perm, N_surrogates, surrogates);
+        // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE: 
+        surrogates_local_perm(full_x_new+(my*(py+1)*sp.N_eff), full_x_new+(my*sp.N_eff), sp.N_eff, mx*px, my*py, k_perm, N_surrogates, surrogates); // 2026-10-30 correction
 //        printf("\t[compute_transfer_entropy_ann_debias] surrogates generated\n");
 
         for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
         {   // inject the surrogate (of future point at t+lag) into the full data:
-            memcpy(full_x_new, (surrogates + i_surrogate*my*sp.N_eff), my*sp.N_eff * sizeof(double));
+            memcpy(full_x_new+(my*(py+1)*sp.N_eff), (surrogates + i_surrogate*mx*px*sp.N_eff), mx*px*sp.N_eff * sizeof(double));    // 2026-10-30 correction
 
 //            printf("\t[compute_transfer_entropy_ann_debias] ready to compute TE of surrogate %d/%d\n", i_surrogate, N_surrogates);
             // and re-compute the TE:

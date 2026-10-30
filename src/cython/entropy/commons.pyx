@@ -430,12 +430,12 @@ cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int 
     creates a set of surrogates to be used for PMI PMI(X,Y|Z) estimation
     
     :param x,y,z: signals 
-    :type x,y,z: NumPy 2d-arrays, time along second dimension)
+    :type x,y,z: NumPy 2d-arrays, time along second dimension
     :param k_perm: the nb of neighbors to consider for a local permutation (default 5)
     :type k_perm: int.
     :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
     :type N_surrogates: int.
-    :returns: an nd-array of surrogates for x (each with the same dimmensionality as the input data x)
+    :returns: an 3d-array of shape (N_surrogates, x.shape[0], x.shape[1]) containing surrogates of x 
 
     To generate the best possible surrogate x^* for PMI(x,y|z), it is required to provided x and z (y is not used). 
     Only surrogates for x are returned, to be used with the same (y,z) as provided.

@@ -331,6 +331,10 @@ int compute_regularity_index_Gaussian(double *x, int npts, int mx, int px, int s
  * 2023-02-23 : now TE(X->Y) (1st -> 2nd argument) instead of the opposite 
  * 2026-10-29 : new parameters N_surrogates and k_perm for bias estimation
  * 2026-10-29 : added (forgotten?) shuffle_perm(perm_pts) in the loop on j
+ * 2026-10-29 : added internal surrogates generation
+ *              -> 2 new input parameters (N_surrogates and k_perm),
+ *              -> one more returned pointer (TE_bias)
+ * 2026-10-30 : error correction (exchanged y_lag and x_t)
  *************************************************************************************/
 int compute_transfer_entropy_Gaussian(double *x, double *y, int nx, int mx, int my, int px, int py, int stride, int lag, 
                             int N_surrogates, int k_perm,
@@ -355,8 +359,8 @@ int compute_transfer_entropy_Gaussian(double *x, double *y, int nx, int mx, int 
     N_real_max = set_sampling_parameters(nx-lag, pp, stride, &sp, "compute_transfer_entropy_Gaussian");
     if (N_real_max<1)     return(printf("[compute_transfer_entropy_Gaussian] : aborting !\n"));
     
-    x_new       = (double*)calloc(             nn*sp.N_eff, sizeof(double));
-    surrogates  = (double*)calloc(N_surrogates*my*sp.N_eff, sizeof(double));
+    x_new       = (double*)calloc(                nn*sp.N_eff, sizeof(double));
+    surrogates  = (double*)calloc(N_surrogates*mx*px*sp.N_eff, sizeof(double)); // 2026-10-30 correction
 	shift       = (pp-1)*stride;   // present is shifted
 	
 	perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
@@ -376,11 +380,11 @@ int compute_transfer_entropy_Gaussian(double *x, double *y, int nx, int mx, int 
 		last_npts_eff += last_npts_eff_local;
 
         // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE:
-        surrogates_local_perm(x_new, x_new+(my*sp.N_eff), sp.N_eff, my, my*py, k_perm, N_surrogates, surrogates);
+        surrogates_local_perm(x_new+(my*(py+1)*sp.N_eff), x_new+(my*sp.N_eff), sp.N_eff, mx*px, my*py, k_perm, N_surrogates, surrogates); // 2026-10-30 correction
 
         for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
         {   // inject the surrogate (of future point at t+lag) into the full data:
-            memcpy(x_new, (surrogates + i_surrogate*my*sp.N_eff), my*sp.N_eff * sizeof(double));
+            memcpy(x_new+(my*(py+1)*sp.N_eff), (surrogates + i_surrogate*mx*px*sp.N_eff), mx*px*sp.N_eff * sizeof(double));    // 2026-10-30 correction
             // and re-compute the TE:
             te1 = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, my, mx*px, my*py);
             
