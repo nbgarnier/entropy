@@ -425,16 +425,19 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int k_perm=10, int N_surrogates=10):
+cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int k_perm=5, int N_surrogates=10):
     """
-    creates a set of surrogates to be used for PMI estimation
+    creates a set of surrogates to be used for PMI PMI(X,Y|Z) estimation
     
-    :param x,y,z: signals (NumPy arrays with ndim=2, time along second dimension)
-    :param k_perm: the nb of neighbors to consider for a local permutationan integer to indicate which type of surrogate to create (default 10)
+    :param x,y,z: signals 
+    :type x,y,z: NumPy 2d-arrays, time along second dimension)
+    :param k_perm: the nb of neighbors to consider for a local permutation (default 5)
+    :type k_perm: int.
     :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
+    :type N_surrogates: int.
     :returns: an nd-array of surrogates for x (each with the same dimmensionality as the input data x)
 
-    To generate the best possible surrogate x^* for PMI(x,y|z), it is required to provided x and z (y is not used).
+    To generate the best possible surrogate x^* for PMI(x,y|z), it is required to provided x and z (y is not used). 
     Only surrogates for x are returned, to be used with the same (y,z) as provided.
     Each surrogate has the same dimensionality as x.
     """
@@ -458,14 +461,17 @@ cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int 
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
-#cpdef surrogates_TE( double[:, ::1] y, int lag=1, int k_perm=10, int N_surrogates=10):
+#cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int lag=1, int k_perm=5, int N_surrogates=10):
 #    """
-#    creates a set of surrogates of y to be used for TE(x->y) estimation 
+#    creates a set of surrogates of x to be used for TE(x->y) estimation 
 #    
-#    :param y: (NumPy array with ndim=2, time along second dimension) the "destination" signal, i.e., the signal 
-#    that may be caused by x (for the reverse TE(y->x), invoke again the surrogates_TE() function using parameter x)
-#    :param lag: distance of the future point in time (integer, default=1) choose it according to you TE invocation
-#    :param k_perm: the nb of neighbors to consider for a local permutationan integer to indicate which type of surrogate to create (default 10)
+#    :param x: (NumPy array with ndim=2, time along second dimension) the "source" signal x, i.e., the signal 
+#    that we are searching if it causes y.
+#    :param x: (NumPy array with ndim=2, time along second dimension) the "destination" signal y, i.e., the signal
+#    that may be caused by x.
+#    :param lag: distance of the future point in time; choose it according to you TE invocation
+#    :type lag: integer (default=1)
+#    :param k_perm: the nb of neighbors to consider for a local permutationa (default 5)
 #    :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
 #    :returns: an nd-array of surrogates for x (each with the same dimmensionality as the input data x)
 #
