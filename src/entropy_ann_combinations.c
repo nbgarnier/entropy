@@ -38,7 +38,7 @@
 #include "nns_count.h"              // NBG counting functions (2019-01-23)
 #include "samplings.h"              // created 2021-12-17 (to factor some operations)
 #include "math_tools.h"
-#include "surrogates_PMI.h"         // for TE/PMI surrogates (local permutations)
+#include "surrogates_local_perm.h"       // for TE/PMI surrogates (local permutations)
 #include "entropy_ann.h"
 #include "entropy_ann_threads.h"
 #include "entropy_ann_combinations.h"

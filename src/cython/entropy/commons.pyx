@@ -436,7 +436,7 @@ cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int 
     :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
     :type N_surrogates: int.
     :returns: an ensemble of surrogates for x (each surrogate has the same dimmensionality as the input data x)
-    :rtype : a Numpy 3d-array with shape (N_surrogates, x.shape[0], x.shape[1])
+    :rtype: a Numpy 3d-array with shape (N_surrogates, x.shape[0], x.shape[1])
 
     To generate the best possible surrogate x^* for PMI(x,y|z), it is required to provide x and z (y is not used). 
     Only surrogates for x are returned, to be used with the same (y,z) as provided.
@@ -470,28 +470,33 @@ cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_
     :type x: NumPy 2-d array (time along second dimension) 
     :param y: the "destination" signal y, i.e., the signal that we want to measure how much of is caused by the other one (x).
     :type y: NumPy 2-d array (time along second dimension)     
-    :param lag: distance of the future point in time; choose it according to your TE invocation
-    :type lag: integer (default=1)
+    :param n_embed_x,y: embedding dimension for x; choose it according to your TE invocation
+    :type n_embed_x,y: integer (default=1)
+    :param stride: embedding dimension for x; choose it according to your TE invocation
+    :type stride: integer (default=1)
     :param k_perm: the nb of neighbors to consider for a local permutation (default 5)
     :type k_perm: integer
     :param N_surrogates: an integer to indicate how many different surrogates to generate
     :type N_surrogates: integer (default=10)
     :returns: an ensemble of surrogates for x (each surrogate has the same dimmensionality as the input data x)
-    :rtype : a Numpy 3d-array with shape (N_surrogates, x.shape[0], x.shape[1])
+    :rtype: a Numpy 3d-array with shape (N_surrogates, x.shape[0], x.shape[1])
 
-|   To generate the best possible surrogate $x^*$ for the estimation of TE(x->y), it is required to provide embedding dimensions and stride, but not lag.
-|   To compute the reverse TE(y->x), you need to create new surrogates again, for y this time.
-|      
-    example
-    _______
-|    N_surrogates = 20
-|    TE_s         = np.zeros( N_surrogates, dtype=float )
-|
-|    x_surrogates = surrogates_TE(x, y, k_perm=5, N_surrogates=N_surrogates)
-|    for i in np.arange(N_surrogates):
-|        TE_s[i] = compute_TE(x_surrogates[i], y, lag=lag)[0]       
-|
-|    print("the bias for TE is", np.mean(TE_s))
+    | To generate the best possible surrogate $x^*$ for the estimation of TE(x->y), it is required to provide embedding dimensions and stride, but not lag.
+    | To compute the reverse TE(y->x), you need to create new surrogates again, for y this time.
+
+    example::
+
+        # assuming you have data x and y available and ready for analysis
+        N_surrogates = 20
+        TE_s         = np.zeros( N_surrogates, dtype=float )
+    
+        x_surrogates = surrogates_TE(x, y, k_perm=5, N_surrogates=N_surrogates)
+        for i in np.arange(N_surrogates):
+            TE_s[i] = compute_TE(x_surrogates[i], y, lag=lag)[0]       
+    
+        print("the bias for TE is", np.mean(TE_s))
+
+    | see function :any:`compute_TE` for a more efficient way to have the bias directly (generation of surrogates is built-in the :any:`compute_TE` function)
     """    
     cdef int npts=x.shape[1], dim_x=x.shape[0], npty=y.shape[1], dim_y=y.shape[0]
 

@@ -75,7 +75,7 @@ cdef extern from "surrogates.h":
 	void shuffle_data		(double *x, int npts, int mx)
 	double *create_surrogate(double *x, int npts, int mx)
 
-cdef extern from "surrogates_PMI.h":
+cdef extern from "surrogates_local_perm.h":
 	int surrogates_local_perm(double *x, double *z, int nx, int m, int q, 
 								int k_perm, int N_surrogates, double *surrogates)
 	int surrogates_local_perm_with_sampling(double *x, double *z, int npts, int mx, int mz, int px, int pz, int stride, 

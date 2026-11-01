@@ -330,15 +330,19 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     :returns: two values (one per algorithm),
             (and a (2, N_surrogates) nd-array of TE values computed with surrogates iif N_surrogates>0).
 
-    example
-    _______
-    | TE1 = compute_TE(x, y, lag=lag)[0]                      
-    | print("TE :", TE1)                                      # TE value (for algorithm 1 (default))
-    | TE, TE_bias = compute_TE(x, y, lag=lag, N_surrogates=10)
-    | print("TE :", TE[0], "with bias", np.mean(TE_bias[0]))  # print TE and bias (for algorithm 1)
-    
+    example::
+
+        # assuming you have data x and y available and ready for analysis
+
+        TE1 = compute_TE(x, y, lag=lag)[0]                      
+        print("TE :", TE1)                                      # TE value (for algorithm 1 (default))
+
+        TE, TE_bias = compute_TE(x, y, lag=lag, N_surrogates=10)
+        print("TE :", TE[0], "with bias", np.mean(TE_bias[0]))  # print TE and bias (for algorithm 1)
+        
     | see :any:`input_parameters` and function :any:`set_sampling` to set sampling parameters globally if needed.
     | see function :any:`choose_algorithm` to select which algorithm is used (default algo 1)
+    | see function :any:`surrogates_TE` if you want to have an access to the surrogates values (less efficient though).
     """
     cdef double TE1=0, TE2=0, tmp1, tmp2
     cdef int npts=x.shape[1], nx=x.shape[0], npty=y.shape[1], ny=y.shape[0]

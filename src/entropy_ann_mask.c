@@ -13,6 +13,7 @@
  *  2022-06-10 : new samplings for all functions (most untested)
  *  2023-02-23 : TE(X->Y) is now correctly ordered (was: TE(Y->X)); same with DI
  *  2026-07-14 : now with Gaussian estimates of entropies where possible
+ *  2026-10-30 : now with local permutation scheme for TE bias estimate
  */
 
 #include <math.h>                        // for fabs
@@ -26,7 +27,7 @@
 #include "entropy_ann_mask.h"
 #include "mask.h"                        // for basic masking functions
 #include "samplings.h"                   // for sub-sampling functions
-#include "surrogates_PMI.h"              // for TE/PMI surrogates (local permutations)
+#include "surrogates_local_perm.h"       // for TE/PMI surrogates (local permutations)
 #include "entropy_ann_single_entropy.h"  // for "engine" function for Shannon entropy
 #include "entropy_ann_single_RE.h"       // for "engine" function for relative entropy
 #include "entropy_ann_single_MI.h"       // for "engine" function for MI 
