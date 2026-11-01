@@ -481,7 +481,7 @@ cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_
 
 |   To generate the best possible surrogate $x^*$ for the estimation of TE(x->y), it is required to provide embedding dimensions and stride, but not lag.
 |   To compute the reverse TE(y->x), you need to create new surrogates again, for y this time.
-
+    
     example
     _______
 |    N_surrogates = 20
