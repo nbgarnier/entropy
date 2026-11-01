@@ -23,7 +23,7 @@
 #include "library_matlab.h"     // compilation for Matlab
 #include "ANN_wrapper.h"        // for ANN library (in C++)
 #include "surrogates.h"         // for "init_surrogates_rng()"
-#include "surrogates_PMI.h" // for "is_in_set()"
+#include "surrogates_PMI.h" 	// for "is_in_set()"
 //#include "math_tools.h"
 
 
@@ -42,6 +42,27 @@ inline int is_in_set(int i, int *set, int npts)
 		j++;
 	}
 	return(in_set);
+}
+
+
+/****************************************************************************************/
+/* to perform embedding of data (without any random sampling) 		                    */
+/*                                                                                      */
+/* used by "surrogates_local_perm_with_sampling" (with parameter Theiler=1)             */
+/*                                                                                      */
+/* 2026-10-31 : fork from "Theiler_embed()" in "samplings.c"           	                */
+/****************************************************************************************/
+void full_embed(double *x, int npts, int mx, int px, int tau, int Theiler, double *x_new, int npts_new)
+{   register int i,                 // indices for time positions
+                 d, l;              // indices for dimensionality
+    
+    for (i=0; i<npts_new; i++)      // loop on time in 1 window
+        {   for (d=0; d<mx; d++)    // loop on existing dimensions in x
+            for (l=0; l<px; l++)    // loop on embedding
+                 x_new[i + npts_new*( d + l*mx )] = x[Theiler*i - l*tau + d*npts];
+        }
+
+    return;
 }
 
 
@@ -81,7 +102,7 @@ inline int is_in_set(int i, int *set, int npts)
  * surrogates : a pointer to the set of surrogates for the variable x only (only x is permuted)
  * 		   so the size of surrogates is (N_surrogates * m * npts) (must be already allocated!)
  * 
- * these function uses subfunction(s) :			
+ * these functions uses subfunction(s) :			
  *  - is_in_set()					(above in the present file)	
  *	- ANN_get_nearest_neighbors()   (new function in ANN_wrapper.cpp 2026-10-27)							
  *
@@ -165,4 +186,57 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
 	gsl_permutation_free(perm);
 	return(nb_errors_local);
 } /* end of function "surrogates_local_perm" */
+
+
+
+
+/***************************************************************************************
+ * creates a set of surrogates for PMI bias estimation,
+ * using nearest neighbor statistics
+ *
+ * same as functions above, but arguments x and z here will be time-embedded on-the-fly
+ * 
+ * this function uses subfunction(s) :			
+ *  - is_in_set()					(above in the present file)	
+ *	- ANN_get_nearest_neighbors()   (new function in ANN_wrapper.cpp 2026-10-27)							
+ *
+ *											
+ * 2026-10-30 : new function, for TE (or others)
+ ***************************************************************************************/
+int surrogates_local_perm_with_sampling(double *x, double *z, int npts, int mx, int mz, int px, int pz, int stride, int k_perm, int N_surrogates, double *surrogates)
+{	register int d, i_surrogate, ind;
+	register int pp = (px>pz) ? px : pz;  // who has the largest past ?
+	double  *x_new, *z_new; 
+	double 	*surrog_tmp;
+//	int		m=mx*px, q=mz*pz;			// total dimensionality of X and Z
+	int		shift    = (pp-1)*stride;   // present is shifted
+	int		npts_new = npts-shift;		// XIV p40
+    
+        
+	if (mx+mz<2) return(printf("[surrogates_local_perm_with_sampling] : not enough dimensions in data (at least 2 required for X and Z)\n"));
+	if ((px<1) || (pz<1)) return(printf("[surrogates_local_perm_with_sampling] : embedding dimensions must be at least 1\n"));
+	
+	x_new       = (double*)calloc( mx*px*npts_new, sizeof(double));
+	z_new       = (double*)calloc( mz*pz*npts_new, sizeof(double));
+	surrog_tmp  = (double*)calloc( N_surrogates*mx*px*npts_new, sizeof(double));
+    
+	// embedding xithout random sampling, and without Theiler prescription (we keep all possible embedded vectors)
+	full_embed(x+shift, npts, mx, px, stride, /* Theiler */ 1, x_new, npts_new);
+	full_embed(z+shift, npts, mz, pz, stride, /* Theiler */ 1, z_new, npts_new);
+    
+	// create surrogates (they have npts_new points in time)
+	nb_errors_local = surrogates_local_perm(x_new, z_new, npts_new, mx*px, mz*pz, k_perm, N_surrogates, surrog_tmp);
+
+	// copy the surrogates in the returned variable ("un-embedd"):
+	for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
+	for (d=0; d<mx; d++)
+	{	ind = (i_surrogate*mx + d);
+		memcpy(surrogates + ind*npts + shift, surrog_tmp + ind, npts_new*sizeof(double));
+		memcpy(surrogates + ind*npts, x + d*npts, shift*sizeof(double));
+	}
+
+	free(x_new); 	free(z_new);
+	free(surrog_tmp);
+	return(nb_errors_local);
+} /* end of function "surrogates_local_perm_with sampling" */
 

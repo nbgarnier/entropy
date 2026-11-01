@@ -435,9 +435,10 @@ cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int 
     :type k_perm: int.
     :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
     :type N_surrogates: int.
-    :returns: an 3d-array of shape (N_surrogates, x.shape[0], x.shape[1]) containing surrogates of x 
+    :returns: an ensemble of surrogates for x (each surrogate has the same dimmensionality as the input data x)
+    :rtype : a Numpy 3d-array with shape (N_surrogates, x.shape[0], x.shape[1])
 
-    To generate the best possible surrogate x^* for PMI(x,y|z), it is required to provided x and z (y is not used). 
+    To generate the best possible surrogate x^* for PMI(x,y|z), it is required to provide x and z (y is not used). 
     Only surrogates for x are returned, to be used with the same (y,z) as provided.
     Each surrogate has the same dimensionality as x.
     """
@@ -459,26 +460,53 @@ cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int 
     return(zout)
 
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
-#cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int lag=1, int k_perm=5, int N_surrogates=10):
-#    """
-#    creates a set of surrogates of x to be used for TE(x->y) estimation 
-#    
-#    :param x: (NumPy array with ndim=2, time along second dimension) the "source" signal x, i.e., the signal 
-#    that we are searching if it causes y.
-#    :param x: (NumPy array with ndim=2, time along second dimension) the "destination" signal y, i.e., the signal
-#    that may be caused by x.
-#    :param lag: distance of the future point in time; choose it according to you TE invocation
-#    :type lag: integer (default=1)
-#    :param k_perm: the nb of neighbors to consider for a local permutationa (default 5)
-#    :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
-#    :returns: an nd-array of surrogates for x (each with the same dimmensionality as the input data x)
-#
-#    To generate the best possible surrogate y^* for TE(x->y), it is required to provided lag.
-#    Only surrogates for y_{lag} are returned, to be used with the same y as provided.
-#    Each surrogate has the same dimensionality as y.
-#    """    
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, int k_perm=5, int N_surrogates=10):
+    """
+    creates a set of surrogates of x to be used for TE(x->y) estimation 
+    
+    :param x: the "source" signal x, i.e., the signal that we want to measure the causal influence over the other one (y).
+    :type x: NumPy 2-d array (time along second dimension) 
+    :param y: the "destination" signal y, i.e., the signal that we want to measure how much of is caused by the other one (x).
+    :type y: NumPy 2-d array (time along second dimension)     
+    :param lag: distance of the future point in time; choose it according to your TE invocation
+    :type lag: integer (default=1)
+    :param k_perm: the nb of neighbors to consider for a local permutation (default 5)
+    :type k_perm: integer
+    :param N_surrogates: an integer to indicate how many different surrogates to generate
+    :type N_surrogates: integer (default=10)
+    :returns: an ensemble of surrogates for x (each surrogate has the same dimmensionality as the input data x)
+    :rtype : a Numpy 3d-array with shape (N_surrogates, x.shape[0], x.shape[1])
+
+|   To generate the best possible surrogate $x^*$ for the estimation of TE(x->y), it is required to provide embedding dimensions and stride, but not lag.
+|   To compute the reverse TE(y->x), you need to create new surrogates again, for y this time.
+
+    example
+    _______
+|    N_surrogates = 20
+|    TE_s         = np.zeros( N_surrogates, dtype=float )
+|
+|    x_surrogates = surrogates_TE(x, y, k_perm=5, N_surrogates=N_surrogates)
+|    for i in np.arange(N_surrogates):
+|        TE_s[i] = compute_TE(x_surrogates[i], y, lag=lag)[0]       
+|
+|    print("the bias for TE is", np.mean(TE_s))
+    """    
+    cdef int npts=x.shape[1], dim_x=x.shape[0], npty=y.shape[1], dim_y=y.shape[0]
+
+    if (npts<dim_x):  raise ValueError("please transpose x")
+    if (npty<dim_y):  raise ValueError("please transpose y")     
+    if (npty!=npts):  raise ValueError("x and y do not have the same number of points in time")
+    if (k_perm<2):    raise ValueError("k_perm needs to be larger than 1 in order to have an effect...")
+    if (N_surrogates<1): raise ValueError("I need to compute at least 1 surrogate...")
+
+    zout = PNP.zeros((N_surrogates, dim_x, npts), dtype=float)
+    cdef double[:, :, :] surrogates = zout
+    
+    commons.surrogates_local_perm_with_sampling(&x[0,0], &y[0,0], npts, dim_x, dim_y, n_embed_x, n_embed_y, stride, 
+								k_perm, N_surrogates, &surrogates[0,0,0])
+    return(zout)
 
 
 

@@ -76,8 +76,10 @@ cdef extern from "surrogates.h":
 	double *create_surrogate(double *x, int npts, int mx)
 
 cdef extern from "surrogates_PMI.h":
-	int surrogates_local_perm(double *x, double *z, int nx, int m, int q, int k_perm, int N_surrogates, double *surrogates)
-
+	int surrogates_local_perm(double *x, double *z, int nx, int m, int q, 
+								int k_perm, int N_surrogates, double *surrogates)
+	int surrogates_local_perm_with_sampling(double *x, double *z, int npts, int mx, int mz, int px, int pz, int stride, 
+								int k_perm, int N_surrogates, double *surrogates)
 
 cdef extern from "mask.h":
 	int NaN_mask	(double *x, int npts, int m, char *mask);

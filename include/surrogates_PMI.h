@@ -16,3 +16,6 @@ int is_in_set(int i, int *set, int npts);
 /* exposed function to generate surrogates for partial mutual information	*/
 int surrogates_local_perm(double *x, double *z, int nx, int m, int q, int k_perm, int N_surrogates, double *surrogates);
 
+/* exposed function to generate surrogates for transfer entropy	            */
+int surrogates_local_perm_with_sampling(double *x, double *z, int npts, int mx, int mz, int px, int pz, int stride, int k_perm, int N_surrogates, double *surrogates);
+
