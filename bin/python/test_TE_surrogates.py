@@ -8,7 +8,7 @@ from numpy.random import normal
 
 # parameters (change them to play)
 ndim = 1        # dimensionality of x and y (usually 1, but you can play)
-npoints = 10000
+npoints = 100000
 std  = 3.       # std of the white noises (x and y)
 
 m_embed_x  = 1  # dimensionality of embedding of x
@@ -16,13 +16,20 @@ m_embed_y  = 1  # dimensionality of embedding of y
 
 N_eff  = 4000   # the larger, the better the estimations
 N_real = 10     # to compute the errorbar (as the std of the estimator)
-N_bias = 10     # how many surrogates to compute the bias?
+N_bias = 20     # how many surrogates to compute the bias?
 entropy.set_sampling(4, N_eff=N_eff, N_real=N_real)
 
 do_MI  = False
 do_PMI = False
 do_bias= True
-do_Gaus= True
+do_Gaus= False
+do_mask= True
+
+if do_mask:
+    nb_NANs = int(npoints*0.2)      # 20% of points are discarded
+    indices = numpy.random.randint(0, npoints, size=(1,nb_NANs))
+    x_mask  = numpy.ones(npoints, dtype='i1')
+    x_mask[indices] = 0
 
 def compare_TE_PMI(x,y, lag=1):
     stride=lag  # I suggest to indicate to the code that the timescale we are studying is "lag" (will be used by Theiler)
@@ -32,14 +39,22 @@ def compare_TE_PMI(x,y, lag=1):
     res=entropy.compute_TE(x, y, m_embed_x, m_embed_y, stride=stride, lag=lag)
     std=entropy.get_last_info()[0]
     t1=time()-t1
-    print("TE   x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(elapsed time :",t1, "s)")
+    print("TE   x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t\t\t(elapsed time :",t1, "s)")
     # TE with surrogates:
     if do_bias:
         t1=time()
         res, surr=entropy.compute_TE(x, y, m_embed_x, m_embed_y, stride=stride, lag=lag, N_surrogates=10)
         std=entropy.get_last_info()[0]
         t1=time()-t1
-        print("TE   x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(elapsed time :",t1, "s)")
+        print("TE   x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(w. surr.)\t(elapsed time :",t1, "s)")
+        print("  with bias %2.7f" %numpy.mean(surr[0]), "+/- %2.7f" %numpy.std(surr[0]))
+    # TE with a mask and surrogates:
+    if do_mask:
+        t1=time()
+        res, surr=entropy.compute_TE(x, y, m_embed_x, m_embed_y, stride=stride, lag=lag, N_surrogates=10, mask=x_mask)
+        std=entropy.get_last_info()[0]
+        t1=time()-t1
+        print("TE   x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(w. mask+surr.)\t(elapsed time :",t1, "s)")
         print("  with bias %2.7f" %numpy.mean(surr[0]), "+/- %2.7f" %numpy.std(surr[0]))
     # TE with Gaussian assumption:
     if do_Gaus:
@@ -47,13 +62,22 @@ def compare_TE_PMI(x,y, lag=1):
         res=entropy.compute_TE(x, y, m_embed_x, m_embed_y, k=-1, stride=stride, lag=lag)
         std=entropy.get_last_info()[0]
         t1=time()-t1
-        print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(elapsed time :",t1, "s)")
+        print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t\t\t(elapsed time :",t1, "s)")
+        # TE with surrogates:
         if do_bias:
             t1=time()
             res, surr=entropy.compute_TE(x, y, m_embed_x, m_embed_y, k=-1, stride=stride, lag=lag, N_surrogates=10)
             std=entropy.get_last_info()[0]
             t1=time()-t1
-            print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(elapsed time :",t1, "s)")
+            print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(w. surr.)\t(elapsed time :",t1, "s)")
+            print("  with bias %2.7f" %numpy.mean(surr[0]), "+/- %2.7f" %numpy.std(surr[0]))
+        # TE with a mask and surrogates:
+        if do_mask:
+            t1=time()
+            res, surr=entropy.compute_TE(x, y, m_embed_x, m_embed_y, k=-1, stride=stride, lag=lag, N_surrogates=10, mask=x_mask)
+            std=entropy.get_last_info()[0]
+            t1=time()-t1
+            print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(w. mask+surr.)\t(elapsed time :",t1, "s)")
             print("  with bias %2.7f" %numpy.mean(surr[0]), "+/- %2.7f" %numpy.std(surr[0]))
 
     # TE (Y->X):
@@ -61,14 +85,22 @@ def compare_TE_PMI(x,y, lag=1):
     res=entropy.compute_TE(y, x, m_embed_y, m_embed_x, stride=stride, lag=lag)
     std=entropy.get_last_info()[0]
     t1=time()-t1
-    print("TE   y->x = %2.7f" %res[0], "+/- %2.7f" %std , "\t(elapsed time :",t1, "s)")
+    print("TE   y->x = %2.7f" %res[0], "+/- %2.7f" %std , "\t\t\t(elapsed time :",t1, "s)")
     # TE with surrogates:
     if do_bias:
         t1=time()
         res, surr=entropy.compute_TE(y, x, m_embed_y, m_embed_x, stride=stride, lag=lag, N_surrogates=10)
         std=entropy.get_last_info()[0]
         t1=time()-t1
-        print("TE   y->x = %2.7f" %res[0], "+/- %2.7f" %std , "\t(elapsed time :",t1, "s)")
+        print("TE   y->x = %2.7f" %res[0], "+/- %2.7f" %std , "\t(w. surr.)\t(elapsed time :",t1, "s)")
+        print("  with bias %2.7f" %numpy.mean(surr[0]), "+/- %2.7f" %numpy.std(surr[0]))
+    # TE with a mask and surrogates:
+    if do_mask:
+        t1=time()
+        res, surr=entropy.compute_TE(y, x, m_embed_y, m_embed_x, stride=stride, lag=lag, N_surrogates=10, mask=x_mask)
+        std=entropy.get_last_info()[0]
+        t1=time()-t1
+        print("TE   y->x = %2.7f" %res[0], "+/- %2.7f" %std , "\t(w. mask+surr.)\t(elapsed time :",t1, "s)")
         print("  with bias %2.7f" %numpy.mean(surr[0]), "+/- %2.7f" %numpy.std(surr[0]))
     # TE with Gaussian assumption:
     if do_Gaus:
@@ -76,14 +108,23 @@ def compare_TE_PMI(x,y, lag=1):
         res=entropy.compute_TE(y, x, m_embed_y, m_embed_x, k=-1, stride=stride, lag=lag)
         std=entropy.get_last_info()[0]
         t1=time()-t1
-        print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(elapsed time :",t1, "s)")
+        print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t\t\t(elapsed time :",t1, "s)")
         if do_bias:
             t1=time()
             res, surr=entropy.compute_TE(y, x, m_embed_y, m_embed_x, k=-1, stride=stride, lag=lag, N_surrogates=10)
             std=entropy.get_last_info()[0]
             t1=time()-t1
-            print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(elapsed time :",t1, "s)")
+            print("TE_G x->y = %2.7f" %res[0], "+/- %2.7f" %std , "\t(w. surr.)\t(elapsed time :",t1, "s)")
             print("  with bias %2.7f" %numpy.mean(surr[0]), "+/- %2.7f" %numpy.std(surr[0]))
+             # TE with a mask and surrogates:
+        if do_mask:
+            t1=time()
+            res, surr=entropy.compute_TE(y, x, m_embed_y, m_embed_x, k=-1, stride=stride, lag=lag, N_surrogates=10, mask=x_mask)
+            std=entropy.get_last_info()[0]
+            t1=time()-t1
+            print("TE_G y->x = %2.7f" %res[0], "+/- %2.7f" %std , "\t(w. mask+surr.)\t(elapsed time :",t1, "s)")
+            print("  with bias %2.7f" %numpy.mean(surr[0]), "+/- %2.7f" %numpy.std(surr[0]))
+
 
 
     xf=x[:,lag:].copy()

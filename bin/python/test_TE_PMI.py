@@ -14,7 +14,6 @@ std  = 3.       # std of the white noises (x and y)
 m_embed_x  = 1  # dimensionality of embedding of x
 m_embed_y  = 1  # dimensionality of embedding of y
 
-
 N_eff  = 4000   # the larger, the better the estimations
 N_real = 10     # to compute the errorbar (as the std of the estimator)
 entropy.set_sampling(4, N_eff=N_eff, N_real=N_real)
