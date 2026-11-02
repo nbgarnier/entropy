@@ -797,27 +797,27 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
         free(ind_epoch);
         free(ind_shuffled);
         free_perm(perm_pts);
+        
+        if (N_surrogates>0)         // test added 2026-11-02
+        {   // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE: // 2026-10-30 correction
+            surrogates_local_perm(full_x_new+(my*(py+1)*sp.N_eff), full_x_new+(my*sp.N_eff), sp.N_eff, mx*px, my*py, k_perm, N_surrogates, surrogates);
 
-
-        // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE: // 2026-10-30 correction
-        surrogates_local_perm(full_x_new+(my*(py+1)*sp.N_eff), full_x_new+(my*sp.N_eff), sp.N_eff, mx*px, my*py, k_perm, N_surrogates, surrogates);
-
-        for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
-        {   // inject the surrogate (of future point at t+lag) into the full data:
-            memcpy(full_x_new+(my*(py+1)*sp.N_eff), (surrogates + i_surrogate*mx*px*sp.N_eff), mx*px*sp.N_eff * sizeof(double)); // 2026-10-30 correction
-            // and re-compute the TE:
-            if (k>=1)   // k-nn estimate
-            {   if (USE_PTHREAD>0)  
-                        nb_errors += compute_partial_MI_direct_ann_threads(full_x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
-                else    nb_errors += compute_partial_MI_engine_ann        (full_x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2);
-            }
-            else        // Gaussian estimate
-            {           te1        = compute_partial_MI_engine_Gaussian   (full_x_new, sp.N_eff, my, mx*px, my*py);
-            }
-            TE_bias[i_surrogate] += te1;   
-		    TE_bias[i_surrogate+N_surrogates] += te2;
-        }
-
+            for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
+            {   // inject the surrogate (of future point at t+lag) into the full data:
+                memcpy(full_x_new+(my*(py+1)*sp.N_eff), (surrogates + i_surrogate*mx*px*sp.N_eff), mx*px*sp.N_eff * sizeof(double)); // 2026-10-30 correction
+                // and re-compute the TE:
+                if (k>=1)   // k-nn estimate
+                {   if (USE_PTHREAD>0)  
+                            nb_errors += compute_partial_MI_direct_ann_threads(full_x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2, get_cores_number(GET_CORES_SELECTED));
+                    else    nb_errors += compute_partial_MI_engine_ann        (full_x_new, sp.N_eff, my, mx*px, my*py, k, &te1, &te2);
+                }
+                else        // Gaussian estimate
+                {           te1        = compute_partial_MI_engine_Gaussian   (full_x_new, sp.N_eff, my, mx*px, my*py);
+                }
+                TE_bias[i_surrogate] += te1;   
+		        TE_bias[i_surrogate+N_surrogates] += te2;
+            } // loop on surrogates
+        } 
     } // loop on j
     
     avg1 /= sp.N_real;  var1 /= sp.N_real;  var1 -= avg1*avg1;

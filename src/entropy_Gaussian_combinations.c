@@ -379,16 +379,18 @@ int compute_transfer_entropy_Gaussian(double *x, double *y, int nx, int mx, int 
         avg1 += te1;    var1 += te1*te1;
 		last_npts_eff += last_npts_eff_local;
 
-        // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE:
-        surrogates_local_perm(x_new+(my*(py+1)*sp.N_eff), x_new+(my*sp.N_eff), sp.N_eff, mx*px, my*py, k_perm, N_surrogates, surrogates); // 2026-10-30 correction
+        if (N_surrogates>0)         // test added 2026-11-02
+        {   // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE:
+            surrogates_local_perm(x_new+(my*(py+1)*sp.N_eff), x_new+(my*sp.N_eff), sp.N_eff, mx*px, my*py, k_perm, N_surrogates, surrogates); // 2026-10-30 correction
 
-        for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
-        {   // inject the surrogate (of future point at t+lag) into the full data:
-            memcpy(x_new+(my*(py+1)*sp.N_eff), (surrogates + i_surrogate*mx*px*sp.N_eff), mx*px*sp.N_eff * sizeof(double));    // 2026-10-30 correction
-            // and re-compute the TE:
-            te1 = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, my, mx*px, my*py);
+            for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
+            {   // inject the surrogate (of future point at t+lag) into the full data:
+                memcpy(x_new+(my*(py+1)*sp.N_eff), (surrogates + i_surrogate*mx*px*sp.N_eff), mx*px*sp.N_eff * sizeof(double));    // 2026-10-30 correction
+                // and re-compute the TE:
+                te1 = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, my, mx*px, my*py);
             
-            TE_bias[i_surrogate] += te1;   
+                TE_bias[i_surrogate] += te1;   
+            }
         }
 	}
     if (nb_errors!=0) return(printf("[compute_transfer_entropy_nd_Gaussian] error, %d points were problematic\n", nb_errors));
