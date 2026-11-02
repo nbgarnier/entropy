@@ -12,12 +12,13 @@
  *  Copyright 2012-2026 ENS-Lyon - CNRS. All rights reserved.
  *
  *  2026-10-27 : new function
+ *  2026-11-02 : optimized test (with bool pointer)
  */
 
 #include <string.h>     // for malloc
 //#include <math.h>       // for log 
 //#include <gsl/gsl_sf.h> // for psi digamma function
-
+#include <stdbool.h> 			// for is_used pointer to keep track of already used points
 
 #include "library_commons.h"    // definitions of nb_errors, and stds
 #include "library_matlab.h"     // compilation for Matlab
@@ -33,6 +34,7 @@
 /* 																			*/
 /* 2026/10/28 : new function												*/
 /* 2026/10/29 : can be inline?												*/
+/* 2026/11/02 : deprecated, a bool pointer is more efficient (M. Frasch)	*/
 /****************************************************************************/
 inline int is_in_set(int i, int *set, int npts)
 {	register int j=0, in_set=0;
@@ -123,7 +125,8 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
 {	gsl_permutation *perm; 	// we need a permutation to ensure it is not always the the same i that takes priority over other indices
 	register int d, i, j, k, i_surrogate, i_permed;
 	double  zi[q]; 
-	int     used_ind[npts], n_used;
+//	int     used_ind[npts], n_used;		// not efficient
+	bool	is_used[npts];	// better solution (thanks to M. Frasch)
 	int     *neighbors;     // to store the indices of neighbors of each central points
     
 	init_surrogates_rng();	// if this hasn't been done already
@@ -154,10 +157,11 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
 	
 	for (i_surrogate=0; i_surrogate<N_surrogates; i_surrogate++)
     {   for (i=0; i<npts; i++) 
-		{	used_ind[i]=-1;   			// 0 is a valid index value, whereas -1 is not
+		{	//used_ind[i]=-1;   		// 0 is a valid index value, whereas -1 is not
+			is_used[i] = false;
 			gsl_ran_shuffle(surrogates_rng, neighbors+k_perm*i, (size_t)k_perm, sizeof(int));
 		}
-		n_used = 0;						// nb of already used indices/points
+//		n_used = 0;						// nb of already used indices/points
 		gsl_permutation_init(perm);		// additional precaution: we use a permutation to ensure no indice is favored
         gsl_ran_shuffle(surrogates_rng, perm->data, perm->size, sizeof(size_t));
 
@@ -168,7 +172,8 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
 			k = 0;
 			
 			// we search for an indice j to use:
-			while ( (is_in_set(j, used_ind, n_used)) && (k < k_perm) )
+//			while ( (is_in_set(j, used_ind, n_used)) && (k < k_perm-1) )	// 2026-11-02: (<k_perm) replaced by (<k_perm-1) (M. Frasch)
+			while ( is_used[j] && (k < k_perm-1) )	// 2026-11-02: (<k_perm) replaced by (<k_perm-1) (M. Frasch)
 			{	k ++;
 				j = (neighbors+k_perm*i_permed)[k];
 			}
@@ -177,8 +182,9 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
 			for (d=0; d<m; d++)			// copy full x_j vector (size m) (at indice j)
 				(surrogates + i_surrogate*m*npts)[i_permed +d*npts] = x[j +d*npts];
 			// and record it as used:
-			used_ind[n_used] = j;
-			n_used++;
+//			used_ind[n_used] = j;
+			is_used[j] = true;
+//			n_used++;
         }
 	} 
 
