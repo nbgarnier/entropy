@@ -382,9 +382,9 @@ def surrogate_WIP( double[:, ::1] x):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
+cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7, int shift=100):
     """
-    creates a surrogate version of (possibly multi-dimensionial) data x
+    creates a surrogate version of (possibly multi-dimensional) data x
     
     :param method: an integer to indicate which type of surrogate to create (see below)
     :param N_steps: an integer to indicate how many steps to use for improved surrogates (method 4 only)
@@ -392,11 +392,12 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
     
     The method parameter can be:  
       |  0 : by shuffling points in time, while retaining the joint-coordinates
-      |  1 : randomize phase with unwindowed Fourier transform (uFt)
+      |  1 : randomize phase with unwindowed Fourier transform (uFt) (from Theiler et al, Physica D 58 (1992) section 2.4.1)
       |  2 : randomize phase with windowed Fourier transform (wFT) (buggy!)
-      |  3 : randomize phase with Gaussian null hypothesis and Ft (aaFT)
-      |  4 : improved surrogate (same PDF and PSD), using N_steps
+      |  3 : randomize phase with Gaussian null hypothesis and Ft (aaFT) (from Theiler et al, Physica D 58 (1992) section 2.4.3)
+      |  4 : improved surrogate (same PDF and same PSD), using N_steps (from Schreiber and Schmitz, PRL 77 pp635-638 (1996))
       |  5 : creates a Gaussian version of x, with same PSD and dependences
+      |  6 : circular (time-)shift of "shift" points (default: shift=100, please adapt accordingly (typically shift > autocorrelation time))
 
     """
     cdef int npts=x.shape[1], nx=x.shape[0], m
@@ -411,6 +412,7 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7):
     elif (method==2):  commons.surrogate_wFt (&z[0,0], npts, nx) 
     elif (method==3):  commons.surrogate_aaFt(&z[0,0], npts, nx)
     elif (method==4):  commons.surrogate_improved(&z[0,0], npts, nx, N_steps)
+    elif (method==6):  commons.circular_shift_data(&z[0,0], npts, nx, N_steps)
     elif (method==5):  
         means = PNP.mean(x, axis=1)
         stds  = PNP.std (x, axis=1)

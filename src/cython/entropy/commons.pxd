@@ -72,6 +72,7 @@ cdef extern from "surrogates.h":
 	void surrogate_aaFt		(double *x, int npts, int mx)
 	void surrogate_improved	(double *x, int npts, int mx, int N_steps)
 	void Gaussianize		(double *x, int npts, int mx)
+	void circular_shift_data(double *x, int npts, int mx, int shift)
 	void shuffle_data		(double *x, int npts, int mx)
 	double *create_surrogate(double *x, int npts, int mx)
 

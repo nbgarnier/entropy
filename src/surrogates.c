@@ -60,7 +60,7 @@ int init_surrogate_FFTW(int npts)
     data_Ft     = (fftw_complex*)fftw_malloc((npts/2+1)*sizeof(fftw_complex));  // compact output is of size n/2+1 
     phase_shift = (double*)      fftw_malloc((npts/2+1)*sizeof(double)); 
 	
-    // fftw3 version of the plans: ( http://fftw.org/fftw3_doc/One_002dDimensional-DFTs-of-Real-Data.html
+    // fftw3 version of the plans: ( http://fftw.org/fftw3_doc/One_002dDimensional-DFTs-of-Real-Data.html )
 	plan_surrogate_direct  = fftw_plan_dft_r2c_1d(npts, data_in, data_Ft, FFTW_ESTIMATE);
 	plan_surrogate_inverse = fftw_plan_dft_c2r_1d(npts, data_Ft, data_in, FFTW_ESTIMATE);
 
@@ -360,9 +360,52 @@ void surrogate_improved(double *x, int npts, int mx, int N_steps)
     free(surrogates_indices);    free(surrogates_ind_inv);
     return;
 }
+
+
+
+
+
+/****************************************************************************************/
+/* circular shift (in time) a (possibly multi-dimensional) dataset, in-place            */
+/*      (this is method 6 in python)                                                    */
+/*                                                                                      */
+/*  It preserves the autocorrelation and marginal distribution of the signal (and the   */
+/*  full dynamics of any other signal (think TE here)), and it destroys only the        */
+/*  temporal alignment between them.                                                    */
+/* Use shifts larger than the autocorrelation time of the signal, the embedding span,   */
+/*  and any plausible interaction delay. Draw many different shifts (100–1000).         */
+/*                                                                                      */
+/* x      : signal, of size (mx,npts)                                                   */
+/* npts   : size along time                                                             */
+/* mx     : dimensionality of the signal                                                */
+/* shift  : by how much (in time) the signal should be shifted                          */
+/*                                                                                      */
+/*  out[(i + shift) mod n] = x[i]                                                       */
+/*                                                                                      */
+/* 2026-11-04 : first version                                                           */
+/****************************************************************************************/
+void circular_shift_data(double *x, int npts, int mx, int shift)
+{   double *out;
+    register int d;
+    int  stride = shift%npts;           // safeguard
+    
+    if (stride==0) return;              // nothing to do
+    if (stride<0)  stride+=npts;        // negative shift (but circular)
+
+    out = malloc(npts*mx * sizeof(double)); 
+    for (d=0; d<mx; d++)
+    {   /* last stride samples go to the front, the first npts-stride samples go after them */
+        memcpy(out,          x+(d*npts) + (npts - stride),         stride  * sizeof(double));
+        memcpy(out + stride, x+(d*npts),                   (npts - stride) * sizeof(double));
+        memcpy(x+(d*npts)  , out,                                   npts   * sizeof(double));
+    }
+
+    free(out);    
+    return;
+}
      
      
-     
+
     
     
 /****************************************************************************************/
@@ -382,6 +425,7 @@ void init_surrogates_rng(void)
 
 /****************************************************************************************/
 /* shuffles a (possibly multi-dimensional) dataset of npts elements, in-place           */
+/*      (this is method 0 (defaut) in python)                                           */
 /*                                                                                      */
 /* 2023-01-30 : first version                                                           */
 /* 2023-02-06 : this is the version used in cython, due to memory leaks with the other  */

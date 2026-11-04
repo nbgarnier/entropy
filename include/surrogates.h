@@ -8,6 +8,7 @@
 /*                                                                                      */
 /* 2023-01-30 : forked from "sampling.h"                                                */
 /* 2023-02-27 : added Fourier method (with fftw)                                        */
+/* 2026-11-04 : added circular shift                                                    */
 /****************************************************************************************/
 
 #ifndef SURROGATES_H
@@ -29,6 +30,7 @@ void    surrogate_wFt   (double *x, int npts, int mx);              // in-place!
 void    surrogate_aaFt  (double *x, int npts, int mx);              // in-place!
 void  surrogate_improved(double *x, int npts, int mx, int N_steps); // in-place!
 void    Gaussianize     (double *x, int npts, int mx);              // in-place!
+void circular_shift_data(double *x, int npts, int mx, int shift);   // in-place!
 void    shuffle_data    (double *x, int npts, int mx);              // in-place!
 double *create_surrogate(double *x, int npts, int mx);              // returns new pointer
 

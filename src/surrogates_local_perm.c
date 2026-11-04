@@ -8,6 +8,8 @@
  *  it implements the "local permutation" scheme defined in
  *  Jorge RUNGE - Proceedings of AISTATS, PMLR 84 pp938-947 (2018)
  *
+ *  For TE, the null hypothesis is “no information flows from Y to X, but everything else is unchanged.
+ * 
  *  Created by Nicolas Garnier on 2026/10/27.
  *  Copyright 2012-2026 ENS-Lyon - CNRS. All rights reserved.
  *
@@ -73,6 +75,8 @@ void full_embed(double *x, int npts, int mx, int px, int tau, int Theiler, doubl
  * creates a set of surrogates for PMI bias estimation,
  * using nearest neighbor statistics
  *
+ * for TE, the null hypothesis is “no information flows from Y to X, but everything else is unchanged.
+ * 
  * for the definition of PMI, and the estimator, see the article from Frenzel, Pompe 
  *		 PRL 99, 204101 (2007)
  *		 "Partial Mutual Information for Coupling Analysis of Multivariate Time Series"
@@ -197,7 +201,7 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
 
 
 /***************************************************************************************
- * creates a set of surrogates for PMI bias estimation,
+ * creates a set of surrogates for PMI (e.g., TE) bias estimation,
  * using nearest neighbor statistics
  *
  * same as functions above, but arguments x and z here will be time-embedded on-the-fly
