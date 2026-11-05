@@ -220,6 +220,8 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
       - the second returned array contains an estimator of the std, as a function of stride.
       - (optional) a third returned array (returned only if the parameter get_samplings is set to 1) contains all sampling parameters used for each estimation. This is usefull to track the value of N_eff or tau-Theiler used in the estimation as a function of the (time-)scale. See :any:`get_sampling` for a list of returned values, and how they are ordered.
       - (optional) a fourth returned array with std of the input data sampled or the estimation (and its std) (returned only if the parameter get_extra is set to 1)%.  See :any:`get_extra_info`. 
+
+    As this function performs a loop on the parameter "stride", it is not well-suited for the estimation of TE where a loop on the parameter "lag" is prefered. See function :any:`compute_over_lags`instead.
     """
     
     test = func(*args, stride=tau_set[0], **kwargs)
@@ -262,4 +264,94 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
         else:             return res, res_std
 
 
+
+#%% 2026-11-05, new function for TE over a set of lags (with bias estimation)
+# strognly inspired by function "compute_over_scales()" above
+def compute_over_lags(func, lag_set, *args, verbosity_timing=1, get_samplings=0, get_extra=0, N_surrogates=0, **kwargs):
+    """
+    runs iteratively an estimation over a range of lag values
+    
+    :param func: (full) name of the function to run (usually, "entropy.compute_TE")
+    :param lag_set: 1-d numpy array containing the set of values for the lag
+    :param verbosity_timing: 0 for no output, or 1,2 or more for more and more detailed output
+    :param get_samplings: 1 for an extra returned array, with samplings parameters used for each stride
+    :param get_extra: 1 for an extra returned array, with std of data used in the estimation
+    :param N_surrogates: nb of surrogates to generate for bias estimation (default=0, no bias estimation)
+    :param args: any parameter to pass to the function: is accepted, with the same syntax as usual (e.g.: x, y, k=5, ...)
+    
+    :returns: 2, 3 or 4 nd-arrays, each having their last dimension equal to tau_set.size (see below).
+    
+    example::
+        
+        # assuming you have data x and y available and ready for analysis
+        
+        lag_set = numpy.arange(1,20)      # a set of (time-)scales to examine
+        TE, TE_std, TE_bias = compute_over_scales(entropy.compute_TE, lag_set, x, y, N_eff=2000, N_surrogates=20)
+        
+        plt.errorbar(lag_set, TE, yerr=TE_std)
+        plt.plot(lag_set, TE_bias, '--')
+        
+    About returned values:
+      - the first returned array contains result(s) as a function of stride. If the function func returns more than one value, then this first nd-array will have more than one dimension.
+      - the second returned array contains an estimator of the std, as a function of stride.
+      - (optional) a third returned array (returned only if the parameter get_samplings is set to 1) contains all sampling parameters used for each estimation. This is usefull to track the value of N_eff or tau-Theiler used in the estimation as a function of the (time-)scale. See :any:`get_sampling` for a list of returned values, and how they are ordered.
+      - (optional) a fourth returned array with std of the input data sampled or the estimation (and its std) (returned only if the parameter get_extra is set to 1)%.  See :any:`get_extra_info`. 
+
+    This function performs a loop on the parameter "lag", and is well-suited for the estimation of TE. See function :any:`compute_over_scales` if you want a set of "stride" values instead.
+    """
+    
+    test = func(*args, lag=lag_set[0], N_surrogates=N_surrogates, **kwargs)
+#    print(type(test))
+    if isinstance(test, tuple):      # multiple returned values: we are using N_surrogates>0, so returned values are [TE1, TE2], TE_bias
+        if (len(test)!=2):  raise Exception("function", func.__name__, "returns a tuple with %d variables" %len(test), "(expecting 2)")
+        test_2 = test[0]
+        if isinstance(test_2, list): 
+            N_results = len(test_2)
+#            print("function first returns a list with", len(test_2), "variables: ", test_2)
+            res = PNP.zeros((N_results, lag_set.size), dtype=float)                             # [TE1, TE2]
+        else: raise Exception("I was expecting a list as the first element of the output tuple...")
+
+        test_2 = test[1]
+#        print(type(test_2))
+        if isinstance(test_2, CNP.ndarray):         # surrogates
+            ms = test_2.shape
+#            print("function returns a ndarray of shape", ms)
+            bias = PNP.zeros(ms + (lag_set.size,), dtype=float) # quantity
+            print(res.shape)
+        else: raise Exception("I was expecting an nd-array as the second element of the output tuple...")
+            
+    elif isinstance(test, list):                                                                # just [TE1, TE2]
+        N_results = len(test)
+#        print("function returns a list with", N_results, "values:", test)
+        res = PNP.zeros((N_results, lag_set.size), dtype=float) # quantity
+    else: raise Exception("function", func.__name__, "has unkown returned values type")
+    
+    res_std = PNP.zeros(lag_set.shape, dtype=float) # estimated errorbars
+    if get_samplings:   samplings = PNP.zeros((7, lag_set.size), dtype=float) # sampling parameters
+    if get_extra:       input_std = PNP.zeros((2, lag_set.size), dtype=float) # std of the input (and its std)
+        
+    for i_tau in enumerate(lag_set):
+        i = i_tau[0]
+        if (verbosity_timing>1):   print(i+1, "/", lag_set.size, "tau =", i_tau[1], end='')
+        elif (verbosity_timing>0): print(".", end='')
+   
+        time1=time()
+        if N_surrogates>0:  res[...,i], bias[...,i] = func(*args, lag=i_tau[1], N_surrogates=N_surrogates, **kwargs) 
+        else:               res[...,i] = PNP.atleast_2d( func(*args, lag=i_tau[1], **kwargs) )
+        res_std[i] = get_last_info()[0]
+        if get_samplings: samplings[...,i] = get_last_sampling()
+        if get_extra:     input_std[...,i] = get_extra_info()
+        time2=time()
+        if (verbosity_timing>2): print(" ->", res[...,i], "\t elapsed time: %f" %(time2-time1))
+        if (verbosity_timing>1): print()
+    if (verbosity_timing==1): print()
+
+    res_bias = PNP.mean(bias, axis=1)    # average over surrogates
+    
+    returned_values = res, res_std
+    if (N_surrogates>0):    returned_values = returned_values + (res_bias,)
+    if get_samplings:       returned_values = returned_values + (samplings,)
+    if get_extra:           returned_values = returned_values + (input_std,)
+    
+    return returned_values
 

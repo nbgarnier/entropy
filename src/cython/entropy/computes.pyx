@@ -363,20 +363,20 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")
             ratou = computes.compute_transfer_entropy_ann_mask(&x[0,0], &y[0,0], &mask[0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, N_surrogates, k_perm, Theiler, N_eff, N_real, k, &TE1, &TE2, &TE_bias[0,0])
-            if (N_surrogates>0): return [TE1,TE2], TE_bias
+            if (N_surrogates>0): return [TE1,TE2], PNP.asarray(TE_bias)
     else:
             if (k==-1): # Gaussian TE
                 ratou = computes.compute_transfer_entropy_Gaussian(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, N_surrogates, k_perm, Theiler, N_eff, N_real, &TE1, &TE_bias[0,0])
                 TE2=PNP.nan
-                if (N_surrogates>0): return [TE1,TE2], TE_bias
+                if (N_surrogates>0): return [TE1,TE2], PNP.asarray(TE_bias)
                 
             else:
                 if (N_surrogates>0):
                     ratou = computes.compute_transfer_entropy_ann_debias(&x[0,0], &y[0,0], 
                                     npts, nx, ny, n_embed_x, n_embed_y, stride, lag, N_surrogates, k_perm, Theiler, N_eff, N_real, k, 
                                     &TE1, &TE2, &TE_bias[0,0])
-                    return [TE1,TE2], TE_bias
+                    return [TE1,TE2], PNP.asarray(TE_bias)
 
                 else:
                     ratou = computes.compute_transfer_entropy_ann(&x[0,0], &y[0,0], 
