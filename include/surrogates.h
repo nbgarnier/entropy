@@ -9,6 +9,7 @@
 /* 2023-01-30 : forked from "sampling.h"                                                */
 /* 2023-02-27 : added Fourier method (with fftw)                                        */
 /* 2026-11-04 : added circular shift                                                    */
+/* 2026-11-07 : added seed management for the random nb generator                       */
 /****************************************************************************************/
 
 #ifndef SURROGATES_H
@@ -23,6 +24,7 @@ extern gsl_rng *surrogates_rng;         // 2026-10-28 now extern to be used by m
 int  init_surrogate_FFTW(int npts);
 void free_surrogate_FFTW(void);
 void init_surrogates_rng(void);
+void seed_surrogates_rng(long int seed);                            // 2026-11-07, new
 
 // public:
 void    surrogate_uFt   (double *x, int npts, int mx);              // in-place!

@@ -304,7 +304,7 @@ def compute_MI(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, int lag=1, 
-            int N_surrogates=0, int k_perm=10,
+            int N_surrogates=0, int k_perm=10, int seed=-1,
             int Theiler=0, int N_eff=0, int N_real=0,
             int k=commons.k_default, char[::1] mask=PNP.zeros(shape=(1),dtype='i1')):
     """           
@@ -323,6 +323,8 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     :param N_real: nb of realizations to consider (default=10) or -1 for N_real=stride (legacy behavior)
     :param N_surrogates: nb of surrogates (created with a local permutation scheme) to generate and use (to estimate the bias) (default=0, no bias estimation)
     :param k_perm: nb of neighbors to consider for generating the surrogates (default=10)
+    :param seed: impose the seed value 'seed' for all random number generation during the surrogates generation process (default=-1, seed untouched)
+    :type seed: int (a positive value is used a the seed)
     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
     :type k: int(, optional)
     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
@@ -358,6 +360,8 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     if (Theiler==0): Theiler=commons.samp_default.Theiler
     if (N_eff==0):   N_eff =commons.samp_default.N_eff
     if (N_real==0):  N_real=commons.samp_default.N_real
+    if (N_surrogates>0): # a safeguard
+                     commons.seed_surrogates_rng(seed)
     
     if (mask.size>1): # then this is a real mask, not just the default value
             if (npts_mask!=npts): raise ValueError("mask's size doesn't match data's shape")

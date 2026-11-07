@@ -74,6 +74,7 @@ cdef extern from "surrogates.h":
 	void Gaussianize		(double *x, int npts, int mx)
 	void circular_shift_data(double *x, int npts, int mx, int shift)
 	void shuffle_data		(double *x, int npts, int mx)
+	void seed_surrogates_rng(long int seed)							# 2026-11-07
 	double *create_surrogate(double *x, int npts, int mx)
 
 cdef extern from "surrogates_local_perm.h":

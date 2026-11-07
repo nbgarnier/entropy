@@ -382,12 +382,18 @@ def surrogate_WIP( double[:, ::1] x):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7, int shift=100):
+cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7, int shift=100, int seed=-1):
     """
     creates a surrogate version of (possibly multi-dimensional) data x
     
     :param method: an integer to indicate which type of surrogate to create (see below)
-    :param N_steps: an integer to indicate how many steps to use for improved surrogates (method 4 only)
+    :type method: integer
+    :param N_steps: to indicate how many steps to use for improved surrogates (method 4 only)
+    :type N_steps: integer (positive)
+    :param shift: positive to shift back in time, or negative to shift to future (method 6 only)
+    :type shift: integer 
+    :param seed: impose the seed value 'seed' for all random number generation during the surrogates generation process (default=-1, seed untouched)
+    :type seed: int (a positive value is used as the seed, a negative value indicates that the seed shouldn't be touched)
     :returns: an nd-array with the same dimmensionality as the input data x
     
     The method parameter can be:  
@@ -402,7 +408,9 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7, int shift=100):
     """
     cdef int npts=x.shape[1], nx=x.shape[0], m
     if (npts<nx):  raise ValueError("please transpose x")
-    if ((method<0) or (method>5)): raise ValueError("choose a valid method")
+    if ((method<0) or (method>6)): raise ValueError("choose a valid method")
+
+    commons.seed_surrogates_rng(seed)
     
     zout = PNP.zeros((nx, npts), dtype=float)
     cdef double[:, :] z = zout
@@ -427,7 +435,7 @@ cpdef surrogate( double[:, ::1] x, int method=0, int N_steps=7, int shift=100):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int k_perm=5, int N_surrogates=10):
+cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int k_perm=5, int N_surrogates=10, seed=-1):
     """
     creates a set of surrogates to be used for PMI PMI(X,Y|Z) estimation
     
@@ -437,6 +445,8 @@ cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int 
     :type k_perm: int.
     :param N_surrogates: an integer to indicate how many different surrogates to generate (default 10)
     :type N_surrogates: int.
+    :param seed: impose the seed value 'seed' for all random number generation during the surrogates generation process (default=-1, seed untouched)
+    :type seed: int (a positive value is used as the seed, a negative value indicates that the seed shouldn't be touched)
     :returns: an ensemble of surrogates for x (each surrogate has the same dimmensionality as the input data x)
     :rtype: a Numpy 3d-array with shape (N_surrogates, x.shape[0], x.shape[1])
 
@@ -454,6 +464,8 @@ cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int 
     if (nptz!=npts):  raise ValueError("x and z do not have the same number of points in time")
     if (k_perm<2):    raise ValueError("k_perm needs to be larger than 1 in order to have an effect...")
     if (N_surrogates<1): raise ValueError("I need to compute at least 1 surrogate...")
+    
+    commons.seed_surrogates_rng(seed)
 
     zout = PNP.zeros((N_surrogates, dim_x, npts), dtype=float)
     cdef double[:, :, :] surrogates = zout
@@ -464,7 +476,7 @@ cpdef surrogates_PMI( double[:, ::1] x, double[:, ::1] y, double[:, ::1] z, int 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, int k_perm=5, int N_surrogates=10):
+cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_y=1, int stride=1, int k_perm=5, int N_surrogates=10, seed=-1):
     """
     creates a set of surrogates of x to be used for TE(x->y) estimation 
     
@@ -480,6 +492,8 @@ cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_
     :type k_perm: integer
     :param N_surrogates: an integer to indicate how many different surrogates to generate
     :type N_surrogates: integer (default=10)
+    :param seed: impose the seed value 'seed' for all random number generation during the surrogates generation process (default=-1, seed untouched)
+    :type seed: int (a positive value is used as the seed, a negative value indicates that the seed shouldn't be touched)
     :returns: an ensemble of surrogates for x (each surrogate has the same dimmensionality as the input data x)
     :rtype: a Numpy 3d-array with shape (N_surrogates, x.shape[0], x.shape[1])
 
@@ -507,6 +521,8 @@ cpdef surrogates_TE( double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_
     if (npty!=npts):  raise ValueError("x and y do not have the same number of points in time")
     if (k_perm<2):    raise ValueError("k_perm needs to be larger than 1 in order to have an effect...")
     if (N_surrogates<1): raise ValueError("I need to compute at least 1 surrogate...")
+
+    commons.seed_surrogates_rng(seed)
 
     zout = PNP.zeros((N_surrogates, dim_x, npts), dtype=float)
     cdef double[:, :, :] surrogates = zout

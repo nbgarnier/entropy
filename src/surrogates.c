@@ -11,6 +11,8 @@
 /*              Theiler et al Physica D 58 pp77-94 (1992)                               */
 /* 2023-03-01 : Jupyter notebook causality_couples_2023-03-01_test_surrogates.ipynb     */
 /* 2026-10-23 : bug correction by Martin Frasch                                         */
+/* 2026-11-04 : added circular shift                                                    */
+/* 2026-11-07 : added seed management for the random nb generator                       */
 /****************************************************************************************/
 #include <stddef.h>                     // for size_t
 #include <string.h>                     // for memcpy
@@ -31,16 +33,18 @@
 #include "surrogates.h"
 
 
-// following are used by basic shuffling method, AND by FT surrogates methods:
-static int surrogates_rng_state=0;  // to keep track of the rng state
-gsl_rng *surrogates_rng;            // 2026-10-28 removed static because is now global (extern in .h)
+// following are used by basic shuffling method, by FT surrogates methods, and PMI/TE local permutations method:
+static int surrogates_rng_state=0;      // to keep track of the rng state
+static long int surrogates_rng_seed=-1; // 2026-11-07 may be changed later
+                                        // note: this is a signed int, to keep the posssibillity of (-1) (not touching the seed, legacy behavior)
+gsl_rng *surrogates_rng;                // 2026-10-28 removed static because is now global (extern in .h)
 
 // following is used by aaFt surrogate method:    
 static int *surrogates_indices; 
 static int *surrogates_ind_inv; 
 
 // following are used by FT surrogates methods:
-static int surrogates_FFT_state=0;  // to keep track of the FFT state
+static int surrogates_FFT_state=0;      // to keep track of the FFT state
 static fftw_complex *data_Ft;
 static double       *phase_shift;
 static double       *data_in; 
@@ -420,6 +424,21 @@ void init_surrogates_rng(void)
         surrogates_rng = gsl_rng_alloc(T);
         surrogates_rng_state++;
     }
+    // at this stage, the seed used is gsl_rng_default_seed (0 by default, but can be set by environment variable GSL_RNG_SEED)
+
+    // 2026-11-07: initialize or set the seed (only if required):
+    if (surrogates_rng_seed>=0)  gsl_rng_set(surrogates_rng, (unsigned)surrogates_rng_seed);
+}
+
+
+/****************************************************************************************/
+/* set the seed (if >=0 value provided) for the random nb generator used for shuffling  */
+/*  or leave it untouched (if <0 value provided) so that numbers are always different,  */
+/*  which is the expected (and legacy) behavior)                                        */
+/****************************************************************************************/
+void seed_surrogates_rng(long int seed)
+{   if (seed>=0) surrogates_rng_seed = (unsigned long int)seed;    
+    else         surrogates_rng_seed = -1;
 }
 
 

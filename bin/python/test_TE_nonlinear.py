@@ -101,18 +101,23 @@ def generate_coupled_signals(system="henon", npts=5000, coupling=0.4, **kwargs):
     return(x,y)
 
 
-def compute_and_print_TE(x, y, lag=1, N_surrogates=20):
-    res, surr = entropy.compute_TE(x, y, lag=lag, N_surrogates=N_surrogates)
+def compute_and_print_TE(x, y, lag=1, N_surrogates=20, seed=-1):
+    res, surr = entropy.compute_TE(x, y, lag=lag, N_surrogates=N_surrogates, seed=seed)
     TE      = res[0]
     TE_std  = entropy.get_last_info()[0]
     TE_bias = np.mean(surr[0])
     print("lag=%2d\tTE(x->y) %1.4f +/- %1.4f with bias %1.4f" %(lag, TE, TE_std, TE_bias))
+    if (seed>=-2): 
+        print("seed set to", seed, "-> all surrogates TE values:", surr[0])
 
-    res, surr = entropy.compute_TE(y, x, lag=lag, N_surrogates=N_surrogates)
+    res, surr = entropy.compute_TE(y, x, lag=lag, N_surrogates=N_surrogates, seed=seed)
     TE      = res[0]
     TE_std  = entropy.get_last_info()[0]
     TE_bias = np.mean(surr[0])
     print("\tTE(y->x) %1.4f +/- %1.4f with bias %1.4f" %(TE, TE_std, TE_bias))
+#    if (seed>=0): 
+#        print("seed set to", seed, "-> all surrogates TE values:", surr[0])
+    
 
 
 
@@ -126,16 +131,17 @@ def main():
     P1.set_xlabel("lag")
 
     npts = 50000
-    x,y = generate_coupled_signals("henon")
+#    x,y = generate_coupled_signals("henon")
     x,y = generate_coupled_signals("quadratic", npts, coupling=0.5, delay=10, noise=0.3)
     x =tools.reorder(x)
     y =tools.reorder(y)
 
-#    compute_and_print_TE(x, y, lag=1, N_surrogates=20)
-#    compute_and_print_TE(x, y, lag=5, N_surrogates=20)
-#    compute_and_print_TE(x, y, lag=10, N_surrogates=20)
+    # test the effect of "seed": is seed is provided, we should get the same surrogates, so the TE values
+#    compute_and_print_TE(x, y, lag=1, N_surrogates=8, seed=3)
+#    compute_and_print_TE(x, y, lag=1, N_surrogates=8)
+#    compute_and_print_TE(x, y, lag=1, N_surrogates=8, seed=3)
 
-    lag_set = numpy.arange(1, 25)      # a set of (time-)scales to examine
+    lag_set = numpy.arange(1, 20)      # a set of (time-)scales to examine
     TE, TE_std, TE_bias = tools.compute_over_lags(entropy.compute_TE, lag_set, verbosity_timing=1, x=x, y=y, N_surrogates=20)
     h = P1.errorbar(lag_set, TE[0], yerr=TE_std, label=r"TE($x\rightarrow y$)")
     my_color = h[0].get_color() 
