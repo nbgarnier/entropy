@@ -286,10 +286,10 @@ def compute_over_lags(func, lag_set, *args, verbosity_timing=1, get_samplings=0,
         # assuming you have data x and y available and ready for analysis
         
         lag_set = numpy.arange(1,20)      # a set of (time-)scales to examine
-        TE, TE_std, TE_bias = compute_over_scales(entropy.compute_TE, lag_set, x, y, N_eff=2000, N_surrogates=20)
+        TE, TE_std, TE_bias = compute_over_scales(entropy.compute_TE, lag_set, x, y, N_eff=4000, N_surrogates=20)
         
-        plt.errorbar(lag_set, TE, yerr=TE_std)
-        plt.plot(lag_set, TE_bias, '--')
+        plt.errorbar(lag_set, TE[0], yerr=TE_std)
+        plt.plot(lag_set, TE[0]-TE_bias[0], '--')
         
     About returned values:
       - the first returned array contains result(s) as a function of stride. If the function func returns more than one value, then this first nd-array will have more than one dimension.
@@ -317,7 +317,6 @@ def compute_over_lags(func, lag_set, *args, verbosity_timing=1, get_samplings=0,
             ms = test_2.shape
 #            print("function returns a ndarray of shape", ms)
             bias = PNP.zeros(ms + (lag_set.size,), dtype=float) # quantity
-            print(res.shape)
         else: raise Exception("I was expecting an nd-array as the second element of the output tuple...")
             
     elif isinstance(test, list):                                                                # just [TE1, TE2]
