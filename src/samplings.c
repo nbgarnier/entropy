@@ -1,5 +1,5 @@
 /****************************************************************************************/
-/* sampling.c                                                                           */
+/* samplings.c                                                                          */
 /*                                                                                      */
 /* functions for embedding, and more generaly sampling, datasets.                       */
 /*                                                                                      */
@@ -15,8 +15,8 @@
 #include <stdio.h>                  // for printf
 #include <math.h>                   // for trunc (to replace %)
 
-#include <gsl/gsl_rng.h>            // for random permutations
-#include <gsl/gsl_randist.h>
+// #include <gsl/gsl_rng.h>            // for random permutations
+// #include <gsl/gsl_randist.h>
 
 #include "verbosity.h"
 #include "samplings.h"
@@ -46,8 +46,6 @@ samp_param samp_default = { .Theiler=-4, .N_eff=4096, .N_real=10, .type=4};
 samp_param last_samp = { .Theiler=0, .Theiler_max=0, .N_eff=0, .N_eff_max=0, .N_real=0, .N_real_max=0, .type=0}; 
 samp_param_2d samp_2d = {.type=THEILER_2D_MAXIMAL};
 
-static int realizations_rng_state=0; // to keep track of the rng state
-static gsl_rng *realizations_rng;
     
 /****************************************************************************************/
 /* to perform embedding of data according to Theiler prescription                       */
@@ -305,56 +303,7 @@ void incr_avg_mask(double *x, int npts, int mx, int px, int stride, size_t *ind_
 }
 
 
-/****************************************************************************************/
-/* creates and returns a permutation of N elements                                      */
-/*                                                                                      */
-/* note that the permutation is allocated on the fly by this function,                  */
-/* so it should be properly de-allocated later after use                                */
-/****************************************************************************************/
-gsl_permutation *create_unity_perm(size_t N)
-{   gsl_permutation *perm;
-    const gsl_rng_type *T;
-    
-    if (realizations_rng_state==0) // never used
-    {   gsl_rng_env_setup();
-        T = gsl_rng_default;
-        realizations_rng = gsl_rng_alloc(T);
-        realizations_rng_state++;
-    }
-    
-    perm = gsl_permutation_alloc(N);
-    gsl_permutation_init(perm);
 
-    return(perm);
-}
-
-/****************************************************************************************/
-/* creates a new permutation of N elements, in-place                                    */
-/*                                                                                      */
-/* note that the permutation should be already allocated                                */
-/****************************************************************************************/
-void shuffle_perm(gsl_permutation *perm)
-{   if (realizations_rng_state>0)
-        gsl_ran_shuffle(realizations_rng, perm->data, perm->size, sizeof(size_t));
-
-    return;
-}
-
-/****************************************************************************************/
-/* deallocates a permutation                                                            */
-/*                                                                                      */
-/* note that the permutation should be already allocated                                */
-/****************************************************************************************/
-void free_perm(gsl_permutation *perm)
-{   if (realizations_rng_state>0) realizations_rng_state--;
-/*    if (realizations_rng_state>0)
-    {   gsl_rng_free(realizations_rng);
-        realizations_rng_state = 0;
-    }
-*/  // 2022-05-24: I now postpone the cleaning of the rng to the code exiting
-    gsl_permutation_free(perm);
-    return;
-}
 
 
 void printf_sampling_parameters(samp_param sp, char *text)

@@ -221,7 +221,7 @@ def compute_over_scales(func, tau_set, *args, verbosity_timing=1, get_samplings=
       - (optional) a third returned array (returned only if the parameter get_samplings is set to 1) contains all sampling parameters used for each estimation. This is usefull to track the value of N_eff or tau-Theiler used in the estimation as a function of the (time-)scale. See :any:`get_sampling` for a list of returned values, and how they are ordered.
       - (optional) a fourth returned array with std of the input data sampled or the estimation (and its std) (returned only if the parameter get_extra is set to 1)%.  See :any:`get_extra_info`. 
 
-    As this function performs a loop on the parameter "stride", it is not well-suited for the estimation of TE where a loop on the parameter "lag" is prefered. See function :any:`compute_over_lags`instead.
+    As this function performs a loop on the parameter "stride", it is not well-suited for the estimation of TE where a loop on the parameter "lag" is prefered. See function :any:`compute_over_lags` instead.
     """
     
     test = func(*args, stride=tau_set[0], **kwargs)

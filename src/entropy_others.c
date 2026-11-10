@@ -3,18 +3,20 @@
  *  
  *
  *  Created by Nicolas Garnier on 2013/04/19.
- *  Copyright 2013 ENS-Lyon - CNRS. All rights reserved.
+ *  Copyright 2013-2026 ENS-Lyon - CNRS. All rights reserved.
  *
  *  2013-04-19 : fork from entropy_symb.c: 2 new functions for ApEn and SampEn
  *  2020-03-04 : new single function, returning both ApEn and SampEn
  *  2023-12-06 : new function using masks and advanced samplings
+ *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  */
 
 #include <math.h>	            // for fabs
 #include <string.h>             // for memcpy
 
 #include "verbosity.h"
-#include "samplings.h"
+#include "samplings.h"          // created 2021-12-17 (to factor some operations)
+#include "samplings_random.h"   // new 2026-11-10
 #include "mask.h"
 
 #include "library_commons.h"  
@@ -421,6 +423,8 @@ double apply_kernel_Gaussian_nd(double* data, int npts, int m, double r)
 /* 2020-03-04 : new version, with stride, but no Theiler correction                   */
 /* 2023-12-06 : forked from "compute_complexity"                                      */
 /* 2023-12-08 : tested OK (see python script)                                         */
+/* 2026-11-10 : with refactored samplings (seed)                                      */
+/*              note: no random choice of realisations yet, see compute_DI()          */
 /**************************************************************************************/
 int compute_complexity_mask(double* data, char *mask, int npts, int m, int stride, 
                             int tau_Theiler, int N_eff, int N_realizations, 
@@ -432,7 +436,7 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-    gsl_permutation *perm_pts;
+    gsl_permutation *perm_pts, *dummy;
     char message[128];
     
     for (k=0; k<m+1; k++)   { ApEn[k] = my_NAN;        SampEn[k] = my_NAN;    }
@@ -459,7 +463,8 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
         {   sprintf(message, "npts_good = %d < N_eff =%d (Theiler %d)", npts_good, sp.N_eff, sp.Theiler);
             return(print_error("compute_complexity_mask", message));
         }   
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        init_samplings(&dummy, 0, &perm_pts, npts_good);
+        shuffle_samplings_pts_perm(perm_pts);           // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
         for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
 
@@ -502,7 +507,7 @@ int compute_complexity_mask(double* data, char *mask, int npts, int m, int strid
 
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);        
+        free_samplings(dummy, perm_pts);      
     }
     for (k=0; k<m+1; k++) { avg_ae[k] /= sp.N_real;     avg_se[k] /= sp.N_real;  }
     var_ae /= sp.N_real;        var_ae -= avg_ae[m]*avg_ae[m];

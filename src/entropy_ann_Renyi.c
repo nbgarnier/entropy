@@ -2,12 +2,13 @@
  *  entropy_ANN_Renyi.c
  *
  *  Created by Nicolas Garnier on 05/10/2014.
- *  Copyright 2014-2022 ENS-Lyon - CNRS. All rights reserved.
+ *  Copyright 2014-2026 ENS-Lyon - CNRS. All rights reserved.
  *
  *  2014-10-05 : new function "compute_Renyi_nd_ann"
  *  2021-12-15 : using multithreading
  *  2021-12-15 : returning std of estimator (and other statistics)
  *  2022-06-09 : nw with enahanced samplings and increments
+ *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  *
  */
 
@@ -18,6 +19,7 @@
 #include "library_matlab.h"         // compilation for Matlab
 #include "ANN_wrapper.h"            // for ANN library (in C++)
 #include "samplings.h"              // created 2021-12-17 (to factor some operations)
+#include "samplings_random.h"       // new 2026-11-10
 #include "entropy_ann_threads.h"
 #include "entropy_ann_threads_Renyi.h"
 
@@ -146,12 +148,12 @@ int compute_Renyi_ann(double *x, int npts, int m, int p, int tau, double q, int 
     
     x_new  = (double*)calloc(m*p_new*sp.N_eff, sizeof(double));
     
-    perm_real = create_unity_perm(N_real_max);  if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
     
     nb_errors=0; last_npts_eff=0;
     for (j=0; j<sp.N_real; j++)     // loop over independant windows
-    {   if (sp.type>=3) shuffle_perm(perm_pts);
+    {   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
     
         if (method==0)      // regular embedding (not increments)
             Theiler_embed(x+(tau*(p-1)+perm_real->data[j]), npts, m, p, tau, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
@@ -180,7 +182,7 @@ int compute_Renyi_ann(double *x, int npts, int m, int p, int tau, double q, int 
     last_samp=sp;
     
     free(x_new);
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
     return(nb_errors);
 } /* end of function "compute_Renyi_ann" *************************************/
 

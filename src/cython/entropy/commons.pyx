@@ -169,7 +169,8 @@ def set_Theiler(int Theiler=4):
 # 2022-05-23: OK
 # 2023-11-17: N_real==1 now accepted
 # 2024-09-18: N_eff and N_real now also set to default values for Theiler==1 
-def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10):
+# 2026-11-10: new parameter 'seed' for the random number generators
+def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10, int seed=-1):
     """ set_sampling(Theiler='adapted', N_eff=4096, N_real=10)
     
     sets the way the library handles by default the Theiler prescription, the number N_eff of effective points and the number N_real of realizations.
@@ -178,6 +179,8 @@ def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10):
     :param Theiler: prescription (default='adapted'), see function :any:`set_Theiler` for details on possible options.
     :param N_eff: number of points to consider in the statistics (default=4096).
     :param N_real: number of realizations to consider (default=10).
+    :param seed: impose the seed value 'seed' for all random number generation during the sampling process (default=-1, seed untouched)
+    :type seed: int (a positive value is used as the seed, a negative value indicates that the seed shouldn't be touched)
     :returns: no output.
     
     parameters N_eff and N_real are overriden if Theiler=='legacy'
@@ -188,6 +191,7 @@ def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10):
     if (commons.samp_default.type>0): # 2024-09-18: >1 not legacy replaced by larger condition
         if (N_eff>1)  : commons.samp_default.N_eff=N_eff
         if (N_real>0) : commons.samp_default.N_real=N_real
+        commons.seed_samplings_rng(seed)
     return
 
 
@@ -195,7 +199,8 @@ def get_sampling(verbosity=1):
     """
     prints the default values of sampling parameters used in all functions.
     
-    :param verbosity: an integer in {0,1} (default=1). If verbosity>0, a human-readable message expliciting the 4 returned values is printed in the console.
+    :param verbosity: an integer in {0,1} (default=1). If verbosity>0, a human-readable message expliciting the 4 returned values is printed in the console,
+                as well as the value of the seeds in use.
     :returns: the following 4 values, in the following order: 
 
       - the default type of Theiler prescription
@@ -216,6 +221,8 @@ def get_sampling(verbosity=1):
         print("Theiler scale        :", commons.samp_default.Theiler)
         print("N_eff                :", commons.samp_default.N_eff)
         print("N_realizations       :", commons.samp_default.N_real)
+        print("seed (realisations)  :", commons.samplings_pts_rng_seed )
+        print("seed (points)        :", commons.samplings_real_rng_seed )
     return [commons.samp_default.type, commons.samp_default.Theiler, commons.samp_default.N_eff, commons.samp_default.N_real]
     
 def get_last_sampling(int verbosity=0):

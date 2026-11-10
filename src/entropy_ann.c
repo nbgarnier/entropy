@@ -5,7 +5,7 @@
  *  using ANN library : http://www.cs.umd.edu/~mount/ANN/
  *
  *  Created by Nicolas Garnier on 2012/02/25.
- *  Copyright 2012-2022 ENS-Lyon - CNRS. All rights reserved.
+ *  Copyright 2012-2026 ENS-Lyon - CNRS. All rights reserved.
  *
  *  2012-02-28 : fork from entropy_nns.c; include and use of ANN library
  *  2012-05-03 : Theiler correction properly implemented
@@ -26,6 +26,7 @@
  *  2022-04-14 : fork from "entropy_ann.c" for new samplings of realizations (_N versions)
  *  2022-12-07 : changes in samplings.c + new extensive tests performed: legacy Theiler is operating well
  *  2023-11-28 : renamed "entropy_ann_N.c" into "entropy_ann.c", and all functions accordingly
+ *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  */
 
 #include <math.h>                   // for fabs and others
@@ -37,6 +38,7 @@
 #include "ANN_wrapper.h"            // for ANN library functions (in C++)
 #include "nns_count.h"              // NBG counting functions (2019-01-23)
 #include "samplings.h"              // created 2021-12-17 (to factor some operations)
+#include "samplings_random.h"       // new 2026-11-10
 #include "math_tools.h"
 #include "entropy_ann.h"
 #include "entropy_ann_single_entropy.h"  // for the engine function to compute Shannon entropy
@@ -148,13 +150,13 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
     
     x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
 
-    perm_real = create_unity_perm(N_real_max);  if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     nb_errors=0; last_npts_eff=0;    
     data_std=0;  data_std_std=0;        // 2025-04-20, for std of the sampled signal
     for (j=0; j<sp.N_real; j++)   // loop over "independant" windows
-    {   if (sp.type>=3) shuffle_perm(perm_pts);
+    {   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
     
         Theiler_embed(x+(tau*(p-1)+perm_real->data[j]), npts, m, p, tau, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 #ifdef DEBUG
@@ -197,7 +199,7 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
     last_samp=sp;
 
     free(x_new);     
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_entropy_ann" **********************************************/
 
@@ -268,15 +270,15 @@ int compute_relative_entropy_ann(double *x, int nx, double *y, int ny, int mx, i
     x_new     = (double*)calloc(n_new*sp_x.N_eff, sizeof(double)); // embedded x
     y_new     = (double*)calloc(n_new*sp_y.N_eff, sizeof(double)); // embedded y
     
-    // "generate" independant windows and samplings:
-    perm_real_x = create_unity_perm(sp_x.N_real_max); if (sp_x.type>=3) shuffle_perm(perm_real_x);
-    perm_real_y = create_unity_perm(sp_y.N_real_max); if (sp_y.type>=3) shuffle_perm(perm_real_y);
-    perm_pts_x  = create_unity_perm(sp_x.N_eff_max);
-    perm_pts_y  = create_unity_perm(sp_y.N_eff_max);
+    // "generate" independant windows (realizations) and sets of sampling points:
+    init_samplings(&perm_real_x, sp_x.N_real_max, &perm_pts_x, sp_x.N_eff_max);
+    if (sp_x.type>=3) shuffle_samplings_real_perm(perm_real_x);
+    init_samplings(&perm_real_y, sp_y.N_real_max, &perm_pts_y, sp_y.N_eff_max);
+    if (sp_y.type>=3) shuffle_samplings_real_perm(perm_real_y);
     
     nb_errors=0; last_npts_eff=0;  // global variables
     for (j=0; j<N_real_tot; j++)    // loop over independant windows
-    {   if (sp_x.type>=3) { shuffle_perm(perm_pts_x); shuffle_perm(perm_pts_y); }
+    {   if (sp_x.type>=3) { shuffle_samplings_pts_perm(perm_pts_x); shuffle_samplings_pts_perm(perm_pts_y); }
     
         Theiler_embed(x+(tau*(px-1)+perm_real_x->data[j]), nx, mx, px, tau, sp_x.Theiler, perm_pts_x->data, x_new, sp_x.N_eff);
         Theiler_embed(y+(tau*(py-1)+perm_real_y->data[j]), ny, my, py, tau, sp_y.Theiler, perm_pts_y->data, y_new, sp_y.N_eff);        
@@ -307,8 +309,8 @@ int compute_relative_entropy_ann(double *x, int nx, double *y, int ny, int mx, i
      last_samp=sp_x;
      
      free(x_new);               free(y_new);
-     free_perm(perm_real_x);    free_perm(perm_pts_x);
-     free_perm(perm_real_y);    free_perm(perm_pts_y);
+     free_samplings(perm_real_x, perm_pts_x);
+     free_samplings(perm_real_y, perm_pts_y);
      return(nb_errors);
 } /* end of function "compute_relative_entropy_ann" *************************************/
 
@@ -370,12 +372,12 @@ int compute_mutual_information_ann(double *x, double *y, int nx, int mx, int my,
     
 	x_new = (double*)calloc(n*sp.N_eff, sizeof(double));    // we work with a unique dataset
 	
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);            // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     nb_errors=0; last_npts_eff=0;
 	for (j=0; j<sp.N_real; j++)  // loop over independant windows
-	{	if (sp.type>=3) shuffle_perm(perm_pts);
+	{	if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 	
         Theiler_embed(x+(tau*(pp-1)+perm_real->data[j]), nx, mx, px, tau, sp.Theiler, perm_pts->data, x_new,                sp.N_eff);
         Theiler_embed(y+(tau*(pp-1)+perm_real->data[j]), nx, my, py, tau, sp.Theiler, perm_pts->data, x_new+mx*px*sp.N_eff, sp.N_eff);
@@ -402,7 +404,7 @@ int compute_mutual_information_ann(double *x, double *y, int nx, int mx, int my,
 	last_samp=sp;
 	
 	free(x_new);
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_mutual_information_ann" ************************************/
 
@@ -471,13 +473,13 @@ int compute_partial_MI_ann(double *x, double *y, double *z, int npts, int *dim, 
 	x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
     if (x_new==NULL) return(printf("[compute_partial_MI_ann] : memory allocation problem !\n"
                                     "\tplease check parameters (especially dimensions, total is %d)\n", n));
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
 	shift  = (pp-1)*tau;            // present is shifted
 	nb_errors=0; last_npts_eff=0;   // global variables
     for (j=0; j<sp.N_real; j++)     // loop over independant windows
-	{   if (sp.type>=3) shuffle_perm(perm_pts);
+	{   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 	
         Theiler_embed(x+shift+perm_real->data[j], npts, mx, px, tau, sp.Theiler, perm_pts->data, x_new                         , sp.N_eff);
         Theiler_embed(z+shift+perm_real->data[j], npts, mz, pz, tau, sp.Theiler, perm_pts->data, x_new+(      (mx*px)*sp.N_eff), sp.N_eff);
@@ -509,7 +511,7 @@ int compute_partial_MI_ann(double *x, double *y, double *z, int npts, int *dim, 
     last_samp=sp;
     
     free(x_new);
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_partial_MI_ann" */
 

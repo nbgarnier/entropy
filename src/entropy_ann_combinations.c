@@ -26,6 +26,7 @@
  *  2022-05-10 : new samplings propagated in all functions
  *  2023-02-23 : TE(X->Y) is now correctly ordered (was: TE(Y->X)); same with DI
  *  2025-12-03 : rewritten compute_entropy_rate_ann function, renamed old function _old to keep it
+ *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  */
 
 #include <math.h>                   // for fabs and others
@@ -37,6 +38,7 @@
 #include "ANN_wrapper.h"            // for ANN library functions (in C++)
 #include "nns_count.h"              // NBG counting functions (2019-01-23)
 #include "samplings.h"              // created 2021-12-17 (to factor some operations)
+#include "samplings_random.h"       // new 2026-11-10
 #include "math_tools.h"
 #include "surrogates_local_perm.h"       // for TE/PMI surrogates (local permutations)
 #include "entropy_ann.h"
@@ -122,14 +124,14 @@ int compute_entropy_increments_ann(double *x, int npts, int m, int px, int strid
     
     x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
 
-    perm_real = create_unity_perm(N_real_max);  if (sp.type>=3) shuffle_perm(perm_real);    // for independant windows
     // 2022-05-23: note: shuffling is a time-consuming operation, so large N_real_max should be avoided (Theiler=-4)
-    perm_pts  = create_unity_perm(sp.N_eff_max);                            // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
     
     nb_errors=0; last_npts_eff=0;
     data_std=0;  data_std_std=0;        // 2022-03-11, for std of the increments
     for (j=0; j<sp.N_real; j++)         // loop over independant windows
-    {   if (sp.type>=3) shuffle_perm(perm_pts);
+    {   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
         
         if (incr_type==1) increments(x+(stride*(p-1)+perm_real->data[j]), npts, m, p, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
         else              incr_avg  (x+(stride*(p-1)+perm_real->data[j]), npts, m, p, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
@@ -163,7 +165,7 @@ int compute_entropy_increments_ann(double *x, int npts, int m, int px, int strid
     last_samp=sp;
     
     free(x_new); 
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_entropy_increments_ann" ***********************************/
 
@@ -307,12 +309,12 @@ int compute_entropy_rate_ann(double *x, int npts, int m, int p, int stride,
     
     x_new  = (double*)calloc(m*(p+1)*sp.N_eff, sizeof(double));
 
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);            // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     nb_errors=0; last_npts_eff=0;
 	for (j=0; j<sp.N_real; j++)  // loop over independant windows
-	{	if (sp.type>=3) shuffle_perm(perm_pts);
+	{	if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 	
         Theiler_embed(x+(stride*(p+1-1)+perm_real->data[j]), npts, m, p+1, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 
@@ -363,7 +365,7 @@ int compute_entropy_rate_ann(double *x, int npts, int m, int p, int stride,
     last_samp=sp;
 
     free(x_new);
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_entropy_rate_ann" *************************************/
 
@@ -415,12 +417,12 @@ int compute_regularity_index_ann(double *x, int npts, int mx, int px, int stride
     if (sp.N_eff<2*k) return(printf("[compute_regularity_index_ann] : not enough points (%d vs k=%d)\n", sp.N_eff, k));
 	
     x_new     = (double*)calloc(n*sp.N_eff, sizeof(double));
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);         // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     nb_errors=0; last_npts_eff=0;
 	for (j=0; j<sp.N_real; j++)  // loop over independant windows
-	{   if (sp.type>=3) shuffle_perm(perm_pts);
+	{   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 	
         Theiler_embed(x+(stride*(px  -1)+perm_real->data[j]), npts, mx, px, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
         if (incr_type==1) increments(x+(stride*(px+1-1)+perm_real->data[j]), npts, mx,  2, stride, sp.Theiler, perm_pts->data, x_new+mx*px*sp.N_eff, sp.N_eff);
@@ -444,7 +446,7 @@ int compute_regularity_index_ann(double *x, int npts, int mx, int px, int stride
 	last_samp=sp;
 	
 	free(x_new);
-	free_perm(perm_real);    free_perm(perm_pts);
+	free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_regularity_index_ann" **********************************/
 
@@ -512,12 +514,12 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
     x_new  = (double*)calloc(nn*sp.N_eff, sizeof(double));
 	shift  = (pp-1)*stride;                             // present is shifted
 	
-	perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);        // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
     
     nb_errors=0; last_npts_eff=0;
     for (j=0; j<sp.N_real; j++)                         // loop over independant windows
-	{   if (sp.type>=3) shuffle_perm(perm_pts);
+	{   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 
         Theiler_embed(y+shift+lag+perm_real->data[j], nx, my,  1, stride, sp.Theiler, perm_pts->data, x_new,                      sp.N_eff);
         Theiler_embed(y+shift+perm_real->data[j],     nx, my, py, stride, sp.Theiler, perm_pts->data, x_new+(      my *sp.N_eff), sp.N_eff);
@@ -549,7 +551,7 @@ int compute_transfer_entropy_ann(double *x, double *y, int nx, int mx, int my, i
     
     free(x_new);
 
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_transfer_entropy_ann" */
 
@@ -599,12 +601,12 @@ int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, in
     surrogates  = (double*)calloc(N_surrogates*mx*px*sp.N_eff, sizeof(double)); // 2026-10-30 correction
 	shift  = (pp-1)*stride;                             // present is shifted
 	
-	perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);        // for random sampling
+	init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
     
     nb_errors=0; last_npts_eff=0;
     for (j=0; j<sp.N_real; j++)                         // loop over independant windows
-	{   if (sp.type>=3) shuffle_perm(perm_pts);
+	{   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 
         Theiler_embed(y+shift+lag+perm_real->data[j], nx, my,  1, stride, sp.Theiler, perm_pts->data, full_x_new,                      sp.N_eff);
         Theiler_embed(y+shift+perm_real->data[j],     nx, my, py, stride, sp.Theiler, perm_pts->data, full_x_new+(      my *sp.N_eff), sp.N_eff);
@@ -656,7 +658,7 @@ int compute_transfer_entropy_ann_debias(double *x, double *y, int nx, int mx, in
     
     free(full_x_new);       free(surrogates);
 
-    free_perm(perm_real);   free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_transfer_entropy_ann_debias" */
 
@@ -710,8 +712,8 @@ int compute_directed_information_ann(double *x, double *y, int npts, int mx, int
     N_real_max = set_sampling_parameters(npts, N, stride, &sp, "compute_directed_information_ann");
     if (N_real_max<1)   return(printf("[compute_directed_information_ann] : aborting !\n"));
     if (sp.N_eff < 2*k) return(printf("[compute_directed_information_ann] : N_eff=%d is too small compared to k=%d)\n", sp.N_eff, k));
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);     // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     di1    = (double*)calloc(N, sizeof(double));    var1 = (double*)calloc(N, sizeof(double));
     di2    = (double*)calloc(N, sizeof(double));    var2 = (double*)calloc(N, sizeof(double));
@@ -719,7 +721,7 @@ int compute_directed_information_ann(double *x, double *y, int npts, int mx, int
 	
     nb_errors=0; last_npts_eff=0;       // global variables
     for (j=0; j<sp.N_real; j++)         // loop over realizations
-    {   if (sp.type>=3) shuffle_perm(perm_pts);
+    {   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
             
         for (n=1; n<=N; n++)            // loop on time-embedding, for a fixed realization since 2022-06-10
         {   shift  = (n-1)*stride;      // present is shifted
@@ -766,7 +768,7 @@ int compute_directed_information_ann(double *x, double *y, int npts, int mx, int
     free(di1); free(di2); free(var1); free(var2);
     
     free(x_new);
-   	free_perm(perm_real);    free_perm(perm_pts);
+   	free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_directed_information_ann" */
 

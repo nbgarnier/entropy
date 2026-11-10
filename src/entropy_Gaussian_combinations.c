@@ -10,6 +10,7 @@
  *  2021-12-21 : new file "entropy_ann_combinations.c" split from "entropy_ann.c"
  *  2022-05-10 : new samlpings propagated in all functions
  *  2022-10-11 : new file forked from "entropy_ann_combinations.c"
+ *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  */
 
 #include <math.h>                   // for fabs and others
@@ -21,6 +22,7 @@
 #include "ANN_wrapper.h"            // for ANN library functions (in C++)
 #include "nns_count.h"              // NBG counting functions (2019-01-23)
 #include "samplings.h"              // created 2021-12-17 (to factor some operations)
+#include "samplings_random.h"       // new 2026-11-10
 #include "math_tools.h"
 #include "surrogates_local_perm.h"       // for TE/PMI surrogates (local permutations)
 #include "entropy_Gaussian.h"
@@ -56,7 +58,7 @@
 /* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)				*/
 /*																			            */
 /* this function is a  wrapper to the functions :									    */
-/*	- compute_entropy_nd_Gaussian                                                            */
+/*	- compute_entropy_nd_Gaussian                                                       */
 /*																			            */
 /* 2021-12-17 : new function                                                            */
 /* 2022-01-08 : new increments type (1 for regular incr. or 2 for averaged)             */
@@ -93,14 +95,13 @@ int compute_entropy_increments_Gaussian(double *x, int npts, int m, int px, int 
     
     x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
 
-    perm_real = create_unity_perm(N_real_max); shuffle_perm(perm_real);     // for independant windows
-    // 2022-05-23: note: shuffling is a time-consuming operation, so large N_real_max should be avoided (Theiler=-4)
-    perm_pts  = create_unity_perm(sp.N_eff_max);                            // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
     
     nb_errors=0; last_npts_eff=0;
     data_std=0;  data_std_std=0;        // 2022-03-11, for std of the increments
     for (j=0; j<sp.N_real; j++)         // loop over independant windows
-    {   if (sp.type>=3) shuffle_perm(perm_pts);
+    {   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
         
         if (incr_type==1) increments(x+(stride*(p-1)+perm_real->data[j]), npts, m, p, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
         else              incr_avg  (x+(stride*(p-1)+perm_real->data[j]), npts, m, p, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
@@ -128,7 +129,7 @@ int compute_entropy_increments_Gaussian(double *x, int npts, int m, int px, int 
     last_samp=sp;
     
     free(x_new); 
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_entropy_increments_Gaussian" ***********************************/
 
@@ -185,12 +186,12 @@ int compute_entropy_rate_Gaussian(double *x, int npts, int m, int p, int stride,
 
     x_new  = (double*)calloc(m*(p+1)*sp.N_eff, sizeof(double));
 
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);            // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     nb_errors=0; last_npts_eff=0;
 	for (j=0; j<sp.N_real; j++)  // loop over independant windows
-	{	if (sp.type>=3) shuffle_perm(perm_pts);
+	{	if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 	
         Theiler_embed(x+(stride*(p+1-1)+perm_real->data[j]), npts, m, p+1, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
 
@@ -222,7 +223,7 @@ int compute_entropy_rate_Gaussian(double *x, int npts, int m, int p, int stride,
     last_samp=sp;
 
     free(x_new);
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);  
 } /* end of function "compute_entropy_rate_Gaussian" *************************************/
 
@@ -271,12 +272,13 @@ int compute_regularity_index_Gaussian(double *x, int npts, int mx, int px, int s
     if (N_real_max<1) return(printf("[compute_regularity_index_Gaussian] : aborting !\n"));
     
     x_new     = (double*)calloc(n*sp.N_eff, sizeof(double));
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);         // for random sampling
+
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     nb_errors=0; last_npts_eff=0;
 	for (j=0; j<sp.N_real; j++)  // loop over independant windows
-	{   if (sp.type>=3) shuffle_perm(perm_pts);
+	{   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 	
         Theiler_embed(x+(stride*(px  -1)+perm_real->data[j]), npts, mx, px, stride, sp.Theiler, perm_pts->data, x_new, sp.N_eff);
         if (incr_type==1) increments(x+(stride*(px+1-1)+perm_real->data[j]), npts, mx,  2, stride, sp.Theiler, perm_pts->data, x_new+mx*px*sp.N_eff, sp.N_eff);
@@ -294,7 +296,7 @@ int compute_regularity_index_Gaussian(double *x, int npts, int mx, int px, int s
 	last_samp=sp;
 	
 	free(x_new);
-	free_perm(perm_real);    free_perm(perm_pts);
+	free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_regularity_index_Gaussian" **********************************/
 
@@ -363,12 +365,12 @@ int compute_transfer_entropy_Gaussian(double *x, double *y, int nx, int mx, int 
     surrogates  = (double*)calloc(N_surrogates*mx*px*sp.N_eff, sizeof(double)); // 2026-10-30 correction
 	shift       = (pp-1)*stride;   // present is shifted
 	
-	perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);         // for random sampling
+	init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
     
     nb_errors=0; last_npts_eff=0;
     for (j=0; j<sp.N_real; j++) // loop over independant windows
-    {   if (sp.type>=3) shuffle_perm(perm_pts);     // added 2026-10-29, why was it missing?
+    {   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);     // added 2026-10-29, why was it missing?
 
         Theiler_embed(y+shift+lag+perm_real->data[j], nx, my,  1, stride, sp.Theiler, perm_pts->data, x_new,                      sp.N_eff);
         Theiler_embed(y+shift+perm_real->data[j],     nx, my, py, stride, sp.Theiler, perm_pts->data, x_new+(      my *sp.N_eff), sp.N_eff);
@@ -405,7 +407,7 @@ int compute_transfer_entropy_Gaussian(double *x, double *y, int nx, int mx, int 
     last_samp=sp;
     
     free(x_new);            free(surrogates);
-    free_perm(perm_real);   free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_transfer_entropy_Gaussian" */
 
@@ -458,8 +460,8 @@ int compute_directed_information_Gaussian(double *x, double *y, int npts, int mx
     // additional checks and auto-adjustments of parameters, using max N:
     N_real_max = set_sampling_parameters(npts, N, stride, &sp, "compute_directed_information_Gaussian");
     if (N_real_max<1)   return(printf("[compute_directed_information_Gaussian] : aborting !\n"));
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);     // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     di1    = (double*)calloc(N, sizeof(double));    var1 = (double*)calloc(N, sizeof(double));
     x_new  = (double*)calloc((mx+my)*N*sp.N_eff, sizeof(double));
@@ -467,7 +469,7 @@ int compute_directed_information_Gaussian(double *x, double *y, int npts, int mx
 	
     nb_errors=0; last_npts_eff=0;       // global variables
     for (j=0; j<sp.N_real; j++)         // loop over realizations
-    {   if (sp.type>=3) shuffle_perm(perm_pts);
+    {   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
             
         for (n=1; n<=N; n++)            // loop on time-embedding, for a fixed realization since 2022-06-10
         {   shift  = (n-1)*stride;      // present is shifted
@@ -502,7 +504,7 @@ int compute_directed_information_Gaussian(double *x, double *y, int npts, int mx
 
     free(x_new);    
     free(di1); free(var1); 
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_directed_information_Gaussian" */
 

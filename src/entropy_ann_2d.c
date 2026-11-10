@@ -11,6 +11,7 @@
  *  2020-07-19: new wrapper for images
  *  2020-09-01: preparations for struct type parameters
  *  2020-01-05: multithread v1
+ *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  */
 
 #include <stdlib.h>
@@ -181,10 +182,14 @@ int compute_entropy_ann_2d(double *x, int nx, int ny, int d, int p, int stride_x
     fprintf(fic, "");
 */
     // "generate" independant windows:
-    perm_real_x = create_unity_perm(sp_x.N_real_max); shuffle_perm(perm_real_x);
+/*    perm_real_x = create_unity_perm(sp_x.N_real_max); shuffle_perm(perm_real_x);
     perm_real_y = create_unity_perm(sp_y.N_real_max); shuffle_perm(perm_real_y);
     perm_pts_x  = create_unity_perm(sp_x.N_eff_max);
-    perm_pts_y  = create_unity_perm(sp_y.N_eff_max);
+    perm_pts_y  = create_unity_perm(sp_y.N_eff_max); */
+    init_samplings(&perm_real_x, sp_x.N_real_max, &perm_pts_x, sp_x.N_eff_max);
+    shuffle_samplings_real_perm(perm_real_x);
+    init_samplings(&perm_real_y, sp_y.N_real_max, &perm_pts_y, sp_y.N_eff_max);
+    shuffle_samplings_real_perm(perm_real_y);
 //    fprintf(fic, "perms created\n"); fflush(fic);
     
     nb_errors=0; last_npts_eff=0;
@@ -192,8 +197,8 @@ int compute_entropy_ann_2d(double *x, int nx, int ny, int d, int p, int stride_x
     for (jx=0; jx<sp_x.N_real; jx++)    // loop over independant windows in x
     for (jy=0; jy<sp_y.N_real; jy++)    // loop over independant windows in y
     {   if (do_shuffle>0)
-        {   shuffle_perm(perm_pts_x);
-            shuffle_perm(perm_pts_y);
+        {   shuffle_samplings_pts_perm(perm_pts_x);
+            shuffle_samplings_pts_perm(perm_pts_y);
         }
         // x_s = x + jy + jx*ny;                   // 2020-07-20 the orientation of the image is chosen to be the same as in Python
         x_s = x + stride_x*(p-1)*ny + stride_y*(p-1) + perm_real_y->data[jy] + perm_real_x->data[jx]*ny; // 2022-05-12 mixing solution
@@ -261,8 +266,8 @@ int compute_entropy_ann_2d(double *x, int nx, int ny, int d, int p, int stride_x
     
 //    fclose(fic);
     free(x_new);
-    free_perm(perm_real_x); free_perm(perm_real_y);
-	free_perm(perm_pts_x);  free_perm(perm_pts_y);
+    free_samplings(perm_real_x, perm_pts_x);
+    free_samplings(perm_real_y, perm_pts_y);
 	return(nb_errors);
 } /* end of function "compute_entropy_2d" *************************************/
 

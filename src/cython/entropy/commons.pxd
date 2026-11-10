@@ -66,6 +66,12 @@ cdef extern from "samplings.h":
 	samp_param_2d samp_2d
 
 
+cdef extern from "samplings_random.h":
+	long int samplings_pts_rng_seed 
+	long int samplings_real_rng_seed 
+	void seed_samplings_rng (long int seed)
+
+
 cdef extern from "surrogates.h":
 	void surrogate_uFt		(double *x, int npts, int mx)
 	void surrogate_wFt		(double *x, int npts, int mx)

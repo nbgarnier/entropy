@@ -12,11 +12,11 @@
 #ifndef SAMPLINGS_H
 #define SAMPLINGS_H
 
-#define THEILER_2D_MINIMAL 1 // straightforward generalization of 1-d case: too minimal!
-#define THEILER_2D_MAXIMAL 2 // simple adaptation by using tau = max(tau_x,tau_y): may not be enough
-#define THEILER_2D_OPTIMAL 4 // ideal adaptation: tau = sqrt(tau_x^2 + tau_y^2): beware the rounding
+#define THEILER_2D_MINIMAL 1    // straightforward generalization of 1-d case: too minimal!
+#define THEILER_2D_MAXIMAL 2    // simple adaptation by using tau = max(tau_x,tau_y): may not be enough
+#define THEILER_2D_OPTIMAL 4    // ideal adaptation: tau = sqrt(tau_x^2 + tau_y^2): beware the rounding
 
-#include <gsl/gsl_permutation.h>
+#include "samplings_random.h"   // for permutations type (size_t*)
 
 struct sampling_parameters {
     int Theiler;        // Theiler scale
@@ -65,10 +65,6 @@ void incr_avg_mask     (double *x, int npts, int mx, int px, int stride, size_t 
 
 /********************************************************************************************************************/
 // functions to handle enhanced sampling parameters
-// - shuffling:
-gsl_permutation *create_unity_perm(size_t N);
-void shuffle_perm  (gsl_permutation *perm);
-void free_perm     (gsl_permutation *perm);
 // legacy embedding, used in the python module "tools" (in file "samplings_basic.c")
 void time_embed(double *data, double *output, int npts, int npts_new, int nb_dim, int n_embed, int n_embed_max, int stride, int i_start, int i_window);
 void crop_array(double *data, double *output, int npts, int nb_dim, int npts_new, int i_window);

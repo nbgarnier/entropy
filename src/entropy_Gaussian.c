@@ -11,6 +11,7 @@
  *  2022-10-10 : fork from "entropy_ann_N.c"
  *  2022-10-11 : entropy and MI tested OK
  *  2025-02-17 : added relative entropy
+ *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  */
 
 #include <math.h>                   // for fabs and others
@@ -19,6 +20,7 @@
 #include "library_commons.h"        // for definitions of nb_errors, and stds
 #include "library_matlab.h"         // compilation for Matlab
 #include "samplings.h"              // created 2021-12-17 (to factor some operations)
+#include "samplings_random.h"       // new 2026-11-10
 #include "math_tools.h"
 #include "entropy_Gaussian.h"
 #include "entropy_Gaussian_single.h"    // for the engine functions to compute H, MI, PMI
@@ -98,8 +100,8 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
     
     x_new  = (double*)calloc(m*p*sp.N_eff, sizeof(double));
     
-    perm_real = create_unity_perm(N_real_max);  if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
 #ifdef DEBUGp   
     save_dataset_d("debug_x", x, npts);
@@ -107,7 +109,7 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
 
     nb_errors=0; last_npts_eff=0;    
     for (j=0; j<sp.N_real; j++)   // loop over "independant" windows
-    {   if (sp.type>=3) shuffle_perm(perm_pts);
+    {   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 
 #ifdef DEBUGp    
         save_dataset_i("debug_perm_real", perm_real->data, perm_real->size);
@@ -135,7 +137,7 @@ int compute_entropy_Gaussian(double *x, int npts, int m, int p, int tau,
     last_samp=sp;
 
     free(x_new);     
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_entropy_Gaussian" **********************************************/
 
@@ -200,14 +202,15 @@ int compute_relative_entropy_Gaussian(double *x, int nx, double *y, int ny, int 
     y_new     = (double*)calloc(n_new*sp_y.N_eff, sizeof(double)); // embedded y
     
     // "generate" independant windows and samplings:
-    perm_real_x = create_unity_perm(sp_x.N_real_max); if (sp_x.type>=3) shuffle_perm(perm_real_x);
-    perm_real_y = create_unity_perm(sp_y.N_real_max); if (sp_x.type>=3) shuffle_perm(perm_real_y);
-    perm_pts_x  = create_unity_perm(sp_x.N_eff_max);
-    perm_pts_y  = create_unity_perm(sp_y.N_eff_max);
+    // "generate" independant windows (realizations) and sets of sampling points:
+    init_samplings(&perm_real_x, sp_x.N_real_max, &perm_pts_x, sp_x.N_eff_max);
+    if (sp_x.type>=3) shuffle_samplings_real_perm(perm_real_x);
+    init_samplings(&perm_real_y, sp_y.N_real_max, &perm_pts_y, sp_y.N_eff_max);
+    if (sp_y.type>=3) shuffle_samplings_real_perm(perm_real_y);
     
     nb_errors=0; last_npts_eff=0;  // global variables
     for (j=0; j<N_real_tot; j++)    // loop over independant windows
-    {   if (sp_x.type>=3) { shuffle_perm(perm_pts_x); shuffle_perm(perm_pts_x); }
+    {   if (sp_x.type>=3) { shuffle_samplings_pts_perm(perm_pts_x); shuffle_samplings_pts_perm(perm_pts_x); }
     
         Theiler_embed(x+(tau*(px-1)+perm_real_x->data[j]), nx, mx, px, tau, sp_x.Theiler, perm_pts_x->data, x_new, sp_x.N_eff);
         Theiler_embed(y+(tau*(py-1)+perm_real_y->data[j]), ny, my, py, tau, sp_y.Theiler, perm_pts_y->data, y_new, sp_y.N_eff);        
@@ -230,8 +233,8 @@ int compute_relative_entropy_Gaussian(double *x, int nx, double *y, int ny, int 
      
      free(x_new);
      free(y_new);
-     free_perm(perm_real_x);    free_perm(perm_pts_x);
-     free_perm(perm_real_y);    free_perm(perm_pts_y);
+     free_samplings(perm_real_x, perm_pts_x);
+     free_samplings(perm_real_y, perm_pts_y);
      return(nb_errors);
 } /* end of function "compute_relative_entropy_Gaussian" *************************************/
 
@@ -282,15 +285,14 @@ int compute_mutual_information_Gaussian(double *x, double *y, int nx, int mx, in
     N_real_max = set_sampling_parameters(nx, pp, tau, &sp, "compute_mutual_information_Gaussian");
     if (N_real_max<1)     return(printf("[compute_mutual_information_Gaussian] : aborting !\n"));
     
-    
 	x_new = (double*)calloc(n*sp.N_eff, sizeof(double));   // we work with a unique dataset
 	
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts  = create_unity_perm(sp.N_eff_max);         // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
     nb_errors=0; last_npts_eff=0;
 	for (j=0; j<sp.N_real; j++)  // loop over independant windows
-	{	if (sp.type>=3) shuffle_perm(perm_pts);
+	{	if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 	
         Theiler_embed(x+(tau*(pp-1)+perm_real->data[j]), nx, mx, px, tau, sp.Theiler, perm_pts->data, x_new,                sp.N_eff);
         Theiler_embed(y+(tau*(pp-1)+perm_real->data[j]), nx, my, py, tau, sp.Theiler, perm_pts->data, x_new+mx*px*sp.N_eff, sp.N_eff);
@@ -312,7 +314,7 @@ int compute_mutual_information_Gaussian(double *x, double *y, int nx, int mx, in
 	last_samp=sp;
 	
 	free(x_new);
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_mutual_information_Gaussian" **********************************/
 
@@ -374,13 +376,13 @@ int compute_partial_MI_Gaussian(double *x, double *y, double *z, int npts, int *
 	x_new  = (double*)calloc(n*sp.N_eff, sizeof(double));
     if (x_new==NULL) return(printf("[compute_partial_MI_Gaussian] : memory allocation problem !\n"
                                     "\tplease check parameters (especially dimensions, total is %d)\n", n));
-    perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
-    perm_pts = create_unity_perm(sp.N_eff_max);     // for random sampling
+    init_samplings(&perm_real, N_real_max, &perm_pts, sp.N_eff_max);   // 2026-11-10 new (for seed management)
+    if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
 
 	shift  = (pp-1)*tau;            // present is shifted
 	nb_errors=0; last_npts_eff=0;   // global variables
     for (j=0; j<sp.N_real; j++)     // loop over independant windows
-	{   if (sp.type>=3) shuffle_perm(perm_pts);
+	{   if (sp.type>=3) shuffle_samplings_pts_perm(perm_pts);
 	
         Theiler_embed(x+shift+perm_real->data[j], npts, mx, px, tau, sp.Theiler, perm_pts->data, x_new                      , sp.N_eff);
         Theiler_embed(z+shift+perm_real->data[j], npts, mz, pz, tau, sp.Theiler, perm_pts->data, x_new+(      (mx*px)*sp.N_eff), sp.N_eff);
@@ -401,7 +403,7 @@ int compute_partial_MI_Gaussian(double *x, double *y, double *z, int npts, int *
     last_samp=sp;
     
     free(x_new);
-    free_perm(perm_real);    free_perm(perm_pts);
+    free_samplings(perm_real, perm_pts);
 	return(nb_errors);
 } /* end of function "compute_partial_MI_Gaussian" */
 

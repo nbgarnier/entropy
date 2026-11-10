@@ -14,6 +14,7 @@
  *  2023-02-23 : TE(X->Y) is now correctly ordered (was: TE(Y->X)); same with DI
  *  2026-07-14 : now with Gaussian estimates of entropies where possible
  *  2026-10-30 : now with local permutation scheme for TE bias estimate
+ *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  */
 
 #include <math.h>                        // for fabs
@@ -90,7 +91,7 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-	gsl_permutation *perm_pts;
+	gsl_permutation *perm_pts, *dummy; // 2026-11-10: added dummy (for perm_real, not used as of now) 
 	char message[MAX_MESSAGE_SIZE];
 //	double temps;
 	
@@ -123,6 +124,7 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
     nb_errors=0; last_npts_eff=0;   // global variables
     data_std=0;  data_std_std=0;    // 2022-03-11, for std of the increments
     for (j=0; j<sp.N_real; j++)     // loop over independant windows
+                                    // 2026-11-10: note that no shuffling of realisations is performed (yet) with masks...
     {   
 //temps=0; tic();   
         npts_good = analyze_mask_for_sampling(mask+j, npts-j, p, stride, 0, sp.Theiler, 1, &ind_epoch); 
@@ -134,7 +136,8 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
             return(print_error("compute_entropy_ann_mask", message));
         } 
 //temps=0; tic();       
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        init_samplings(&dummy, 0, &perm_pts, npts_good);
+        shuffle_samplings_pts_perm(perm_pts);           // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
 //toc(&temps);        
 //if (j==0) printf("\ttime for perm creation and shuffling: %f (%d pts)\n", temps, npts_good);
@@ -170,7 +173,8 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
         
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);
+//        free_perm(perm_pts); // 2026-11-10, replaced by line below 
+        free_samplings(dummy, perm_pts);
         n_sets_total += sp.N_eff;
     }
     avg /= sp.N_real;
@@ -223,7 +227,7 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-	gsl_permutation *perm_pts;
+	gsl_permutation *perm_pts, *dummy; // 2026-11-10: added dummy (for perm_real, not used as of now) 
     char message[MAX_MESSAGE_SIZE];
     
     *S = my_NAN;
@@ -262,7 +266,8 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
             return(print_error("compute_Renyi_ann_mask", message));
         } 
         
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        init_samplings(&dummy, 0, &perm_pts, npts_good);
+        shuffle_samplings_pts_perm(perm_pts);           // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
         for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
         
@@ -291,7 +296,8 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
         
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);
+//        free_perm(perm_pts); // 2026-11-10, replaced by line below 
+        free_samplings(dummy, perm_pts);
         n_sets_total += sp.N_eff;
     }
     avg /= sp.N_real;
@@ -444,7 +450,7 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-	gsl_permutation *perm_pts;
+	gsl_permutation *perm_pts, *dummy; // 2026-11-10: added dummy (for perm_real, not used as of now) 
     char message[MAX_MESSAGE_SIZE];
     
     *S = my_NAN;    // default returned value
@@ -478,7 +484,8 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
             return(print_error("compute_entropy_rate_ann_mask", message));
         }
         
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        init_samplings(&dummy, 0, &perm_pts, npts_good);
+        shuffle_samplings_pts_perm(perm_pts);           // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
         
         for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
@@ -545,7 +552,9 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
 
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);
+//        free_perm(perm_pts); // 2026-11-10, replaced by line below 
+        free_samplings(dummy, perm_pts);
+
     } // loop on N_real
 
 	avg /= sp.N_real;   var /= sp.N_real;  var -= avg*avg;
@@ -601,7 +610,7 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-	gsl_permutation *perm_pts;
+	gsl_permutation *perm_pts, *dummy; // 2026-11-10: added dummy (for perm_real, not used as of now) 
 	char message[MAX_MESSAGE_SIZE];
 	
     *I1=my_NAN; *I2=my_NAN;     // default value (in case of return on error):	
@@ -631,7 +640,8 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
         {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
             return(print_error("compute_mutual_information_ann_mask", message));
         }      
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        init_samplings(&dummy, 0, &perm_pts, npts_good);
+        shuffle_samplings_pts_perm(perm_pts);           // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
         for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
         
@@ -658,7 +668,8 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
         
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);
+//        free_perm(perm_pts); // 2026-11-10, replaced by line below 
+        free_samplings(dummy, perm_pts);
     }
     
 	avg1 /= sp.N_real;  var1 /= sp.N_real;  var1 -= avg1*avg1;
@@ -725,7 +736,7 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
     int     *ind_epoch;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-	gsl_permutation *perm_pts;
+	gsl_permutation *perm_pts, *dummy; // 2026-11-10: added dummy (for perm_real, not used as of now) 
 	char message[MAX_MESSAGE_SIZE];
 
     // default value (in case of return on error):
@@ -757,7 +768,8 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
         {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
             return(print_error("compute_transfer_entropy_ann_mask", message));
         }      
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        init_samplings(&dummy, 0, &perm_pts, npts_good);
+        shuffle_samplings_pts_perm(perm_pts);           // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
         for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
         
@@ -796,7 +808,8 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
         
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);
+//        free_perm(perm_pts); // 2026-11-10, replaced by line below 
+        free_samplings(dummy, perm_pts);
         
         if (N_surrogates>0)         // test added 2026-11-02
         {   // 2026-10-29: generate appropriate surrogates and use them to compute the (bias of the) TE: // 2026-10-30 correction
@@ -877,7 +890,7 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-	gsl_permutation *perm_pts;
+	gsl_permutation *perm_pts, *dummy; // 2026-11-10: added dummy (for perm_real, not used as of now) 
 	char message[MAX_MESSAGE_SIZE];
 	    
     // default value (in case of return on error):
@@ -913,7 +926,8 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
         {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
             return(print_error("compute_partial_TE_ann_mask", message));
         }      
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        init_samplings(&dummy, 0, &perm_pts, npts_good); 
+        shuffle_samplings_pts_perm(perm_pts);           // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
         for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
 
@@ -940,7 +954,8 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
         
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);
+//        free_perm(perm_pts); // 2026-11-10, replaced by line below 
+        free_samplings(dummy, perm_pts);
     } // loop on j
  
 	avg1 /= sp.N_real;  var1 /= sp.N_real;  var1 -= avg1*avg1;
@@ -1000,7 +1015,7 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=tau_Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-	gsl_permutation *perm_pts;
+	gsl_permutation *perm_pts, *dummy; // 2026-11-10: added dummy (for perm_real, not used as of now) 
 	char message[MAX_MESSAGE_SIZE];
 
     *I1=my_NAN; *I2=my_NAN;
@@ -1034,7 +1049,8 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
         {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
             return(print_error("compute_partial_MI_ann_mask", message));
         }      
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        init_samplings(&dummy, 0, &perm_pts, npts_good);    
+        shuffle_samplings_pts_perm(perm_pts);   // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
         for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
 
@@ -1074,7 +1090,7 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
         
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);
+        free_samplings(dummy, perm_pts);
 	}
     
 	avg1 /= sp.N_real;  var1 /= sp.N_real;  var1 -= avg1*avg1;
@@ -1133,7 +1149,7 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
     int     *ind_epoch=NULL;
     size_t  *ind_shuffled=NULL;
     samp_param  sp = { .Theiler=Theiler, .N_eff=N_eff, .N_real=N_realizations, .type=-1};
-	gsl_permutation *perm_real, *perm_pts;
+	gsl_permutation *perm_pts, *dummy_1, *perm_real, *dummy_2; // 2026-11-10: added dummy_X (to be optimized)
 	char message[MAX_MESSAGE_SIZE];
 
     *I1=my_NAN; *I2=my_NAN;
@@ -1159,7 +1175,8 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
     di2    = (double*)calloc(N, sizeof(double));    var2 = (double*)calloc(N, sizeof(double));
 	x_new  = (double*)calloc((mx+my)*N*sp.N_eff, sizeof(double));
 	
-	perm_real = create_unity_perm(N_real_max); if (sp.type>=3) shuffle_perm(perm_real);
+    init_samplings(&perm_real, N_real_max, &dummy_1, 0); // allocate for realizations only
+	if (sp.type>=3) shuffle_samplings_real_perm(perm_real);
     
     nb_errors=0; last_npts_eff=0;       // global variables
     for (j=0; j<sp.N_real; j++)         // loop over realizations
@@ -1169,8 +1186,9 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
         {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
             return(print_error("compute_directed_information_ann_mask", message));
         }
-            
-        perm_pts  = create_unity_perm(npts_good); shuffle_perm(perm_pts); // for random sampling
+        
+        init_samplings(&dummy_2, 0, &perm_pts, npts_good);     
+        shuffle_samplings_pts_perm(perm_pts);   // for random sampling of pts
         ind_shuffled = (size_t*)calloc(npts_good, sizeof(size_t));
         for (i=0; i<npts_good; i++) ind_shuffled[i] = ind_epoch[perm_pts->data[i]]; // OK
 
@@ -1212,7 +1230,7 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
         
         free(ind_epoch);
         free(ind_shuffled);
-        free_perm(perm_pts);
+        free_samplings(dummy_2, perm_pts);
     } // end of loop over realizations (loop over j)
 
     for (n=0; n<N; n++)
@@ -1231,6 +1249,7 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
     last_samp=sp;
     free(x_new);    
     free(di1); free(di2); free(var1); free(var2);
+    free_samplings(perm_real, dummy_1);
 	return(nb_errors);
 } /* end of function "compute_directed_information_ann_mask" */
 

@@ -324,7 +324,7 @@ def compute_TE(double[:, ::1] x, double[:, ::1] y, int n_embed_x=1, int n_embed_
     :param N_surrogates: nb of surrogates (created with a local permutation scheme) to generate and use (to estimate the bias) (default=0, no bias estimation)
     :param k_perm: nb of neighbors to consider for generating the surrogates (default=10)
     :param seed: impose the seed value 'seed' for all random number generation during the surrogates generation process (default=-1, seed untouched)
-    :type seed: int (a positive value is used a the seed)
+    :type seed: int (a positive value is used as the seed, a negative value indicates that the seed shouldn't be touched)
     :param k: number of neighbors to consider or -1 to force a non-ANN computation using covariance only, assuming Gaussian statistics.
     :type k: int(, optional)
     :param mask: mask to use (NumPy array of dtype=char). If a mask is provided, only values given by the mask will be used. (default=no mask)
