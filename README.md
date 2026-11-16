@@ -103,7 +103,7 @@ Here is a short list of functions that all versions (C/Python or pure Python) pr
 | `compute_entropy_Renyi` | Renyi entropy |
 | `compute_complexities` | ApEn and SampEn |
  
-See help on all functions on the [documentation webpage](https://perso.ens-lyon.fr/nicolas.garnier/files/html/).
+See help on all functions on the [documentation webpage](https://perso.ens-lyon.fr/nicolas.garnier/entropy/html/).
 
 See Python examples in `bin/python/`.
 
