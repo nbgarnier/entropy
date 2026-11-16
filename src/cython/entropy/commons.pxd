@@ -8,6 +8,7 @@
 
 # import definitions from C : 
 cdef extern from "library_commons.h":
+	int 	Jaynes_invariant
 	int		nb_errors, nb_errors_local, nb_errors_total
 	int		last_npts_eff, last_npts_eff_local
 	double	last_std, last_std2

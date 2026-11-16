@@ -264,11 +264,11 @@ int ANN_marginal_distances_ex(double *x, int n, int k, double *epsilon_z, int co
 /***************************************************************************************/
 double ANN_find_distance_in(int i, int n, int k, int core) // 2021-12-01: core=0 if not multithread!
 {   UNUSED(n);
-    kdTree->annkSearch(            // search
-                       dataPts[i], //queryPt,            // query point
+    kdTree->annkSearch(                         // search
+                       dataPts[i],              // query point
                        k+ANN_ALLOW_SELF_MATCH,  // number of near neighbors (including or excluding central point)
-                       nnIdx[core],                // nearest neighbors (returned)
-                       dists[core],                // distance (returned)
+                       nnIdx[core],             // nearest neighbors (returned)
+                       dists[core],             // distance (returned)
                        ANN_eps,
                        core);
 // 2021-12-13, test   
@@ -293,11 +293,11 @@ double ANN_find_distance_in(int i, int n, int k, int core) // 2021-12-01: core=0
 /****************************************************************************************/
 double ANN_find_distance_in_tree1(int i, int n, int k, int core) // 2021-12-01: core=0 if not multithread!
 {   UNUSED(n);
-    kdTree_1->annkSearch(            // search
-                       dataPts_1[i], //queryPt,            // query point
+    kdTree_1->annkSearch(                       // search
+                       dataPts_1[i],            // query point
                        k+ANN_ALLOW_SELF_MATCH,  // number of near neighbors (including or excluding central point)
-                       nnIdx[core],                // nearest neighbors (returned)
-                       dists[core],                // distance (returned)
+                       nnIdx[core],             // nearest neighbors (returned)
+                       dists[core],             // distance (returned)
                        ANN_eps,
                        core);
 

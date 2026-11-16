@@ -133,7 +133,7 @@ int surrogates_local_perm(double *x, double *z, int npts, int m, int q, int k_pe
 	bool	is_used[npts];	// better solution (thanks to M. Frasch)
 	int     *neighbors;     // to store the indices of neighbors of each central points
     
-	init_surrogates_rng();	// if this hasn't been done already
+	init_surrogates_rng();	// if this hasn't been done already (this includes seed management)
 	perm = gsl_permutation_alloc(npts);
         
 	if (m+q<2) return(printf("[surrogates_local_perm] : not enough dimensions in data (at least 2 required for X and Z)\n"));

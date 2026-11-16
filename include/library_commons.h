@@ -38,6 +38,10 @@
 
 
 /********************************************************************************************************************/
+// using or not an invariant measure (following Jaynes idea)
+extern int Jaynes_invariant;    // defined in entropy_ann.c with default value 0 (legacy)
+
+/********************************************************************************************************************/
 // choice of the Kraskov et al. algorithm for MIs:
 extern int MI_algo;             // defined in entropy_ann.c with values from library_commons.h
 

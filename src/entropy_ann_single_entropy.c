@@ -16,9 +16,10 @@
  *  2019-01-22 : rewritten some ANN functions, and cleaned up a little (tests moved back here)
  *  2020-02-26 : new management of "nb_errors" (via global variables)
  *  2021-12-17 : extracted from "entropy_ann.c"
+ *  2026-11-11 : added invariant measure estimation (WIP)
  */
 
-#include <math.h>               // for fabs and log
+#include <math.h>               // for fabs and log (and pow since 2026-11-11)
 #include <string.h>
 #include <gsl/gsl_sf.h>         // for psi digamma function
 
@@ -51,11 +52,12 @@
 /* x1(t=0)...x1(t=nx-1) x2(t=0) ... x2(t=nx-1) ... xn(t=0) ... xn(t=nx-1)               */
 /*                                                                                      */
 /* 2012-02-27, fork from "compute_entropy_ann"                                          */
+/* 2026-11-11: added invariant measure estimation                                       */
 /****************************************************************************************/
 double compute_entropy_nd_ann(double *x, int npts, int n, int k)
 {	register int i;
     double epsilon=0.0;
-	double h=0.00;
+	double h=0.0, vm=0.0;
     
 //    printf(" ANN state before init : %d\n", get_ANN_ALLOW_SELF_MATCH());
 	init_ANN(npts, n, k, SINGLE_TH); 	
@@ -78,19 +80,32 @@ double compute_entropy_nd_ann(double *x, int npts, int n, int k)
 #endif           
         }
         else /* estimateur de l'entropie : esperance de la grandeur suivante : */
-        {  h += log(epsilon);
+        {   h += log(epsilon);
 //           fprintf(fe,"%f\n",epsilon);
+            if (Jaynes_invariant)   vm += pow(epsilon, n);        // XIV.47
         }
 	}
     
     if (nb_errors_local>=npts) h=my_NAN;   // big trouble
     else // we can get an estimate
-    {   h /= (double)(npts-nb_errors_local); /* normalisation de l'esperance */
-	
+    {   h  /= (double)(npts-nb_errors_local);   // normalisation de l'esperance
+        vm /= (double)(npts-nb_errors_local);   // normalisation de l'esperance
+
         /* normalisation : */
         h *= (double)n;
         h += gsl_sf_psi_int(npts-nb_errors_local) - gsl_sf_psi_int(k);
-        h += (double)n*log((double)2.0);	/* notre epsilon est le rayon, et pas le diametre de la boule */
+        h += (double)n*log((double)2.0);	    // notre epsilon est le rayon, et pas le diametre de la boule
+
+        // 2026-11-11:
+        if (Jaynes_invariant) 
+        {   if (vm>0)   vm = log(vm);
+            else        printf("[compute_entropy_nd_ann] log of vm=%1.5f <0!\t", vm);
+            vm += (double)n*log((double)2.0);	// notre epsilon est le rayon, et pas le diametre de la boule (will cancel)
+//            vm += log((double)(npts-nb_errors_local));  // XIV.47, not sure of that!
+            vm += - log((double)k);                     // XIV.47, not sure of that!
+            printf("Jaynes. raw H: %1.5f\t measure: %1.5f\t final: %1.5f\t log(N): %1.5f\t log(k): %1.5f\n", h, vm, h-vm, log((double)(npts-nb_errors_local)), log((double)k));
+            h -= vm;
+        }
     }
 //    printf("nb errors local : %d, DBL_MIN = %g\n", nb_errors_local, DBL_MIN*1e13);
     

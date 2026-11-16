@@ -12,8 +12,6 @@ Systems:
                  (zero linear correlation, so only nonlinear measures see it)
   3. logistic  : unidirectionally coupled logistic maps (chaotic)
 
-Usage:
-  python generate_test_signals.py --system henon --n 5000 --coupling 0.4 --out data.csv
 """
 import numpy
 import numpy as np

@@ -66,6 +66,9 @@
 // constant to be used globally (including in other source .c files, and cython)
 const int k_default = 5;
 
+// using or not an invariant measure (following Jaynes idea)
+int Jaynes_invariant = 0;               // 2026-11-11: Jaynes proposal, take two (from Nagel et al (2024))
+
 // choice of the Kraskov et al. algorithm for MIs:
 // default = algo 1 from Kraskov, and legacy counting
 int MI_algo = MI_ALGO_1 | COUNTING_NG;
@@ -222,7 +225,9 @@ int compute_entropy_ann(double *x, int npts, int m, int p, int tau,
  * px   indicates how many points to take in the past of x (embedding)                  *
  * py   indicates how many points to take in the past of y (embedding)                  *
  * tau  is the time lag between 2 consecutive points in time when embedding             *
- * method is an integer to choose between cross entropy (0) or relative entropy (1)     *
+ * method is an integer to choose between                                               *
+ *     - cross entropy (if ==0) or                                                      *
+ *     - "full" relative entropy (if ==1) (full KL divergence)                          *
  *                                                                                      *
  * this function is a wrapper to the functions :                                        *
  *     - compute_relative_entropy_2xnd_ann                                              *

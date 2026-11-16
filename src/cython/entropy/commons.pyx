@@ -12,6 +12,7 @@
 # 2021-12-02: multi-threaded entropy algorithm
 # 2021-12-19: forked out of entropy_ann.pyx
 # 2023-03-23: playing with memoryviews freeing for optimizations
+# 2026-11-10: seed for samplings rng can now be provided (via set_sampling())
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
@@ -80,20 +81,29 @@ def get_extra_info(int verbosity=0):
 
 
 # 2019-01-28: OK
-def choose_algorithm(int algo=1, int version=1):
+def choose_algorithm(int algo=1, int version=1, int Jaynes=0):
      """
-     selects the algorithms to use for computing all mutual informations (including partial mutual informations and TEs),
-     and selects the algorithm to use to count neighbors.
+     selects the algorithm(s)/estimator(s) to use for computing all mutual informations (including partial mutual informations and TEs),
+     the algorithm to use to count neighbors, and either or not we use Jaynes invariant measure estimation.
      
      :param algo: the Kraskov-Stogbauer-Grassberger algorithm. Possible values are {1, 2, 1|2}) for (algo 1, algo 2, both algos). (default=1)
-     :param version: counting algorithm version, possible values are {1, 2} for (legacy, mixed ANN) (default=1)
+     :type algo: integer, default=1
+     :param version: counting algorithm version, possible values are {1, 2} for (legacy, mixed ANN)
+     :type version: integer, default=1
+     :param Jaynes: do we use an estimation of the invariant measures to correct the estimations
+     :type Jaynes: integer, default=0
      :returns: no output
      
      about the "version" parameter:
        - 1 : legacy (NBG) : faster for small embedding dimensions (<=2)
        - 2 : mixed ANN    : faster for large embedding dimensions (>=4)
+
+     about Jaynes parameter:
+       if True, the differential entropies are replaced by relative entropies, with an estimation of the invariant measure of the data. 
+       This adds a very light extra cost in computation time, but changes drastically the behavior of the entropies. See Nagel et al (2024).
      """
      commons.ANN_choose_algorithm(algo|(version*0x0100))
+     commons.Jaynes_invariant = Jaynes
      return
 
 
@@ -113,7 +123,7 @@ def set_verbosity(int level=1):
       -  ...
         
     """
-    commons.lib_verbosity=level
+    commons.lib_verbosity = level
     
 def get_verbosity():
     """

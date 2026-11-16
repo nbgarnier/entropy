@@ -80,7 +80,7 @@ double compute_cross_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int 
         epsilon = ANN_find_distance_ex(x_central, n, k, 0); // 2019-01-22 
                                             // 2021-12-01: thread index 0
         if (epsilon<=0) nb_errors_local++;
-        else   h = h + log(epsilon);
+        else   h += log(epsilon);
     }
 
     if (nb_errors_local>=nx) h=my_NAN;
@@ -112,6 +112,8 @@ double compute_cross_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int 
  * 
  * this function returns the "complete" relative entropy (Kullbach-Leibler divergence),
  * see https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
+ * 
+ * D(f\\g) = \Sum_x f(x) \ln f(x)/g(x)
  *
  * this version is for n-dimentional systems, and uses ANN library with kd-tree
  *
@@ -122,7 +124,7 @@ double compute_cross_entropy_2xnd_ann(double *x, int nx, double *y, int ny, int 
  * nx  is the number of observations of x (number of points in time)
  * y   contains the data, distributed from g(y). y is of size n*ny
  * ny  is the number of observations of y
- * n   is the dimensionality (of both x and y, should be the same)
+ * n   is the dimensionality (of both x and y, should be the same!)
  * k   is the number of neighbors to consider
  *
  * data is ordered like this :
@@ -159,8 +161,15 @@ double compute_relative_entropy_2xnd_ann(double *x, int nx, double *y, int ny, i
      
         // normalisation :
         h *= (double)n;
-        h += gsl_sf_psi_int(ny) - gsl_sf_psi_int(nx);   // 2025-02-12: formula "à la Kraskov"
+        h += gsl_sf_psi_int(ny) - gsl_sf_psi_int(nx);   // 2025-02-12: formula "à la Kraskov" (je préfère)
+//      $\psi(ny)$ or $\psi(ny+1)$: it depends on whether $x_i$ belongs to $Y$:
+//      $Y$ independent of the data (permuted components, draws from a fitted family): $ny$ candidates, so $\psi(ny+1)-\psi(nx)$.
+//      $Y$ contains $x_i$, self-match excluded (distinct values, symmetrised sample): $ny-1$ candidates, so $\psi(ny)-\psi(nx)$, which is exactly the expression above.
 //        h += log((double)ny/(double)(nx-1));          // 2025-02-12: formula from Leonenko et al (XIII.30)
+//      This $\ln\frac{ny}{nx-1}$ is the Wang–Kulkarni–Verdú form, obtained from the plug-in densities 
+//      $\hat p=k/\big((nx-1)c_d\varepsilon^d\big)$ and $\hat m=k/(ny c_d\delta^d)$. 
+//      Each has a bias $\ln k-\psi(k)$, which cancels in the difference when the same $k$ is used.
+//      Both expressions are the same quantity up to $O(1/nx)$,
     }
     
     /* free pointers : */
