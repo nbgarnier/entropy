@@ -79,7 +79,7 @@ esac
 #################################################################
 #: ${CXXFLAGS="-O3 -fPIC -pthread"}
 #: ${CFLAGS="-O3 -fPIC -std=c99 -pthread"}
-${CFLAGS+=" -std=c99"}
+# ${CFLAGS="$CFLAGS -std=c99"} # removed 2026-11-17
 my_CPPFLAGS="-pedantic -Wall -Wextra -Wshadow -Wpointer-arith -Wundef -Wunreachable-code -O3 -fPIC -pthread"
 
 
