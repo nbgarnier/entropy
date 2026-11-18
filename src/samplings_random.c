@@ -78,13 +78,24 @@ void init_samplings_rng(void)
 
 /****************************************************************************************/
 /* init the random number generators for random sampling and allocate permutations      */
+/*                                                                                      */
 /****************************************************************************************/
 void init_samplings(gsl_permutation **perm_real, int N_real, gsl_permutation **perm_pts, int N_pts)
 {   
     init_samplings_rng();
 
-    *perm_real = create_unity_perm(N_real);  
-    *perm_pts  = create_unity_perm(N_pts);     // for random sampling
+    if (N_real>0)   *perm_real = create_unity_perm(N_real); 
+    else            *perm_real = NULL;
+    if (N_pts>0)    *perm_pts  = create_unity_perm(N_pts);     // for random sampling
+    else            *perm_pts  = NULL;
+
+#ifdef DEBUG
+    printf("[init_samplings] called with N_real=%d and N_pts=%d, OK\n", N_real, N_pts);
+    if (*perm_real!=NULL)   printf("[init_samplings] realisations permutation pointer OK\n");
+    else                    printf("[init_samplings] realisations permutation pointer NULL\n");
+    if (*perm_pts!=NULL)    printf("[init_samplings] pts permutation pointer OK\n");
+    else                    printf("[init_samplings] pts permutation pointer NULL\n");
+#endif
 
     return;
 }

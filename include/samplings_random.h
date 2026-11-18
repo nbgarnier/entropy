@@ -29,7 +29,7 @@ void shuffle_samplings_pts_perm     (gsl_permutation *perm);
 
 /****************************************************************************************/
 // internal functions:
-void init_samplings_rng             (void);
+// void init_samplings_rng             (void);
 gsl_permutation *create_unity_perm  (size_t N);
 
 #endif
