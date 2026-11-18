@@ -181,7 +181,7 @@ def set_Theiler(int Theiler=4):
 # 2024-09-18: N_eff and N_real now also set to default values for Theiler==1 
 # 2026-11-10: new parameter 'seed' for the random number generators
 def set_sampling(int Theiler=4, int N_eff=4096, int N_real=10, int seed=-1):
-    """ set_sampling(Theiler='adapted', N_eff=4096, N_real=10)
+    """ set_sampling(Theiler='adapted', N_eff=4096, N_real=10, seed=-1)
     
     sets the way the library handles by default the Theiler prescription, the number N_eff of effective points and the number N_real of realizations.
     These values are overiden if explicitly specified in a function call. 
