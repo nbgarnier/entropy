@@ -310,7 +310,7 @@ void printf_sampling_parameters(samp_param sp, char *text)
 {   printf("variable ""%s"":", text);
     printf("\tTheiler prescription : %d ", sp.type);
     switch (sp.type)
-    {   case 0 :   printf("(no Theiler prescription)\n");
+    {   case 0 :   printf("(no automatic Theiler prescription, using provided tau_Theiler)\n");
                     break;
         case 1 :   printf("(legacy: fixed Theiler + uniform sampling)\n");
                     break;
@@ -361,7 +361,7 @@ int check_sampling_parameters(int npts, int p, int stride, samp_param *sp, char 
     
     if (npts < (T_real + sp->N_real_max - 1))
     {   if (lib_verbosity>0) 
-        {   sprintf(message, " [check_sampling_parameters] not enough points");
+        {   sprintf(message, " [check_sampling_parameters] (error 1) not enough points '%d < %d + %d - 1 = %d", npts, T_real, sp->N_real_max, T_real+sp->N_real_max-1);
             print_error(func_name, message);
         }
         return(-1);
@@ -398,7 +398,7 @@ int check_sampling_parameters(int npts, int p, int stride, samp_param *sp, char 
         return(-5);
     }
     if (npts_left<1)
-    {   if (lib_verbosity>0) print_error(func_name, " [check_sampling_parameters] not enough points");
+    {   if (lib_verbosity>0) print_error(func_name, " [check_sampling_parameters] (error 6) not enough points");
         return(-6);
     }
     
@@ -482,6 +482,7 @@ int check_sampling_parameters(int npts, int p, int stride, samp_param *sp, char 
 /* 2022-12-07: full refactoring of the code                                             */
 /* 2023-02-15: now recomputing sp->N_eff_max for sp.Theiler==3                          */
 /* 2023-11-17: added 2 tests for Theiler type 4  (to be cleaned)                        */
+/* 2026-11-19: better estimation of N_eff when Theiler scale is imposed                 */
 /****************************************************************************************/
 int set_sampling_parameters(int npts, int p, int stride, samp_param *sp, char *func_name)
 {   int tmp=-13;                    
@@ -514,7 +515,8 @@ int set_sampling_parameters(int npts, int p, int stride, samp_param *sp, char *f
     {   sp->Theiler_max = sp->Theiler;              // 2022-12-14
         if (sp->N_real<1) sp->N_real=stride;
         sp->N_real_max  = sp->N_real;
-        npts_left       = npts - (p-1)*stride;      // 2023-11-29, for the line below
+        npts_left       = npts - (p-1)*stride;      // 2023-11-29, for the lines below
+        npts_left      -= sp->N_real;               // 2026-11-19, because npts_left is reduced if N_real increases
         sp->N_eff_max   = (npts_left-npts_left%(sp->Theiler))/(sp->Theiler);  
         if (sp->N_eff<1) sp->N_eff = sp->N_eff_max; // N_eff automatic
     }
@@ -583,6 +585,7 @@ int set_sampling_parameters(int npts, int p, int stride, samp_param *sp, char *f
     // then some checks and warnings:
     tmp = check_sampling_parameters(npts, p, stride, sp, func_name);
 
+//    printf_sampling_parameters(*sp, func_name);
     if (tmp<0) return(tmp);
     return(sp->N_real_max);
 }

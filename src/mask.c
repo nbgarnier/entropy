@@ -292,6 +292,7 @@ int set_sampling_parameters_mask(char *mask, int npts, int p, int stride, int la
 //        printf("Theiler type %d, for scale %d and imposed Theiler %d\n", sp->type, stride, sp->Theiler);
         sp->N_eff_max   = get_N_eff_from_mask(mask, npts, p, stride, lag, sp->Theiler, sp->N_real);
         if (sp->N_eff<1) sp->N_eff = sp->N_eff_max; // N_eff automatic
+        if (sp->N_eff>sp->N_eff_max) sp->N_eff = sp->N_eff_max; // 2026-11-19 added (N_eff automatic if Theiler>0 is given)
     }
     else
     if (sp->type==1)                                // automatic Theiler style 1 (legacy, 2012-05-03)
@@ -376,7 +377,9 @@ int set_sampling_parameters_mask(char *mask, int npts, int p, int stride, int la
         sp->Theiler_max = sp->Theiler;
     }
     
-    if (lib_verbosity>3) printf("[set_sampling_parameters_mask] returning with N_real = %d (N_real_max = %d), N_eff = %d (N_eff_max = %d), Theiler = %d, type = %d\n", sp->N_real, sp->N_real_max, sp->N_eff, sp->N_eff_max, sp->Theiler, sp->type);  
+//    printf_sampling_parameters(*sp, func_name);
+
+    if (lib_verbosity>3) printf_sampling_parameters(*sp, "[set_sampling_parameters_mask]");  
     return(sp->N_real_max);
 } /* end of function "set_sampling_parameters_mask" */
 

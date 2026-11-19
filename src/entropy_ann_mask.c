@@ -15,6 +15,7 @@
  *  2026-07-14 : now with Gaussian estimates of entropies where possible
  *  2026-10-30 : now with local permutation scheme for TE bias estimate
  *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
+ *  2026-11-19 : second estimates of MI, TE et al for Gaussian now return NaN (because not relevant)
  */
 
 #include <math.h>                        // for fabs
@@ -659,6 +660,7 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
         }
         else        // Gaussian estimate
         {       mi1   = compute_mutual_information_direct_Gaussian(x_new, sp.N_eff, mx*px, my*py);
+                mi2   = my_NAN;    // not relevant for Gaussian estimate
         }
         
         avg1 += mi1;    var1 += mi1*mi1;
@@ -799,6 +801,7 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
         else        // Gaussian estimate
         {
                 te1        = compute_partial_MI_engine_Gaussian   (full_x_new, sp.N_eff, my, mx*px, my*py);
+                te2        = my_NAN;    // not relevant for Gaussian estimate
         }
         
         avg1 += te1;    var1 += te1*te1;
@@ -946,6 +949,7 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
         }
         else
         {       te1        = compute_partial_MI_engine_Gaussian   (x_new, sp.N_eff, my, mx*px, my*py+mz*pz);
+                te2        = my_NAN;    // not relevant for Gaussian estimate
         }
         
         avg1 += te1;    var1 += te1*te1;
@@ -1083,6 +1087,7 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
         }
         else        // Gaussian estimate
         {       mi1        = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, mx*px, my*py, mz*pz); //PMI
+                mi2        = my_NAN;    // not relevant for Gaussian estimate
         }
         avg1 += mi1;    var1 += mi1*mi1;
 		avg2 += mi2;	var2 += mi2*mi2;
@@ -1206,8 +1211,10 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
                                                         my*n, mx*n, k, &tmp1, &tmp2);
                 }
                 else        // Gaussian estimate
-                                        tmp1      = compute_mutual_information_direct_Gaussian(x_new, sp.N_eff, 
+                {                       tmp1       = compute_mutual_information_direct_Gaussian(x_new, sp.N_eff, 
                                                         my*n, mx*n);
+                                        tmp2       = my_NAN;    // not relevant for Gaussian estimate
+                }
                 
                 di1[0] += tmp1; var1[0] += tmp1*tmp1;        // 2023-02-24: replaced = by +=
                 di2[0] += tmp2; var2[0] += tmp2*tmp2;
@@ -1220,8 +1227,10 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
                                                         my, mx*n, my*(n-1), k, &tmp1, &tmp2);
                 }
                 else        // Gaussian estimate
-                                        tmp1      = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, 
+                {                       tmp1      = compute_partial_MI_engine_Gaussian(x_new, sp.N_eff, 
                                                         my, mx*n, my*(n-1));
+                                        tmp2      = my_NAN;    // not relevant for Gaussian estimate
+                }
                 di1[n-1] += tmp1; var1[n-1] += tmp1*tmp1;
                 di2[n-1] += tmp2; var2[n-1] += tmp2*tmp2;
             }
