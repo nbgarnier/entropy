@@ -16,6 +16,7 @@
  *  2026-10-30 : now with local permutation scheme for TE bias estimate
  *  2026-11-10 : refactored random number generation (for samplings) interface into slightly different functions 
  *  2026-11-19 : second estimates of MI, TE et al for Gaussian now return NaN (because not relevant)
+ *             : bug correction (test on 2*k replaced by 2*abs(k))
  */
 
 #include <math.h>                        // for fabs
@@ -115,8 +116,8 @@ int compute_entropy_ann_mask(double *x, char *mask, int npts, int m, int p, int 
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_entropy_ann_mask", message));
     }
-    if ((k!=-1) && (sp.N_eff < 2*k))
-    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+    if (sp.N_eff < 2*abs(k))        // 2026-11-19: added abs() to take into account k=-1 (Gaussian estimates)
+    {   sprintf(message, "N_eff=%d is too small (k=%d)", sp.N_eff, k);
         return(print_error("compute_entropy_ann_mask", message));
     }
 
@@ -251,16 +252,16 @@ int compute_Renyi_ann_mask(double *x, char *mask, int npts, int m, int p, int st
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_Renyi_ann_mask", message));
     }
-    if (sp.N_eff < 2*k) 
-    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+    if (sp.N_eff < 2*abs(k))        // 2026-11-19: added abs() to take into account k=-1 (Gaussian estimates)
+    {   sprintf(message, "N_eff=%d is too small (k=%d)", sp.N_eff, k);
         return(print_error("compute_Renyi_ann_mask", message));
     }
 
     x_new    = (double*)calloc(m*p_new*sp.N_eff, sizeof(double));
 
-    nb_errors=0; last_npts_eff=0; // global variables
+    nb_errors=0; last_npts_eff=0;   // global variables
     data_std=0;  data_std_std=0;    // 2022-03-11, for std of the increments
-    for (j=0; j<sp.N_real; j++)   // loop over independant windows
+    for (j=0; j<sp.N_real; j++)     // loop over independant windows
     {   npts_good = analyze_mask_for_sampling(mask+j, npts-j, p, stride, 0, sp.Theiler, 1, &ind_epoch); 
         if (npts_good<sp.N_eff) 
         {   sprintf(message, "npts_good = %d < N_eff =%d", npts_good, sp.N_eff);
@@ -469,8 +470,8 @@ int compute_entropy_rate_ann_mask(double *x, char *mask, int npts, int m, int p,
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_entropy_rate_ann_mask", message));
     }
-    if (sp.N_eff < 2*k) 
-    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+    if (sp.N_eff < 2*abs(k))        // 2026-11-19: added abs() to take into account k=-1 (Gaussian estimates)
+    {   sprintf(message, "N_eff=%d is too small (k=%d)", sp.N_eff, k);
         return(print_error("compute_entropy_rate_ann_mask", message));
     }
    
@@ -626,8 +627,8 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_mutual_information_ann_mask", message));
     }
-    if (sp.N_eff < 2*k) 
-    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+    if (sp.N_eff < 2*abs(k))            // 2026-11-19: added abs() to take into account k=-1 (Gaussian estimates)
+    {   sprintf(message, "N_eff=%d is too small (k=%d)", sp.N_eff, k);
         return(print_error("compute_mutual_information_ann_mask", message));
     }
     
@@ -724,7 +725,8 @@ int compute_mutual_information_ann_mask(double *x, double *y, char *mask, int np
  * 2026-10-29 : added internal surrogates generation (local permutation scheme)
  *              -> 2 new input parameters (N_surrogates and k_perm),
  *              -> one more returned pointer (TE_bias)
- * 2026-10-30 : error correction (exchanged y_lag and x_t)                          
+ * 2026-10-30 : error correction (exchanged y_lag and x_t)       
+ * 2026-11-19 : bug correction (test N_eff vs abs(k) instead of k to take into account k=-1)                   
  *************************************************************************************/
 int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts, int mx, int my, int px, int py, int stride, int lag, 
                             int N_surrogates, int k_perm,
@@ -755,8 +757,8 @@ int compute_transfer_entropy_ann_mask(double *x, double *y, char *mask, int npts
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_transfer_entropy_ann_mask", message));
     }
-    if (sp.N_eff < 2*k) 
-    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+    if (sp.N_eff < 2*abs(k))            // 2026-11-19: added abs() to take into account k=-1 (Gaussian estimates)
+    {   sprintf(message, "N_eff=%d is too small (k=%d)", sp.N_eff, k);
         return(print_error("compute_transfer_entropy_ann_mask", message));
     }
     full_x_new  = (double*)calloc(                nn*sp.N_eff, sizeof(double));
@@ -914,8 +916,8 @@ int compute_partial_TE_ann_mask(double *x, double *y, double *z, char *mask, int
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_partial_TE_ann_mask", message));
     }
-    if (sp.N_eff < 2*k) 
-    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+    if (sp.N_eff < 2*abs(k))            // 2026-11-19: added abs() to take into account k=-1 (Gaussian estimates)
+    {   sprintf(message, "N_eff=%d is too small (k=%d)", sp.N_eff, k);
         return(print_error("compute_partial_TE_ann_mask", message));
     }
     
@@ -1038,8 +1040,8 @@ int compute_partial_MI_ann_mask(double *x, double *y, double *z, char *mask, int
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_partial_MI_ann_mask", message));
     }
-    if (sp.N_eff < 2*k) 
-    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+    if (sp.N_eff < 2*abs(k))            // 2026-11-19: added abs() to take into account k=-1 (Gaussian estimates)
+    {   sprintf(message, "N_eff=%d is too small (k=%d)", sp.N_eff, k);
         return(print_error("compute_partial_MI_ann_mask", message));
     }
     
@@ -1171,8 +1173,8 @@ int compute_directed_information_ann_mask(double *x, double *y, char *mask, int 
     {   sprintf(message, "no available realizations (Theiler %d, N_eff %d, N_real %d)", sp.Theiler, sp.N_eff, sp.N_real);
         return(print_error("compute_directed_information_ann_mask", message));
     }
-    if (sp.N_eff < 2*k) 
-    {   sprintf(message, "N_eff=%d is too small compared to k=%d", sp.N_eff, k);
+    if (sp.N_eff < 2*abs(k))            // 2026-11-19: added abs() to take into account k=-1 (Gaussian estimates)
+    {   sprintf(message, "N_eff=%d is too small (k=%d)", sp.N_eff, k);
         return(print_error("compute_directed_information_ann_mask", message));
     }
     
